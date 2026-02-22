@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 from .models import (
     User, Profile, Organization, Incident,
-    IncidentMember, TrackPoint, Alert, Device, RiskCell
+    Session, TrackPoint, Alert, Device, RiskCell, WorkArea
 )
 
 
@@ -44,7 +44,7 @@ class IncidentAdmin(GISModelAdmin):
     }
 
 
-@admin.register(IncidentMember)
+@admin.register(Session)
 class IncidentMemberAdmin(admin.ModelAdmin):
     list_display = ['user', 'incident', 'role_in_incident', 'joined_at', 'is_active']
     list_filter = ['role_in_incident', 'is_active']
@@ -79,3 +79,10 @@ class RiskCellAdmin(GISModelAdmin):
     list_display = ['incident', 'risk_score', 'trackpoint_count', 'alert_count', 'calculated_at']
     list_filter = ['calculated_at']
     search_fields = ['incident__name']
+
+@admin.register(WorkArea)
+class WorkAreaAdmin(GISModelAdmin):
+    list_display = ['name','incident','area_type','active','created_at']
+    list_filter = ['area_type','active','created_at']
+    search_fields = ['name','incident__name']
+    gis_widget_kwargs = {'attrs': {'default_zoom': 13,'map_width': 800,'map_height': 500,}}

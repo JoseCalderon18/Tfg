@@ -5,7 +5,7 @@ from .user import User
 from .incident import Incident
 
 
-class IncidentMember(models.Model):
+class Session(models.Model):
     """
     Modelo de relación muchos a muchos entre Incidente y Usuario.
 

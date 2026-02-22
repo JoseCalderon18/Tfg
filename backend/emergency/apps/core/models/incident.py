@@ -82,7 +82,7 @@ class Incident(models.Model):
     # Participantes - relación muchos a muchos a través de IncidentMember
     members = models.ManyToManyField(
         User,
-        through='IncidentMember',
+        through='Session',
         related_name='incidents',
         help_text="Usuarios asignados a este incidente"
     )

@@ -4,11 +4,12 @@ from .models import (
     Organization,
     Profile,
     Incident,
-    IncidentMember,
+    Session,
     TrackPoint,
     Alert,
     Device,
     RiskCell,
+    WorkArea,
 )
 
 __all__ = [
@@ -16,9 +17,10 @@ __all__ = [
     'Organization',
     'Profile',
     'Incident',
-    'IncidentMember',
+    'Session',
     'TrackPoint',
     'Alert',
     'Device',
     'RiskCell',
+    'WorkArea',    
 ]
