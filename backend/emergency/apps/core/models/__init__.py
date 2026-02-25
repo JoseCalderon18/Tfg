@@ -25,7 +25,7 @@ from .alert import Alert
 from .device import Device
 from .risk_cell import RiskCell
 from .track_point import TrackPoint
-from .session import Session
+from .incident_member import IncidentMember
 from .workarea import WorkArea
 
 __all__ = [
@@ -37,6 +37,6 @@ __all__ = [
     'Device',
     'RiskCell',
     'TrackPoint',
-    'Session',
+    'IncidentMember',
     'WorkArea',
 ]

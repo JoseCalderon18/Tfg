@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 from .models import (
     User, Profile, Organization, Incident,
-    Session, TrackPoint, Alert, Device, RiskCell, WorkArea
+    IncidentMember, TrackPoint, Alert, Device, RiskCell, WorkArea
 )
 
 
@@ -44,7 +44,7 @@ class IncidentAdmin(GISModelAdmin):
     }
 
 
-@admin.register(Session)
+@admin.register(IncidentMember)
 class IncidentMemberAdmin(admin.ModelAdmin):
     list_display = ['user', 'incident', 'role_in_incident', 'joined_at', 'is_active']
     list_filter = ['role_in_incident', 'is_active']

@@ -5,7 +5,7 @@ from .user import User
 from .incident import Incident
 
 
-class Session(models.Model):
+class IncidentMember(models.Model):
     """
     Modelo de relación muchos a muchos entre Incidente y Usuario.
 
@@ -22,7 +22,6 @@ class Session(models.Model):
         is_active: Indica si el usuario sigue activo en el incidente
     """
 
-    # Opciones para el rol dentro del incidente
     ROLES_IN_INCIDENT = [
         ('SUPERVISOR', 'Supervisor'),
         ('OPERATIVE', 'Operativo'),
