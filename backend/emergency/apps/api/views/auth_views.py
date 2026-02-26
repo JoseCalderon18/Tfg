@@ -20,6 +20,9 @@ from ..serializers import UserSerializer, UserCreateSerializer, ProfileSerialize
 # JWT / API GENERAL (como lo tenías)
 # -------------------------
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
 class RegisterView(generics.CreateAPIView):
     """
     POST /api/auth/register/
@@ -217,3 +220,47 @@ class PanelUsersListView(APIView):
             for u in users
         ]
         return Response(data, status=status.HTTP_200_OK)
+
+
+# -------------------------
+# JWT Login para Mobile App
+# -------------------------
+
+class JWTLoginView(APIView):
+    """
+    POST /api/auth/login/
+    Login con JWT (sin CSRF). Para mobile-app.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if not username or not password:
+            return Response(
+                {'error': 'Username and password required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from django.contrib.auth import authenticate
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            return Response(
+                {'error': 'Invalid credentials'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not user.is_active:
+            return Response(
+                {'error': 'User account is disabled'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        })

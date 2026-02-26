@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.contrib.gis.geos import Point
 
 from emergency.apps.core.models import (
-    Perfil, Organizacion, Incidente, Session,
-    PuntoRastreo, Alerta, Dispositivo, CeldaRiesgo
+    Perfil, Organizacion, Incidente, IncidentMember,
+    PuntoRastreo, Alerta, Dispositivo
 )
 from django.contrib.auth import get_user_model
 
@@ -76,12 +76,12 @@ class OrganizacionSerializer(serializers.ModelSerializer):
 
 
 
-class SessionSerializer(serializers.ModelSerializer):
+class IncidentMemberSerializer(serializers.ModelSerializer):
     """Serializer para miembros de incidente"""
     user = UserSerializer(read_only=True)
 
     class Meta:
-        model = Session
+        model = IncidentMember
         fields = ['id', 'user', 'role_in_incident', 'joined_at', 'left_at', 'is_active']
 
 
@@ -89,7 +89,7 @@ class IncidenteSerializer(serializers.ModelSerializer):
     """Serializer de incidente"""
     created_by = UserSerializer(read_only=True)
     owner_organization = OrganizacionSerializer(read_only=True)
-    members = SessionSerializer(source='incident_members', many=True, read_only=True)
+    members = IncidentMemberSerializer(source='incident_members', many=True, read_only=True)
     location_lat = serializers.FloatField(source='location.y', read_only=True)
     location_lng = serializers.FloatField(source='location.x', read_only=True)
     alert_count = serializers.IntegerField(source='alerts.count', read_only=True)
@@ -214,12 +214,3 @@ class DispositivoSerializer(serializers.ModelSerializer):
         model = Dispositivo
         fields = ['id', 'fcm_token', 'device_name', 'platform', 'is_active', 'last_used']
         read_only_fields = ['id', 'last_used']
-
-
-class CeldaRiesgoSerializer(serializers.ModelSerializer):
-    """Serializer de celda de riesgo"""
-    class Meta:
-        model = CeldaRiesgo
-        fields = ['id', 'incident', 'cell', 'trackpoint_count', 'alert_count',
-                  'risk_score', 'last_activity', 'calculated_at']
-        read_only_fields = ['id', 'calculated_at']

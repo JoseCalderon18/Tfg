@@ -79,7 +79,7 @@ class Incidente(models.Model):
         help_text="Organización responsable del incidente"
     )
 
-    # Participantes - relación muchos a muchos a través de Session
+    # Participantes - relación muchos a muchos a través de IncidentMember
     members = models.ManyToManyField(
         User,
         through='IncidentMember',

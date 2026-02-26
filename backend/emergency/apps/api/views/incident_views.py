@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 
-from emergency.apps.core.models import Incidente, Session
-from ..serializers import IncidenteSerializer, IncidenteCreateSerializer, SessionSerializer
+from emergency.apps.core.models import Incidente, IncidentMember
+from ..serializers import IncidenteSerializer, IncidenteCreateSerializer, IncidentMemberSerializer
 
 
 class IncidentViewSet(viewsets.ModelViewSet):
@@ -36,19 +36,19 @@ class IncidentViewSet(viewsets.ModelViewSet):
         role = request.data.get('role', 'OPERATIVE')
 
         # Verificar si ya es miembro
-        if Session.objects.filter(incident=incident, user=user).exists():
+        if IncidentMember.objects.filter(incident=incident, user=user).exists():
             return Response(
                 {'error': 'Already a member of this incident'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        member = Session.objects.create(
+        member = IncidentMember.objects.create(
             incident=incident,
             user=user,
             role_in_incident=role
         )
 
-        return Response(SessionSerializer(member).data, status=status.HTTP_201_CREATED)
+        return Response(IncidentMemberSerializer(member).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def leave(self, request, pk=None):
@@ -57,11 +57,11 @@ class IncidentViewSet(viewsets.ModelViewSet):
         user = request.user
 
         try:
-            member = Session.objects.get(incident=incident, user=user)
+            member = IncidentMember.objects.get(incident=incident, user=user)
             member.is_active = False
             member.save()
             return Response({'status': 'left incident'})
-        except Session.DoesNotExist:
+        except IncidentMember.DoesNotExist:
             return Response(
                 {'error': 'Not a member of this incident'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -90,7 +90,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
         """Obtener miembros del incidente"""
         incident = self.get_object()
         members = incident.incident_members.select_related('user').all()
-        serializer = SessionSerializer(members, many=True)
+        serializer = IncidentMemberSerializer(members, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])

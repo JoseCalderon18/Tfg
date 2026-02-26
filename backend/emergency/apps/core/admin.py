@@ -1,20 +1,19 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 from .models import (
-    User, Profile, Organization, Incident,
-    Session, TrackPoint, Alert, Device, RiskCell, WorkArea,
-    Perfil, Organizacion, Incidente, PuntoRastreo, Alerta, Dispositivo, CeldaRiesgo, AreaTrabajo
+    User, Perfil, Profile, Organizacion, Organization,
+    Incidente, Incident, Alerta, Alert,
+    Dispositivo, Device,
+    PuntoRastreo, TrackPoint, IncidentMember, AreaTrabajo, WorkArea,
+    RiskReport
 )
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['username', 'email', 'role', 'is_active', 'created_at']
-    list_filter = ['is_active', 'profile__role']
+    list_display = ['username', 'email', 'is_active', 'created_at']
+    list_filter = ['is_active']
     search_fields = ['username', 'email']
-
-    def role(self, obj):
-        return obj.profile.get_role_display() if hasattr(obj, 'profile') else '-'
 
 
 @admin.register(Perfil)
@@ -45,7 +44,7 @@ class IncidenteAdmin(GISModelAdmin):
     }
 
 
-@admin.register(Session)
+@admin.register(IncidentMember)
 class IncidentMemberAdmin(admin.ModelAdmin):
     list_display = ['user', 'incident', 'role_in_incident', 'joined_at', 'is_active']
     list_filter = ['role_in_incident', 'is_active']
@@ -75,11 +74,13 @@ class DispositivoAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'device_name']
 
 
-@admin.register(CeldaRiesgo)
-class CeldaRiesgoAdmin(GISModelAdmin):
-    list_display = ['incident', 'risk_score', 'trackpoint_count', 'alert_count', 'calculated_at']
-    list_filter = ['calculated_at']
-    search_fields = ['incident__name']
+@admin.register(RiskReport)
+class RiskReportAdmin(GISModelAdmin):
+    list_display = ['incident', 'reported_by', 'severity', 'is_active', 'created_at']
+    list_filter = ['severity', 'is_active', 'created_at']
+    search_fields = ['incident__name', 'description', 'reported_by__username']
+    date_hierarchy = 'created_at'
+
 
 @admin.register(AreaTrabajo)
 class AreaTrabajoAdmin(GISModelAdmin):
