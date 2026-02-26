@@ -1,45 +1,48 @@
 """
-Paquete de modelos de la aplicación core.
+Paquete de modelos de la aplicacion core.
 
 Este paquete contiene todos los modelos de Django que definen la estructura
-de la base de datos para el sistema de gestión de emergencias.
-
-Modelos principales:
-- User: Usuarios del sistema
-- Profile: Perfiles de usuario
-- Organization: Organizaciones (bomberos, policía, etc.)
-- Incident: Incidentes y operativos
-- Alert: Alertas y emergencias
-- Device: Dispositivos móviles para notificaciones
-- RiskCell: Celdas de riesgo geográfico
-- TrackPoint: Puntos de rastreo GPS
-- Session: Relación usuarios-incidentes
+de la base de datos para el sistema de gestion de emergencias.
 """
 
-# Imports para facilitar el acceso desde otros módulos
 from .user import User
-from .profile import Profile
-from .organization import Organization
-from .incident import Incident
-from .alert import Alert
-from .device import Device
-from .risk_cell import RiskCell
-from .track_point import TrackPoint
-from .session import Session
-from .workarea import WorkArea
+from .profile import Perfil
+from .profile import Perfil as Profile
+from .organization import Organizacion
+from .organization import Organizacion as Organization
+from .incident import Incidente
+from .incident import Incidente as Incident
+from .alert import Alerta
+from .alert import Alerta as Alert
+from .device import Dispositivo
+from .device import Dispositivo as Device
+from .risk_cell import CeldaRiesgo
+from .risk_cell import CeldaRiesgo as RiskCell
+from .track_point import PuntoRastreo
+from .track_point import PuntoRastreo as TrackPoint
+from .incident_member import IncidentMember
+from .incident_member import IncidentMember as Session
+from .workarea import AreaTrabajo
+from .workarea import AreaTrabajo as WorkArea
 
 __all__ = [
-    'User',
-    'Perfil',
-    'Profile',
-    'Organizacion',
-    'Organization',
-    'Incidente',
-    'Incident',
-    'Alert',
-    'Device',
-    'RiskCell',
-    'TrackPoint',
-    'Session',
-    'WorkArea',
+    "User",
+    "Perfil",
+    "Profile",
+    "Organizacion",
+    "Organization",
+    "Incidente",
+    "Incident",
+    "Alerta",
+    "Alert",
+    "Dispositivo",
+    "Device",
+    "CeldaRiesgo",
+    "RiskCell",
+    "PuntoRastreo",
+    "TrackPoint",
+    "IncidentMember",
+    "Session",
+    "AreaTrabajo",
+    "WorkArea",
 ]

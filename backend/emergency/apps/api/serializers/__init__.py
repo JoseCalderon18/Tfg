@@ -1,20 +1,58 @@
 """
 Paquete de serializers de la API.
-
-Los serializers convierten datos entre objetos Python y JSON,
-permitiendo la serialización/deserialización para la API REST.
-
-Serializers disponibles:
-- auth_serializers: Para autenticación y usuarios
-- track_serializers: Para tracking GPS
-- alert_serializers: Para alertas
+Compatibiliza nombres en espanol e ingles usados en las vistas.
 """
 
 from .auth_serializers import UserSerializer, UserCreateSerializer, ProfileSerializer
+from .track_serializers import TrackPointSerializer, TrackPointCreateSerializer
+from .incident_serializers import (
+    IncidentSerializer,
+    IncidentCreateSerializer,
+    IncidentMemberSerializer,
+    IncidentMemberCreateSerializer,
+)
+from .alert_serializers import (
+    AlertSerializer,
+    AlertCreateSerializer,
+    AlertAckSerializer,
+    AlertCloseSerializer,
+)
+from .organization_serializers import OrganizationSerializer, OrganizationCreateSerializer
+
+# Alias en espanol para compatibilidad con vistas existentes
+PuntoRastreoSerializer = TrackPointSerializer
+PuntoRastreoCreateSerializer = TrackPointCreateSerializer
+IncidenteSerializer = IncidentSerializer
+IncidenteCreateSerializer = IncidentCreateSerializer
+SessionSerializer = IncidentMemberSerializer
+AlertaSerializer = AlertSerializer
+AlertaCreateSerializer = AlertCreateSerializer
+AlertaAckSerializer = AlertAckSerializer
+AlertaCloseSerializer = AlertCloseSerializer
 
 __all__ = [
-    'UserSerializer',
-    'UserCreateSerializer',
-    'PerfilSerializer',
-    'ProfileSerializer',
+    "UserSerializer",
+    "UserCreateSerializer",
+    "ProfileSerializer",
+    "TrackPointSerializer",
+    "TrackPointCreateSerializer",
+    "PuntoRastreoSerializer",
+    "PuntoRastreoCreateSerializer",
+    "IncidentSerializer",
+    "IncidentCreateSerializer",
+    "IncidentMemberSerializer",
+    "IncidentMemberCreateSerializer",
+    "IncidenteSerializer",
+    "IncidenteCreateSerializer",
+    "SessionSerializer",
+    "AlertSerializer",
+    "AlertCreateSerializer",
+    "AlertAckSerializer",
+    "AlertCloseSerializer",
+    "AlertaSerializer",
+    "AlertaCreateSerializer",
+    "AlertaAckSerializer",
+    "AlertaCloseSerializer",
+    "OrganizationSerializer",
+    "OrganizationCreateSerializer",
 ]

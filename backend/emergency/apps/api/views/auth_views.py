@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.throttling import SimpleRateThrottle
 
 from emergency.apps.core.models import User, Profile
 from emergency.apps.core.forms import SupervisorLoginForm  # <-- TU FORMS.PY
@@ -78,14 +77,6 @@ class ProfileView(APIView):
 # GET  /api/auth/panel/me/
 
 
-class PanelLoginThrottle(SimpleRateThrottle):
-    scope = "panel_login"
-
-    def get_cache_key(self, request, view):
-        ident = self.get_ident(request)
-        return self.cache_format % {"scope": self.scope, "ident": ident}
-
-
 @method_decorator(csrf_protect, name="dispatch")
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class PanelLoginView(APIView):
@@ -96,7 +87,6 @@ class PanelLoginView(APIView):
     """
     permission_classes = [AllowAny]
     authentication_classes = [SessionAuthentication]
-    throttle_classes = [PanelLoginThrottle]
 
     def get(self, request):
         # Setea cookie CSRF para permitir el POST subsiguiente desde SPA.

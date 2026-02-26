@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 from .models import (
     User, Profile, Organization, Incident,
-    Session, TrackPoint, Alert, Device, RiskCell, WorkArea
+    Session, TrackPoint, Alert, Device, RiskCell, WorkArea,
+    Perfil, Organizacion, Incidente, PuntoRastreo, Alerta, Dispositivo, CeldaRiesgo, AreaTrabajo
 )
 
 
