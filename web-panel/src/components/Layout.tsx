@@ -1,13 +1,15 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+import { Link, Navigate, Outlet } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 export default function Layout() {
-  const { user, logout, isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, logout, isAuthenticated, isCheckingAuth } = useAuthStore();
+
+  if (isCheckingAuth) {
+    return <div className="p-6">Cargando...</div>;
+  }
 
   if (!isAuthenticated) {
-    navigate('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -31,7 +33,7 @@ export default function Layout() {
         </nav>
         <div className="absolute bottom-0 w-64 p-4">
           <button
-            onClick={logout}
+            onClick={() => void logout()}
             className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700"
           >
             Logout

@@ -2,10 +2,10 @@ from django.db import models
 import uuid
 
 from .user import User
-from .organization import Organization
+from .organization import Organizacion
 
 
-class Profile(models.Model):
+class Perfil(models.Model):
     """
     Modelo de Perfil extendido de Usuario.
 
@@ -47,7 +47,7 @@ class Profile(models.Model):
         help_text="Rol del usuario en el sistema"
     )
     organization = models.ForeignKey(
-        Organization,
+        Organizacion,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

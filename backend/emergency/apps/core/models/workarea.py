@@ -1,9 +1,9 @@
 from django.contrib.gis.db import models as gis_models
 from django.db import models
-from .incident import Incident
+from .incident import Incidente as Incident
 
 
-class WorkArea(models.Model):
+class AreaTrabajo(models.Model):
 
     """
     Modelo de área de trabajo dentro de un incidente.

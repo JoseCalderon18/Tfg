@@ -20,7 +20,7 @@ function App() {
 
   // Verificamos la autenticación al cargar la aplicación
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, [checkAuth]);
 
   return (

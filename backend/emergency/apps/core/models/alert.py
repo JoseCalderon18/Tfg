@@ -4,10 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
 from .user import User
-from .incident import Incident
+from .incident import Incidente as Incident
 
 
-class Alert(models.Model):
+class Alerta(models.Model):
     """
     Modelo de Alerta SOS o anomalía generada por operativos.
 
@@ -115,7 +115,7 @@ class Alert(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'alerts'
+        db_table = 'alertas'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['incident', 'status']),

@@ -29,6 +29,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+GDAL_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\gdal312.dll"
+GEOS_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\geos_c.dll"
 
 # Application definition
 
@@ -174,6 +176,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_RATES': {
+        'panel_login': '5/minute',
+    },
 }
 
 # JWT Configuration - Configuración de tokens JWT
@@ -197,11 +202,26 @@ SIMPLE_JWT = {
 # CORS Configuration - Orígenes permitidos para conexión desde frontend
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",   # React web panel
+    "http://localhost:5173",   # Vite por defecto
     "http://localhost:19006",  # Expo/React Native
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # Spectacular (OpenAPI/Swagger) - Configuración de documentación API
 SPECTACULAR_SETTINGS = {

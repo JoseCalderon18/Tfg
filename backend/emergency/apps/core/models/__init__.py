@@ -13,7 +13,7 @@ Modelos principales:
 - Device: Dispositivos móviles para notificaciones
 - RiskCell: Celdas de riesgo geográfico
 - TrackPoint: Puntos de rastreo GPS
-- IncidentMember: Relación usuarios-incidentes
+- Session: Relación usuarios-incidentes
 """
 
 # Imports para facilitar el acceso desde otros módulos
@@ -25,18 +25,21 @@ from .alert import Alert
 from .device import Device
 from .risk_cell import RiskCell
 from .track_point import TrackPoint
-from .incident_member import IncidentMember
+from .session import Session
 from .workarea import WorkArea
 
 __all__ = [
     'User',
+    'Perfil',
     'Profile',
+    'Organizacion',
     'Organization',
+    'Incidente',
     'Incident',
     'Alert',
     'Device',
     'RiskCell',
     'TrackPoint',
-    'IncidentMember',
+    'Session',
     'WorkArea',
 ]

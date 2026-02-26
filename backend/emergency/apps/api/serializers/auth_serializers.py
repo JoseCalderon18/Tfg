@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.contrib.gis.geos import Point
 
 from emergency.apps.core.models import (
-    Profile, Organization, Incident, IncidentMember,
-    TrackPoint, Alert, Device, RiskCell
+    Perfil, Organizacion, Incidente, Session,
+    PuntoRastreo, Alerta, Dispositivo, CeldaRiesgo
 )
 from django.contrib.auth import get_user_model
 
@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear usuarios"""
     password = serializers.CharField(write_only=True, min_length=8)
-    role = serializers.ChoiceField(choices=Profile.ROLES, write_only=True)
+    role = serializers.ChoiceField(choices=Perfil.ROLES, write_only=True)
     organization_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
 
     class Meta:
@@ -43,58 +43,59 @@ class UserCreateSerializer(serializers.ModelSerializer):
         profile_data = {'role': role}
         if organization_id:
             try:
-                org = Organization.objects.get(id=organization_id)
+                org = Organizacion.objects.get(id=organization_id)
                 profile_data['organization'] = org
-            except Organization.DoesNotExist:
+            except Organizacion.DoesNotExist:
                 pass
 
-        Profile.objects.create(user=user, **profile_data)
+        Perfil.objects.create(user=user, **profile_data)
 
         return user
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class PerfilSerializer(serializers.ModelSerializer):
     """Serializer de perfil"""
     user = UserSerializer(read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
 
     class Meta:
-        model = Profile
+        model = Perfil
         fields = ['id', 'user', 'role', 'organization', 'organization_name',
                   'emergency_contact', 'emergency_phone', 'medical_notes']
 
 
-class OrganizationSerializer(serializers.ModelSerializer):
+class OrganizacionSerializer(serializers.ModelSerializer):
     """Serializer de organización"""
     member_count = serializers.IntegerField(source='members.count', read_only=True)
 
     class Meta:
-        model = Organization
+        model = Organizacion
         fields = ['id', 'name', 'org_type', 'contact_email', 'contact_phone',
                   'address', 'is_active', 'member_count', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
-class IncidentMemberSerializer(serializers.ModelSerializer):
+
+class SessionSerializer(serializers.ModelSerializer):
     """Serializer para miembros de incidente"""
     user = UserSerializer(read_only=True)
 
     class Meta:
-        model = IncidentMember
+        model = Session
         fields = ['id', 'user', 'role_in_incident', 'joined_at', 'left_at', 'is_active']
 
 
-class IncidentSerializer(serializers.ModelSerializer):
+class IncidenteSerializer(serializers.ModelSerializer):
     """Serializer de incidente"""
     created_by = UserSerializer(read_only=True)
-    owner_organization = OrganizationSerializer(read_only=True)
-    members = IncidentMemberSerializer(source='incident_members', many=True, read_only=True)
+    owner_organization = OrganizacionSerializer(read_only=True)
+    members = SessionSerializer(source='incident_members', many=True, read_only=True)
     location_lat = serializers.FloatField(source='location.y', read_only=True)
     location_lng = serializers.FloatField(source='location.x', read_only=True)
     alert_count = serializers.IntegerField(source='alerts.count', read_only=True)
 
     class Meta:
-        model = Incident
+        model = Incidente
         fields = ['id', 'name', 'incident_type', 'status', 'description',
                   'location', 'location_lat', 'location_lng', 'location_address',
                   'created_by', 'owner_organization', 'members', 'alert_count',
@@ -102,13 +103,13 @@ class IncidentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
 
-class IncidentCreateSerializer(serializers.ModelSerializer):
+class IncidenteCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear incidentes"""
     location_lat = serializers.FloatField(required=False, allow_null=True)
     location_lng = serializers.FloatField(required=False, allow_null=True)
 
     class Meta:
-        model = Incident
+        model = Incidente
         fields = ['name', 'incident_type', 'description', 'location_lat', 'location_lng', 'location_address']
 
     def create(self, validated_data):
@@ -122,25 +123,25 @@ class IncidentCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class TrackPointSerializer(serializers.ModelSerializer):
+class PuntoRastreoSerializer(serializers.ModelSerializer):
     """Serializer de punto de tracking"""
     lat = serializers.FloatField(source='location.y', read_only=True)
     lng = serializers.FloatField(source='location.x', read_only=True)
 
     class Meta:
-        model = TrackPoint
+        model = PuntoRastreo
         fields = ['id', 'user', 'incident', 'lat', 'lng', 'accuracy_m',
                   'altitude', 'speed', 'recorded_at']
         read_only_fields = ['id', 'user']
 
 
-class TrackPointCreateSerializer(serializers.ModelSerializer):
+class PuntoRastreoCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear puntos de tracking"""
     lat = serializers.FloatField()
     lng = serializers.FloatField()
 
     class Meta:
-        model = TrackPoint
+        model = PuntoRastreo
         fields = ['incident', 'lat', 'lng', 'accuracy_m', 'altitude', 'speed', 'recorded_at']
 
     def create(self, validated_data):
@@ -151,7 +152,7 @@ class TrackPointCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class AlertSerializer(serializers.ModelSerializer):
+class AlertaSerializer(serializers.ModelSerializer):
     """Serializer de alerta"""
     created_by = UserSerializer(read_only=True)
     acked_by = UserSerializer(read_only=True)
@@ -160,7 +161,7 @@ class AlertSerializer(serializers.ModelSerializer):
     lng = serializers.FloatField(source='location.x', read_only=True)
 
     class Meta:
-        model = Alert
+        model = Alerta
         fields = ['id', 'incident', 'created_by', 'alert_type', 'severity',
                   'status', 'title', 'description', 'lat', 'lng',
                   'acked_by', 'acked_at', 'ack_notes',
@@ -169,13 +170,13 @@ class AlertSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
 
-class AlertCreateSerializer(serializers.ModelSerializer):
+class AlertaCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear alertas"""
     lat = serializers.FloatField()
     lng = serializers.FloatField()
 
     class Meta:
-        model = Alert
+        model = Alerta
         fields = ['incident', 'alert_type', 'severity', 'title', 'description', 'lat', 'lng']
 
     def create(self, validated_data):
@@ -186,32 +187,39 @@ class AlertCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class AlertAckSerializer(serializers.ModelSerializer):
+class AlertaAckSerializer(serializers.ModelSerializer):
     """Serializer para reconocer alertas"""
     class Meta:
-        model = Alert
+        model = Alerta
         fields = ['ack_notes']
 
 
-class AlertCloseSerializer(serializers.ModelSerializer):
+class AlertaCloseSerializer(serializers.ModelSerializer):
     """Serializer para cerrar alertas"""
     class Meta:
-        model = Alert
+        model = Alerta
         fields = ['close_notes']
 
 
-class DeviceSerializer(serializers.ModelSerializer):
+# Alias en inglés para compatibilidad
+ProfileSerializer = PerfilSerializer
+
+# English alias for compatibility
+OrganizationSerializer = OrganizacionSerializer
+
+
+class DispositivoSerializer(serializers.ModelSerializer):
     """Serializer de dispositivo"""
     class Meta:
-        model = Device
+        model = Dispositivo
         fields = ['id', 'fcm_token', 'device_name', 'platform', 'is_active', 'last_used']
         read_only_fields = ['id', 'last_used']
 
 
-class RiskCellSerializer(serializers.ModelSerializer):
+class CeldaRiesgoSerializer(serializers.ModelSerializer):
     """Serializer de celda de riesgo"""
     class Meta:
-        model = RiskCell
+        model = CeldaRiesgo
         fields = ['id', 'incident', 'cell', 'trackpoint_count', 'alert_count',
                   'risk_score', 'last_activity', 'calculated_at']
         read_only_fields = ['id', 'calculated_at']

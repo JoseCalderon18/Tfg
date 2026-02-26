@@ -3,10 +3,10 @@ from django.db import models
 import uuid
 
 from .user import User
-from .organization import Organization
+from .organization import Organizacion
 
 
-class Incident(models.Model):
+class Incidente(models.Model):
     """
     Modelo de Incidente u Operativo de Emergencia.
 
@@ -71,7 +71,7 @@ class Incident(models.Model):
         help_text="Usuario que creó este incidente"
     )
     owner_organization = models.ForeignKey(
-        Organization,
+        Organizacion,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -79,7 +79,7 @@ class Incident(models.Model):
         help_text="Organización responsable del incidente"
     )
 
-    # Participantes - relación muchos a muchos a través de IncidentMember
+    # Participantes - relación muchos a muchos a través de Session
     members = models.ManyToManyField(
         User,
         through='IncidentMember',
@@ -94,7 +94,7 @@ class Incident(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'incidents'
+        db_table = 'incidentes'
         ordering = ['-created_at']
 
     def __str__(self):

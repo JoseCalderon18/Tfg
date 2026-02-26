@@ -1,13 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { apiFetch } from "../utils/api";
 
-/**
- * Interface que define la estructura de un Usuario
- * @property id - Identificador único del usuario
- * @property username - Nombre de usuario
- * @property email - Correo electrónico
- * @property role - Rol del usuario (SUPERVISOR, OPERATIVE, etc.)
- */
 interface User {
   id: string;
   username: string;
@@ -15,75 +8,101 @@ interface User {
   role: string;
 }
 
-/**
- * Interface que define el estado y acciones de autenticación
- * @property user - Datos del usuario autenticado (null si no hay sesión)
- * @property token - Token JWT de autenticación
- * @property isAuthenticated - Indica si hay una sesión activa
- * @property login - Función para iniciar sesión
- * @property logout - Función para cerrar sesión
- * @property checkAuth - Función para verificar autenticación almacenada
- */
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-  checkAuth: () => void;
+  isCheckingAuth: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
-/**
- * Store de Zustand para manejo de autenticación
- * 
- * Utiliza persist middleware para guardar el estado en localStorage.
- * Esto permite mantener la sesión activa aunque se recargue la página.
- * 
- * @example
- * const { user, login, logout } = useAuthStore();
- * await login('usuario', 'contraseña');
- */
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      // Estado inicial
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      
-      /**
-       * Inicia sesión con credenciales
-       * TODO: Implementar llamada real a la API
-       * @param username - Nombre de usuario
-       * @param password - Contraseña
-       */
-      login: async (username: string, password: string) => {
-        console.log('Login:', username, password);
-        set({ 
-          user: { id: '1', username, email: '', role: 'SUPERVISOR' },
-          token: 'fake-token',
-          isAuthenticated: true 
-        });
-      },
-      
-      /**
-       * Cierra la sesión del usuario
-       * Limpia todos los datos de autenticación
-       */
-      logout: () => {
-        set({ user: null, token: null, isAuthenticated: false });
-      },
-      
-      /**
-       * Verifica si hay una sesión guardada
-       * Se ejecuta al cargar la aplicación
-       */
-      checkAuth: () => {
-        // Verificar autenticación almacenada (persist la maneja automáticamente)
-      },
-    }),
-    {
-      name: 'auth-storage', // Nombre en localStorage
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isCheckingAuth: true,
+
+  login: async (email: string, password: string) => {
+    const csrfBootstrap = await apiFetch("/auth/panel/login/", { method: "GET" });
+    if (!csrfBootstrap.ok) {
+      set({ user: null, isAuthenticated: false });
+      return false;
     }
-  )
-);
+
+    const body = new URLSearchParams();
+    body.append("email", email.trim().toLowerCase());
+    body.append("password", password);
+
+    const loginRes = await apiFetch("/auth/panel/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+
+    if (!loginRes.ok) {
+      set({ user: null, isAuthenticated: false });
+      return false;
+    }
+
+    const meRes = await apiFetch("/auth/panel/me/");
+    if (!meRes.ok) {
+      set({ user: null, isAuthenticated: false });
+      return false;
+    }
+
+    const me = await meRes.json();
+    const isSupervisor = me?.role === "SUPERVISOR";
+    if (!isSupervisor) {
+      set({ user: null, isAuthenticated: false });
+      return false;
+    }
+
+    set({
+      isAuthenticated: true,
+      user: {
+        id: me.id ?? "",
+        username: me.username ?? "",
+        email: me.email ?? "",
+        role: me.role,
+      },
+    });
+    return true;
+  },
+
+  logout: async () => {
+    await apiFetch("/auth/panel/logout/", { method: "POST" });
+    set({ user: null, isAuthenticated: false });
+  },
+
+  checkAuth: async () => {
+    set({ isCheckingAuth: true });
+    try {
+      const res = await apiFetch("/auth/panel/me/");
+      if (!res.ok) {
+        set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+        return;
+      }
+
+      const me = await res.json();
+      const isSupervisor = me?.role === "SUPERVISOR";
+
+      if (!isSupervisor) {
+        set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+        return;
+      }
+
+      set({
+        isAuthenticated: true,
+        isCheckingAuth: false,
+        user: {
+          id: me.id ?? "",
+          username: me.username ?? "",
+          email: me.email ?? "",
+          role: me.role,
+        },
+      });
+    } catch {
+      set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+    }
+  },
+}));

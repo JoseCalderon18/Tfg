@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 
 
-class Organization(models.Model):
+class Organizacion(models.Model):
     """
     Modelo de Organización.
 
@@ -68,7 +68,7 @@ class Organization(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'organizations'
+        db_table = 'organizaciones'
         ordering = ['name']
         verbose_name = 'Organización'
         verbose_name_plural = 'Organizaciones'

@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 
 from .user import User
-from .incident import Incident
+from .incident import Incidente as Incident
 
 
 class IncidentMember(models.Model):

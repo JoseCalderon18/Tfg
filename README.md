@@ -48,14 +48,14 @@ Las siguientes entidades están definidas en `backend/emergency/apps/core/models
 | Entidad | Descripción | Campos principales |
 |---------|-------------|-------------------|
 | **User** | Usuario base (extiende AbstractUser) | username, email, password, phone |
-| **Profile** | Peril extendido con roles | role (ADMIN/SUPERVISOR/OPERATIVE), organization |
-| **Organization** | Organización (bomberos, policía, etc.) | name, org_type, contact |
-| **Incident** | Incidente/Operativo | name, type (WILDFIRE/SEARCH), status (OPEN/CLOSED), location (Point) |
-| **IncidentMember** | Relación N:M usuario-incidente | role_in_incident, joined_at |
-| **TrackPoint** | Punto GPS de tracking | location (Point), accuracy_m, recorded_at |
-| **Alert** | Alerta SOS o anomalía | type (SOS/MAN_DOWN), severity (1-5), status (OPEN/ACK/CLOSED) |
-| **Device** | Dispositivo para notificaciones push | fcm_token, platform |
-| **RiskCell** | Celda de heatmap para análisis | cell (Polygon), risk_score |
+| **Perfil** | Perfil extendido con roles | role (ADMIN/SUPERVISOR/OPERATIVE), organization |
+| **Organizacion** | Organización (bomberos, policía, etc.) | name, org_type, contact |
+| **Incidente** | Incidente/Operativo | name, type (WILDFIRE/SEARCH), status (OPEN/CLOSED), location (Point) |
+| **Session** | Relación N:M usuario-incidente | role_in_incident, joined_at |
+| **PuntoRastreo** | Punto GPS de tracking | location (Point), accuracy_m, recorded_at |
+| **Alerta** | Alerta SOS o anomalía | type (SOS/MAN_DOWN), severity (1-5), status (OPEN/ACK/CLOSED) |
+| **Dispositivo** | Dispositivo para notificaciones push | fcm_token, platform |
+| **CeldaRiesgo** | Celda de heatmap para análisis | cell (Polygon), risk_score |
 
 ---
 
@@ -78,7 +78,7 @@ El proyecto incluye un módulo de Machine Learning para detección de anomalías
 
 **Respaldo:** Reglas heurísticas (inmovilidad > X min, aislamiento, geofence)
 
-**Uso:** Si el `anomaly_score` supera un umbral → se crea automáticamente una `Alert(type=ANOMALY)`
+**Uso:** Si el `anomaly_score` supera un umbral → se crea automáticamente una `Alerta(type=ANOMALY)`
 
 **Ubicación propuesta:** `backend/emergency/apps/ml/anomaly_detector.py`
 

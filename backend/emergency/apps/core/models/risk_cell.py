@@ -3,10 +3,10 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
-from .incident import Incident
+from .incident import Incidente as Incident
 
 
-class RiskCell(models.Model):
+class CeldaRiesgo(models.Model):
     """
     Modelo de Celda de Heatmap para Análisis de Riesgo.
 
@@ -63,7 +63,7 @@ class RiskCell(models.Model):
     )
 
     class Meta:
-        db_table = 'risk_cells'
+        db_table = 'celdas_riesgo'
         ordering = ['-risk_score']
         indexes = [
             models.Index(fields=['incident', 'risk_score']),

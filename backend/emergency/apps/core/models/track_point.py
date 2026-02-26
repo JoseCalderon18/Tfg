@@ -4,10 +4,10 @@ from django.core.validators import MinValueValidator
 import uuid
 
 from .user import User
-from .incident import Incident
+from .incident import Incidente as Incident
 
 
-class TrackPoint(models.Model):
+class PuntoRastreo(models.Model):
     """
     Modelo de Punto de Tracking GPS.
 
@@ -73,7 +73,7 @@ class TrackPoint(models.Model):
     )
 
     class Meta:
-        db_table = 'track_points'
+        db_table = 'puntos_rastreo'
         ordering = ['-recorded_at']
         indexes = [
             models.Index(fields=['user', 'recorded_at']),

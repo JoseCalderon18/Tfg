@@ -4,7 +4,7 @@ import uuid
 from .user import User
 
 
-class Device(models.Model):
+class Dispositivo(models.Model):
     """
     Modelo de Dispositivo Móvil para notificaciones push.
 
@@ -54,7 +54,7 @@ class Device(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'devices'
+        db_table = 'dispositivos'
         unique_together = ['user', 'fcm_token']
         verbose_name = 'Dispositivo'
         verbose_name_plural = 'Dispositivos'

@@ -5,25 +5,25 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 
-from emergency.apps.core.models import Alert
+from emergency.apps.core.models import Alerta
 from ..serializers import (
-    AlertSerializer, AlertCreateSerializer,
-    AlertAckSerializer, AlertCloseSerializer
+    AlertaSerializer, AlertaCreateSerializer,
+    AlertaAckSerializer, AlertaCloseSerializer
 )
 
 
-class AlertViewSet(viewsets.ModelViewSet):
+class AlertaViewSet(viewsets.ModelViewSet):
     """ViewSet completo para alertas"""
-    queryset = Alert.objects.all()
-    serializer_class = AlertSerializer
+    queryset = Alerta.objects.all()
+    serializer_class = AlertaSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['incident', 'status', 'alert_type', 'severity', 'created_by']
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return AlertCreateSerializer
-        return AlertSerializer
+            return AlertaCreateSerializer
+        return AlertaSerializer
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -39,7 +39,7 @@ class AlertViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = AlertAckSerializer(data=request.data)
+        serializer = AlertaAckSerializer(data=request.data)
         if serializer.is_valid():
             alert.status = 'ACK'
             alert.acked_by = request.user
@@ -47,7 +47,7 @@ class AlertViewSet(viewsets.ModelViewSet):
             alert.ack_notes = serializer.validated_data.get('ack_notes', '')
             alert.save()
 
-            return Response(AlertSerializer(alert).data)
+            return Response(AlertaSerializer(alert).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
@@ -61,7 +61,7 @@ class AlertViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = AlertCloseSerializer(data=request.data)
+        serializer = AlertaCloseSerializer(data=request.data)
         if serializer.is_valid():
             alert.status = 'CLOSED'
             alert.closed_by = request.user
@@ -69,19 +69,19 @@ class AlertViewSet(viewsets.ModelViewSet):
             alert.close_notes = serializer.validated_data.get('close_notes', '')
             alert.save()
 
-            return Response(AlertSerializer(alert).data)
+            return Response(AlertaSerializer(alert).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def my_alerts(self, request):
         """Obtener alertas creadas por el usuario actual"""
-        alerts = Alert.objects.filter(created_by=request.user)
-        serializer = AlertSerializer(alerts, many=True)
+        alerts = Alerta.objects.filter(created_by=request.user)
+        serializer = AlertaSerializer(alerts, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def open(self, request):
         """Obtener alertas abiertas"""
-        alerts = Alert.objects.filter(status='OPEN')
-        serializer = AlertSerializer(alerts, many=True)
+        alerts = Alerta.objects.filter(status='OPEN')
+        serializer = AlertaSerializer(alerts, many=True)
         return Response(serializer.data)
