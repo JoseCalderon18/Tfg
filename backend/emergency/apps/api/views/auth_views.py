@@ -2,6 +2,7 @@ from django.contrib.auth import login as django_login, logout as django_logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.db import transaction
 
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
@@ -140,3 +141,79 @@ class PanelMeView(APIView):
             "email": getattr(request.user, "email", ""),
             "role": getattr(profile, "role", None),
         }, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PanelCreateOperativeUserView(APIView):
+    """
+    POST /api/auth/panel/users/create/
+    Crea un usuario nuevo desde el panel web.
+    Solo SUPERVISOR.
+    El rol se fuerza siempre a OPERATIVE en backend.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+
+    @transaction.atomic
+    def post(self, request):
+        current_profile = getattr(request.user, "profile", None)
+        if not current_profile or current_profile.role != "SUPERVISOR":
+            return Response(
+                {"detail": "No autorizado para crear usuarios."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        payload = dict(request.data)
+        payload["role"] = "OPERATIVE"
+        payload.pop("organization_id", None)
+
+        serializer = UserCreateSerializer(data=payload)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class PanelUsersListView(APIView):
+    """
+    GET /api/auth/panel/users/
+    Lista usuarios para el panel.
+    Solo SUPERVISOR.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+
+    def get(self, request):
+        current_profile = getattr(request.user, "profile", None)
+        if not current_profile or current_profile.role != "SUPERVISOR":
+            return Response(
+                {"detail": "No autorizado para visualizar usuarios."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        users = (
+            User.objects.select_related("profile")
+            .order_by("username")
+            .values(
+                "id",
+                "username",
+                "email",
+                "is_active",
+                "created_at",
+                "profile__role",
+            )
+        )
+
+        data = [
+            {
+                "id": str(u["id"]),
+                "username": u["username"],
+                "email": u["email"],
+                "is_active": u["is_active"],
+                "created_at": u["created_at"],
+                "role": u["profile__role"],
+            }
+            for u in users
+        ]
+        return Response(data, status=status.HTTP_200_OK)

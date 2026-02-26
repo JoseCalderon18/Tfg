@@ -17,7 +17,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 text-white">
         <div className="p-4">
-          <h1 className="text-xl font-bold">Emergency Panel</h1>
+          <h1 className="text-xl font-bold">Panel de emergencias</h1>
           <p className="text-sm text-gray-400">{user?.username}</p>
         </div>
         <nav className="mt-8">
@@ -25,10 +25,10 @@ export default function Layout() {
             Dashboard
           </Link>
           <Link to="/incidents" className="block px-4 py-2 hover:bg-gray-700">
-            Incidents
+            Incidentes
           </Link>
           <Link to="/alerts" className="block px-4 py-2 hover:bg-gray-700">
-            Alerts
+            Alertas
           </Link>
         </nav>
         <div className="absolute bottom-0 w-64 p-4">

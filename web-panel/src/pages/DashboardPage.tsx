@@ -161,6 +161,16 @@ export default function DashboardPage() {
             title="Ajustes"
             desc="Configuración del panel y preferencias."
           />
+          <CardLink
+            to="/newuser"
+            title="Crear Usuario"
+            desc="Crear nuevos usuarios del sistema."
+          />
+          <CardLink
+            to="/viewusers"
+            title="Ver Usuarios"
+            desc="Ver y gestionar usuarios del sistema."
+          />
         </div>
 
         {/* Barra inferior */}

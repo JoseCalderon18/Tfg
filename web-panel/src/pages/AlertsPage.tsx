@@ -1,7 +1,7 @@
 export default function AlertsPage() {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Alerts</h1>
+      <h1 className="text-2xl font-bold mb-6">Alertas</h1>
 
       <div className="mb-4 flex gap-2">
         <button className="px-4 py-2 bg-red-100 text-red-700 rounded">Open</button>

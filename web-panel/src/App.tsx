@@ -10,6 +10,8 @@ import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
 import AlertsPage from './pages/AlertsPage';
 import Layout from './components/Layout';
+import NewUserPage from './pages/NewUserPage';
+import ViewUsersPage from './pages/ViewUsersPage';
 
 /**
  * Componente principal del panel web
@@ -33,6 +35,8 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
+        <Route path="newuser" element={<NewUserPage />} />
+        <Route path="viewusers" element={<ViewUsersPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
