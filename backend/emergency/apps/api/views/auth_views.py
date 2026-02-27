@@ -11,13 +11,13 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication
 
 from emergency.apps.core.models import User, Profile
-from emergency.apps.core.forms import SupervisorLoginForm  # <-- TU FORMS.PY
+from emergency.apps.core.forms import SupervisorLoginForm  
 
 from ..serializers import UserSerializer, UserCreateSerializer, ProfileSerializer
 
 
 # -------------------------
-# JWT / API GENERAL (como lo tenías)
+# JWT / API GENERAL
 # -------------------------
 
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -75,10 +75,6 @@ class ProfileView(APIView):
 # -------------------------
 # PANEL WEB (SESIONES) - SOLO SUPERVISOR
 # -------------------------
-# Endpoints recomendados:
-# POST /api/auth/panel/login/
-# POST /api/auth/panel/logout/
-# GET  /api/auth/panel/me/
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -97,7 +93,6 @@ class PanelLoginView(APIView):
         return Response({"ok": True}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        # Para formulario tradicional (application/x-www-form-urlencoded)
         form = SupervisorLoginForm(request.data)
 
         if form.is_valid():

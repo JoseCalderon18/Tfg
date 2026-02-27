@@ -152,7 +152,7 @@ export default function DashboardPage() {
             badge="Geo"
           />
           <CardLink
-            to="/units"
+            to="/viewunidades"
             title="Unidades"
             desc="Consultar estado y asignación de unidades."
           />
