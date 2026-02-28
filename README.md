@@ -11,20 +11,23 @@ Proyecto/
 ├── backend/                          # Django REST API
 │   ├── emergency/
 │   │   ├── apps/
-│   │   │   ├── core/                 # Modelos y admin
-│   │   │   │   ├── models.py         # Entidades principales
-│   │   │   │   └── admin.py          # Configuración admin
-│   │   │   └── api/                  # API REST
-│   │   │       ├── serializers/      # Serializadores DRF
-│   │   │       └── views/            # Vistas API
-│   │   └── config/                   # Configuración Django
+│   │   │   ├── core/               # Modelos y admin
+│   │   │   │   ├── models/         # Entidades principales
+│   │   │   │   └── admin.py        # Configuración admin
+│   │   │   └── api/                # API REST
+│   │   │       ├── serializers/     # Serializadores DRF
+│   │   │       └── views/          # Vistas API
+│   │   └── config/                 # Configuración Django
 │   │       ├── settings.py
 │   │       ├── urls.py
 │   │       └── wsgi.py
-│   ├── manage.py                     # CLI Django
-│   └── requirements.txt              # Dependencias Python
-├── mobile-app/                       # React Native + Expo
+│   ├── manage.py                   # CLI Django
+│   ├── requirements.txt            # Dependencias Python
+│   ├── Dockerfile                  # Imagen Docker
+│   └── docker-compose.yml          # Orquestación Docker
+├── mobile-app/                      # React Native + Expo
 │   ├── src/
+<<<<<<< HEAD
 │   │   ├── context/                  # AuthContext, LocationContext
 │   │   └── screens/                  # Pantallas
 │   │       ├── LoginScreen.tsx       # Autenticación
@@ -33,219 +36,209 @@ Proyecto/
 │   │       ├── MapScreen.tsx         # Visualización del mapa
 │   │       ├── AlertScreen.tsx       # Formulario de alertas
 │   │       └── HomeScreen.tsx        # Pantalla de inicio (legacy)
+=======
+│   │   ├── context/               # AuthContext, LocationContext
+│   │   └── screens/               # Pantallas
+>>>>>>> f943b3c14cd95417887e7e5fca7917e137cc2082
 │   ├── App.tsx
 │   └── package.json
-├── web-panel/                        # React + Vite + TypeScript
+├── web-panel/                      # React + Vite + TypeScript
 │   ├── src/
-│   │   ├── components/               # Componentes reutilizables
-│   │   ├── pages/                    # Páginas
-│   │   └── store/                    # Zustand stores
+│   │   ├── components/             # Componentes reutilizables
+│   │   ├── pages/                  # Páginas
+│   │   └── store/                  # Zustand stores
 │   ├── index.html
 │   └── package.json
-└── docs/                             # Documentación adicional
+└── README.md
 ```
 
 ---
 
-## 🗄️ Entidades Creadas
+## 🗄️ Entidades del Sistema
 
-Las siguientes entidades están definidas en `backend/emergency/apps/core/models.py`:
+Las entidades están definidas en `backend/emergency/apps/core/models/`:
 
 | Entidad | Descripción | Campos principales |
 |---------|-------------|-------------------|
 | **User** | Usuario base (extiende AbstractUser) | username, email, password, phone |
 | **Perfil** | Perfil extendido con roles | role (ADMIN/SUPERVISOR/OPERATIVE), organization |
-| **Organizacion** | Organización (bomberos, policía, etc.) | name, org_type, contact |
-| **Incidente** | Incidente/Operativo | name, type (WILDFIRE/SEARCH), status (OPEN/CLOSED), location (Point) |
-| **Session** | Relación N:M usuario-incidente | role_in_incident, joined_at |
-| **PuntoRastreo** | Punto GPS de tracking | location (Point), accuracy_m, recorded_at |
-| **Alerta** | Alerta SOS o anomalía | type (SOS/MAN_DOWN), severity (1-5), status (OPEN/ACK/CLOSED) |
-| **Dispositivo** | Dispositivo para notificaciones push | fcm_token, platform |
-| **CeldaRiesgo** | Celda de heatmap para análisis | cell (Polygon), risk_score |
+| **Organization** | Organización (bomberos, policía, etc.) | name, org_type, contact |
+| **Incident** | Incidente/Operativo | name, type (WILDFIRE/SEARCH), status (OPEN/CLOSED), location (Point) |
+| **IncidentMember** | Relación N:M usuario-incidente | role_in_incident, joined_at |
+| **TrackPoint** | Punto GPS de tracking | location (Point), accuracy_m, speed, recorded_at |
+| **Alert** | Alerta SOS o emergencia urgente | type (SOS/MAN_DOWN), severity (1-5), status (OPEN/ACK/CLOSED) |
+| **RiskReport** | Reporte de zona de riesgo | location (Point), description, severity (LOW/MEDIUM/HIGH) |
+| **Device** | Dispositivo para notificaciones push | fcm_token, platform |
+| **WorkArea** | Área de trabajo (círculo o polígono) | area_type, center, radius_m, polygon |
 
 ---
 
-## 🤖 Módulo de IA/ML
+## 🚀 Guía de Inicio Rápido
 
-El proyecto incluye un módulo de Machine Learning para detección de anomalías y priorización de zonas de riesgo.
-
-### A) Detección de Anomalías
-
-**Objetivo:** Detectar comportamientos "raros" o potencialmente peligrosos de los operativos.
-
-**Features utilizadas (ventana de 5-10 min):**
-- Velocidad media y variación
-- Distancia recorrida
-- Tiempo de inmovilidad
-- Distancia al equipo (centro o vecino más cercano)
-- Precisión GPS
-
-**Modelo:** Isolation Forest (scikit-learn)
-
-**Respaldo:** Reglas heurísticas (inmovilidad > X min, aislamiento, geofence)
-
-**Uso:** Si el `anomaly_score` supera un umbral → se crea automáticamente una `Alerta(type=ANOMALY)`
-
-**Ubicación propuesta:** `backend/emergency/apps/ml/anomaly_detector.py`
-
-### B) Zonas de Riesgo / Heatmap
-
-**MVP (sin ML):** Scoring heurístico por celdas (grid):
-- Densidad de trackpoints
-- Densidad de alertas
-- Recencia (peso temporal)
-
-**ML Opcional:** Clasificador simple (Logistic Regression o Random Forest) por celdas con etiquetas generadas.
-
-**Salida:** `risk_score` por celda almacenado en la entidad `RiskCell`
-
-**Visualización:** Heatmap en el panel web usando Leaflet.heat
-
-**Ubicación propuesta:** `backend/emergency/apps/ml/risk_analyzer.py`
-
-### C) Clasificación de Imágenes (Opcional)
-
-**NO** geolocalización por foto.
-
-**Uso:** Clasificar vegetación/humo en imágenes como feature adicional para el scoring de riesgo.
-
-**Modelos posibles:** 
-- MobileNetV2 (ligero)
-- YOLOv8 (detección de objetos)
-
-### Instalación de Dependencias ML
+### Opción 1: Docker (Recomendado)
 
 ```bash
-pip install scikit-learn numpy pandas
-# Opcional
-pip install tensorflow torch torchvision
+# 1. Clonar el proyecto
+git clone <repo-url>
+cd Proyecto
+
+# 2. Levantar servicios
+cd backend
+docker-compose up --build
+
+# 3. Acceder a los servicios
+# API: http://localhost:8000
+# Admin: http://localhost:8000/admin
+# Swagger: http://localhost:8000/api/docs/
 ```
 
-### Ejecución del Módulo ML
+### Opción 2: Local (sin Docker)
 
 ```bash
-# Análisis manual de anomalías para un incidente
-python manage.py shell
->>> from emergency.apps.ml.anomaly_detector import detect_anomalies
->>> detect_anomalies(incident_id="uuid-del-incidente")
+# 1. Instalar PostgreSQL + PostGIS
+# Ver sección de instalación abajo
 
-# Generar heatmap
->>> from emergency.apps.ml.risk_analyzer import generate_heatmap
->>> generate_heatmap(incident_id="uuid-del-incidente", cell_size=100)
-```
-
-### Integración Automática
-
-En el futuro, se puede integrar con Celery para ejecución periódica:
-
-```python
-# tasks.py
-from celery import shared_task
-from .ml.anomaly_detector import detect_anomalies
-
-@shared_task
-def check_anomalies_periodic():
-    for incident in Incident.objects.filter(status='OPEN'):
-        detect_anomalies(incident.id)
-```
-
----
-
-## 🚀 Guía de Migraciones
-
-### 1. Instalar Dependencias del Backend
-
-```bash
+# 2. Backend
 cd backend
 python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux/Mac
-source venv/bin/activate
-
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
-```
 
-### 2. Configurar Base de Datos (PostgreSQL + PostGIS)
-
-Instala PostgreSQL y PostGIS, luego crea la base de datos:
-
-```sql
--- Conectarse a PostgreSQL
-psql -U postgres
-
--- Crear base de datos
-CREATE DATABASE emergency_db;
-
--- Activar extensión PostGIS
-\c emergency_db
-CREATE EXTENSION postgis;
-
--- Verificar instalación
-SELECT PostGIS_Version();
-```
-
-### 3. Configurar Variables de Entorno
-
-```bash
-cd backend
+# 3. Configurar .env
 cp .env.example .env
-```
 
-Edita el archivo `.env` con tus configuraciones:
-
-```env
-DJANGO_SECRET_KEY=tu-clave-secreta-aqui
-DJANGO_DEBUG=True
-DB_NAME=emergency_db
-DB_USER=postgres
-DB_PASSWORD=tu-password
-DB_HOST=localhost
-DB_PORT=5432
-```
-
-### 4. Crear y Ejecutar Migraciones
-
-```bash
-# Desde el directorio backend/
-
-# 1. Crear migraciones basadas en los modelos
-python manage.py makemigrations
-
-# 2. Ver las migraciones pendientes
-python manage.py showmigrations
-
-# 3. Aplicar migraciones a la base de datos
+# 4. Migraciones
 python manage.py migrate
-
-# 4. Verificar tablas creadas (opcional)
-python manage.py dbshell
-\dt
-```
-
-### 5. Crear Superusuario
-
-```bash
 python manage.py createsuperuser
-```
 
-### 6. Iniciar Servidor de Desarrollo
-
-```bash
+# 5. Ejecutar
 python manage.py runserver
 ```
 
-El backend estará disponible en `http://localhost:8000`
+---
 
-- API: `http://localhost:8000/api/`
-- Admin: `http://localhost:8000/admin/`
-- Swagger Docs: `http://localhost:8000/api/docs/swagger/`
+## 🐳 Docker
+
+### Servicios disponibles:
+
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| Backend (Django) | 8000 | API REST |
+| PostgreSQL + PostGIS | 5432 | Base de datos |
+
+### Comandos Docker:
+
+```bash
+# Iniciar servicios
+docker-compose up
+
+# Iniciar en background
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar servicios
+docker-compose down
+
+# Rebuild y iniciar
+docker-compose up --build
+```
 
 ---
 
-## 📱 Iniciar Frontend Móvil
+## 📡 Endpoints de la API
+
+### Autenticación
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/auth/register/` | Registrar usuario |
+| POST | `/api/auth/panel/login/` | Iniciar sesión (web panel) |
+| POST | `/api/auth/login/` | Iniciar sesión (mobile app) |
+| POST | `/api/auth/panel/logout/` | Cerrar sesión |
+| GET | `/api/auth/me/` | Usuario actual |
+| GET | `/api/auth/me/profile/` | Perfil del usuario |
+
+### Incidentes
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/incidents/` | Lista de incidentes |
+| POST | `/api/incidents/` | Crear incidente |
+| GET | `/api/incidents/{id}/` | Detalle de incidente |
+| PUT | `/api/incidents/{id}/` | Actualizar incidente |
+| DELETE | `/api/incidents/{id}/` | Eliminar incidente |
+| POST | `/api/incidents/{id}/join/` | Unirse al incidente |
+| POST | `/api/incidents/{id}/leave/` | Abandonar incidente |
+| POST | `/api/incidents/{id}/close/` | Cerrar incidente |
+| GET | `/api/incidents/{id}/members/` | Ver miembros |
+| GET | `/api/incidents/active/` | Incidentes activos |
+| GET | `/api/incidents/my_incidents/` | Mis incidentes |
+
+### Alertas
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/alerts/` | Lista de alertas |
+| POST | `/api/alerts/` | Crear alerta |
+| POST | `/api/alerts/{id}/acknowledge/` | Reconocer alerta |
+| POST | `/api/alerts/{id}/close/` | Cerrar alerta |
+| GET | `/api/alerts/open/` | Alertas abiertas |
+| GET | `/api/alerts/my_alerts/` | Mis alertas |
+
+### Reportes de Riesgo (RiskReport)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/risk-reports/` | Lista de reportes de riesgo |
+| POST | `/api/risk-reports/` | Crear reporte de riesgo |
+| GET | `/api/risk-reports/{id}/` | Detalle de reporte |
+| POST | `/api/risk-reports/{id}/deactivate/` | Desactivar reporte |
+| GET | `/api/risk-reports/active/` | Reportes activos |
+| GET | `/api/risk-reports/by_incident/?incident_id=` | Reportes de un incidente |
+
+### Tracking GPS
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/tracking/point/` | Enviar punto GPS |
+| POST | `/api/tracking/batch/` | Enviar varios puntos |
+| GET | `/api/tracking/last/` | Última posición |
+| GET | `/api/tracking/route/?user_id=&incident_id=` | Ruta de un usuario |
+| GET | `/api/tracking/incident/{id}/` | Tracking de incidente |
+
+### Usuarios y Organizaciones
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/users/` | Lista de usuarios |
+| GET | `/api/organizations/` | Lista de organizaciones |
+| POST | `/api/organizations/` | Crear organización |
+
+---
+
+## 🔐 Autenticación
+
+El sistema usa **JWT (JSON Web Tokens)**.
+
+### Headers requeridos:
+```
+Authorization: Bearer <token>
+```
+
+### Obtener token:
+```bash
+# Login para mobile-app
+curl -X POST http://localhost:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}'
+```
+
+---
+
+## 📱 Mobile App
 
 ```bash
 cd mobile-app
@@ -322,7 +315,7 @@ Pantalla dedicada a marcar y visualizar puntos de interés en el terreno.
 
 ---
 
-## 🖥️ Iniciar Panel Web
+## 🖥️ Web Panel
 
 ```bash
 cd web-panel
@@ -330,94 +323,32 @@ npm install
 npm run dev
 ```
 
-El panel estará en `http://localhost:3000`
-
----
-
-## 🔄 Comandos Útiles de Migraciones
-
-```bash
-# Ver SQL que se ejecutará (dry-run)
-python manage.py sqlmigrate core 0001
-
-# Deshacer última migración
-python manage.py migrate core zero
-
-# Deshacer hasta migración específica
-python manage.py migrate core 0001
-
-# Limpiar migraciones y recrear
-# 1. Eliminar archivos de migración (excepto __init__.py)
-# 2. Eliminar registros de django_migrations en BD
-# 3. Volver a crear: python manage.py makemigrations
-# 4. Aplicar: python manage.py migrate --fake-initial
-
-# Verificar estado de modelos
-python manage.py check
-
-# Shell de Django con auto-carga
-python manage.py shell_plus --notebook
-```
-
 ---
 
 ## 🧪 Tests
 
 ```bash
-# Ejecutar todos los tests
+cd backend
 python manage.py test
-
-# Ejecutar tests de una app específica
-python manage.py test core
-
-# Con cobertura
-pytest --cov=emergency --cov-report=html
 ```
 
 ---
 
-## 📚 Documentación de Endpoints API
+## 📚 Documentación API
 
-Una vez iniciado el servidor, la documentación está disponible en:
-
-- **Swagger UI**: http://localhost:8000/api/docs/swagger/
-- **ReDoc**: http://localhost:8000/api/docs/redoc/
-- **OpenAPI Schema**: http://localhost:8000/api/schema/
+Swagger UI: http://localhost:8000/api/docs/
+ReDoc: http://localhost:8000/api/docs/redoc/
 
 ---
 
-## 🐳 Docker (Opcional)
+## Diferencia entre Alert y RiskReport
 
-Para ejecutar todo el stack con Docker:
-
-```bash
-# En desarrollo
-docker-compose -f docker-compose.dev.yml up -d
-
-# Construir imágenes
-docker-compose build
-
-# Ver logs
-docker-compose logs -f
-```
-
----
-
-## 🔐 Seguridad
-
-- Autenticación mediante JWT (JSON Web Tokens)
-- Roles: ADMIN, SUPERVISOR, OPERATIVE
-- CORS configurado para desarrollo local
-- Variables sensibles en archivo `.env` (no commitear)
-
----
-
-## 📞 Soporte
-
-Para más información sobre el proyecto, consulta:
-- [Documentación Backend](./backend/README.md)
-- [Modelos](./backend/emergency/apps/core/models.py)
-- [API Views](./backend/emergency/apps/api/views/)
+| Característica | Alert | RiskReport |
+|---------------|-------|-------------|
+| Es una emergencia | ✅ | ❌ |
+| Ejemplo | "SOS!", "Man down" | "Hay humo ahí", "Ramas en la carretera" |
+| Severidad | 1-5 | LOW/MEDIUM/HIGH |
+| Creado por | Cualquier usuario | Cualquier usuario |
 
 ---
 

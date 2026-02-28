@@ -18,13 +18,13 @@ from .alert_serializers import (
     AlertCloseSerializer,
 )
 from .organization_serializers import OrganizationSerializer, OrganizationCreateSerializer
+from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
 
 # Alias en espanol para compatibilidad con vistas existentes
 PuntoRastreoSerializer = TrackPointSerializer
 PuntoRastreoCreateSerializer = TrackPointCreateSerializer
 IncidenteSerializer = IncidentSerializer
 IncidenteCreateSerializer = IncidentCreateSerializer
-SessionSerializer = IncidentMemberSerializer
 AlertaSerializer = AlertSerializer
 AlertaCreateSerializer = AlertCreateSerializer
 AlertaAckSerializer = AlertAckSerializer
@@ -44,7 +44,6 @@ __all__ = [
     "IncidentMemberCreateSerializer",
     "IncidenteSerializer",
     "IncidenteCreateSerializer",
-    "SessionSerializer",
     "AlertSerializer",
     "AlertCreateSerializer",
     "AlertAckSerializer",
@@ -55,4 +54,6 @@ __all__ = [
     "AlertaCloseSerializer",
     "OrganizationSerializer",
     "OrganizationCreateSerializer",
+    "RiskReportSerializer",
+    "RiskReportCreateSerializer",
 ]

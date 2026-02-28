@@ -12,6 +12,7 @@ import AlertsPage from './pages/AlertsPage';
 import Layout from './components/Layout';
 import NewUserPage from './pages/NewUserPage';
 import ViewUsersPage from './pages/ViewUsersPage';
+import { ViewUnidadesPage } from './pages/ViewUnidadesPage';
 
 /**
  * Componente principal del panel web
@@ -37,6 +38,7 @@ function App() {
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="newuser" element={<NewUserPage />} />
         <Route path="viewusers" element={<ViewUsersPage />} />
+        <Route path="viewunidades" element={<ViewUnidadesPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

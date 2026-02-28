@@ -109,6 +109,7 @@ export default function ViewUsersPage() {
                 <th className="px-4 py-3 text-left">Rol</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Creado</th>
+                <th className="px-4 py-3 text-left">Editar</th>
               </tr>
             </thead>
             <tbody>
@@ -137,6 +138,15 @@ export default function ViewUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-400">
                       {u.created_at ? new Date(u.created_at).toLocaleString() : "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/edituser/${u.id}`)}
+                        className="rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700 transition"
+                      >
+                        Editar
+                      </button>
                     </td>
                   </tr>
                 ))
