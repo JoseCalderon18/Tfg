@@ -10,7 +10,7 @@ export default function LoginScreen({ navigation }: any) {
   const handleLogin = async () => {
     try {
       await login(username, password);
-      navigation.replace('Home');
+      navigation.replace('Operative');
     } catch (error) {
       console.error('Login failed:', error);
     }

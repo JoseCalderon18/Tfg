@@ -27,6 +27,12 @@ Proyecto/
 │   ├── src/
 │   │   ├── context/                  # AuthContext, LocationContext
 │   │   └── screens/                  # Pantallas
+│   │       ├── LoginScreen.tsx       # Autenticación
+│   │       ├── OperativeScreen.tsx   # Pantalla principal operativo
+│   │       ├── PointsOfInterestScreen.tsx  # Puntos de interés
+│   │       ├── MapScreen.tsx         # Visualización del mapa
+│   │       ├── AlertScreen.tsx       # Formulario de alertas
+│   │       └── HomeScreen.tsx        # Pantalla de inicio (legacy)
 │   ├── App.tsx
 │   └── package.json
 ├── web-panel/                        # React + Vite + TypeScript
@@ -246,6 +252,73 @@ cd mobile-app
 npm install
 npx expo start
 ```
+
+Una vez ejecutado, escanea el código QR con **Expo Go** en tu dispositivo iOS o Android.
+
+### Pantallas de la App Móvil
+
+#### 🔐 **LoginScreen**
+- Pantalla de autenticación
+- Campos: Username y Password
+- Valida credenciales contra el backend
+
+#### 🏠 **OperativeScreen** - Pantalla Principal del Operativo
+La interfaz principal de trabajo para operativos en el terreno.
+
+**Componentes:**
+- **Header (Rojo):** 
+  - Botón menú hamburguesa (≡)
+  - Título "Emergency App"
+  - Nombre del usuario
+
+- **Área Central:** Espacio reservado para el mapa (placeholder "Mapa")
+
+- **Menú Inferior (15% altura):**
+  - 📍 **MARCAR PUNTO** (izquierda) - Accede a puntos de interés
+  - 🚨 **ALERTA** (centro, rojo, destacado) - Envía alerta SOS con confirmación
+  - ☎️ **LLAMAR** (derecha) - Función de llamada de emergencia
+
+- **Menú Hamburguesa:**
+  - 👥 Compañeros - Ver ubicación de compañeros
+  - 🌤️ Meteorología - Información meteorológica
+  - ⏸️ Iniciar Descanso - Registrar descanso
+  - 🛑 Parar Jornada - Finalizar jornada de trabajo
+  - 🚪 Cerrar Sesión - Logout
+
+**Funcionalidades:**
+- Confirmación requerida para enviar alerta SOS
+- Navegación fluida entre pantallas
+- Almacenamiento seguro de tokens con Expo Secure Store
+
+#### 📍 **PointsOfInterestScreen** - Puntos de Interés
+Pantalla dedicada a marcar y visualizar puntos de interés en el terreno.
+
+**Opciones disponibles:**
+- 🚰 **Hidrantes** - Ubicación de hidrantes disponibles
+- 🏠 **Asentamiento** - Zonas de viviendas y asentamientos
+- 🔥 **Cortafuegos** - Líneas de cortafuegos
+- 👁️ **Puntos de Vigilancia** - Torres y puntos de vigilancia
+- 🏢 **Estaciones Base** - Campamentos y estaciones base
+- 🚪 **Vías de Evacuación** - Rutas de evacuación recomendadas
+
+**Interactividad:**
+- Selecciona un punto para ver opciones
+- "Ver en mapa" - Visualiza el punto en el mapa principal
+- "Marcar como punto" - Registra el punto en el sistema
+
+#### 🗺️ **MapScreen**
+- Visualización del mapa en tiempo real
+- Muestra la ubicación actual del operativo
+- Marcador de posición GPS
+
+#### 🚨 **AlertScreen**
+- Formulario para enviar alertas manuales
+- Campos:
+  - Tipo de alerta (SOS, Man Down, Pérdida, Otro)
+  - Severidad (1-5)
+  - Descripción
+- Incluye geolocalización automática
+- Confirmación antes de enviar
 
 ---
 

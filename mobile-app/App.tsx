@@ -11,6 +11,8 @@ import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import MapScreen from './screens/MapScreen';
 import AlertScreen from './screens/AlertScreen';
+import OperativeScreen from './screens/OperativeScreen';
+import PointsOfInterestScreen from './screens/PointsOfInterestScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
@@ -29,6 +31,16 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Map" component={MapScreen} />
             <Stack.Screen name="Alert" component={AlertScreen} />
+            <Stack.Screen
+              name="Operative"
+              component={OperativeScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="PointsOfInterest"
+              component={PointsOfInterestScreen}
+              options={{ headerShown: false }}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </LocationProvider>
