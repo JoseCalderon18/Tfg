@@ -13,6 +13,7 @@ import Layout from './components/Layout';
 import NewUserPage from './pages/NewUserPage';
 import ViewUsersPage from './pages/ViewUsersPage';
 import { ViewUnidadesPage } from './pages/ViewUnidadesPage';
+import EditUserPage from './pages/EditUserPage';
 
 /**
  * Componente principal del panel web
@@ -39,6 +40,7 @@ function App() {
         <Route path="newuser" element={<NewUserPage />} />
         <Route path="viewusers" element={<ViewUsersPage />} />
         <Route path="viewunidades" element={<ViewUnidadesPage />} />
+        <Route path="edituser/:id" element={<EditUserPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -105,7 +105,7 @@ class PanelLoginView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-
+# Apartado de logout y me para el panel web, usando sesiones y CSRF, sin JWT. Solo para supervisores (validado en cada vista).
 @method_decorator(csrf_protect, name="dispatch")
 class PanelLogoutView(APIView):
     """
@@ -215,6 +215,124 @@ class PanelUsersListView(APIView):
             for u in users
         ]
         return Response(data, status=status.HTTP_200_OK)
+
+
+# Apartado de edición de usuarios desde el panel, solo para supervisores. Permite actualizar campos básicos + rol (sin tocar contraseña). 
+# La contraseña solo la puede cambiar el propio usuario desde su perfil (PATCH /api/auth/me/profile/), no desde el panel.
+# Para resetear contreña, acceder desde usuario Administrador. 
+@method_decorator(csrf_protect, name="dispatch")
+class PanelUserDetailView(APIView):
+    """
+    GET/PATCH /api/auth/panel/users/<user_id>/
+    Obtiene y actualiza un usuario desde el panel.
+    Solo SUPERVISOR.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication]
+
+    @staticmethod
+    def _serialize_user(user):
+        profile = getattr(user, "profile", None)
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "is_active": user.is_active,
+            "created_at": user.created_at,
+            "role": getattr(profile, "role", None),
+        }
+
+    @staticmethod
+    def _ensure_supervisor(request):
+        current_profile = getattr(request.user, "profile", None)
+        if not current_profile or current_profile.role != "SUPERVISOR":
+            return Response(
+                {"detail": "No autorizado para editar usuarios."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return None
+
+    def get(self, request, user_id):
+        unauthorized = self._ensure_supervisor(request)
+        if unauthorized:
+            return unauthorized
+
+        user = User.objects.select_related("profile").filter(id=user_id).first()
+        if not user:
+            return Response(
+                {"detail": "Usuario no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    def patch(self, request, user_id):
+        unauthorized = self._ensure_supervisor(request)
+        if unauthorized:
+            return unauthorized
+
+        user = User.objects.select_related("profile").filter(id=user_id).first()
+        if not user:
+            return Response(
+                {"detail": "Usuario no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        payload = request.data
+        role_choices = {choice[0] for choice in Profile.ROLES}
+
+        if "username" in payload:
+            username = str(payload.get("username", "")).strip()
+            if not username:
+                return Response({"username": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+            exists = User.objects.exclude(id=user.id).filter(username=username).exists()
+            if exists:
+                return Response({"username": ["Este username ya existe."]}, status=status.HTTP_400_BAD_REQUEST)
+            user.username = username
+
+        if "email" in payload:
+            email = str(payload.get("email", "")).strip()
+            if not email:
+                return Response({"email": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+            exists = User.objects.exclude(id=user.id).filter(email=email).exists()
+            if exists:
+                return Response({"email": ["Este email ya existe."]}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = email
+
+        if "first_name" in payload:
+            user.first_name = str(payload.get("first_name", "")).strip()
+
+        if "last_name" in payload:
+            user.last_name = str(payload.get("last_name", "")).strip()
+
+        if "phone" in payload:
+            user.phone = str(payload.get("phone", "")).strip()
+
+        if "is_active" in payload:
+            user.is_active = bool(payload.get("is_active"))
+
+        user.save()
+
+        role = payload.get("role", None)
+        if role is not None:
+            if role not in role_choices:
+                return Response(
+                    {"role": ["Rol no valido."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile = getattr(user, "profile", None)
+            if profile is None:
+                profile = Profile.objects.create(user=user, role=role)
+            else:
+                profile.role = role
+                profile.save(update_fields=["role", "updated_at"])
+
+        user.refresh_from_db()
+        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
 
 
 # -------------------------

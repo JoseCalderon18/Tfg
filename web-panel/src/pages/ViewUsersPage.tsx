@@ -124,7 +124,7 @@ export default function ViewUsersPage() {
                   <tr key={u.id} className="border-t border-slate-800/80">
                     <td className="px-4 py-3 font-medium text-slate-100">{u.username}</td>
                     <td className="px-4 py-3 text-slate-300">{u.email}</td>
-                    <td className="px-4 py-3 text-slate-300">{u.role ?? "-"}</td>
+                    <td className="px-4 py-3 text-slate-300">{u.role ?? "Sin rol asignado"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
@@ -137,7 +137,7 @@ export default function ViewUsersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-400">
-                      {u.created_at ? new Date(u.created_at).toLocaleString() : "-"}
+                      {u.created_at ? new Date(u.created_at).toLocaleString() : "Fecha desconocida"}
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -145,7 +145,7 @@ export default function ViewUsersPage() {
                         onClick={() => navigate(`/edituser/${u.id}`)}
                         className="rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700 transition"
                       >
-                        Editar
+                        Editar usuario
                       </button>
                     </td>
                   </tr>

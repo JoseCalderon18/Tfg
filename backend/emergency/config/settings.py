@@ -30,8 +30,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # GDAL_LIBRARY_PATH - En Docker se configura en el Dockerfile, en local descomenta si es necesario:
-# GDAL_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\gdal312.dll"
-# GEOS_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\geos_c.dll"
+GDAL_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\gdal312.dll"
+GEOS_LIBRARY_PATH = r"C:\Users\Practicas2\AppData\Local\Programs\OSGeo4W\bin\geos_c.dll"
 
 # Application definition
 
