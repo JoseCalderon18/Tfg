@@ -16,6 +16,20 @@ from emergency.apps.core.forms import SupervisorLoginForm
 from ..serializers import UserSerializer, UserCreateSerializer, ProfileSerializer
 
 
+def _has_panel_full_access(user):
+    """
+    Acceso total al panel:
+    - superusuario Django
+    - usuario con perfil SUPERVISOR
+    """
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    profile = getattr(user, "profile", None)
+    return bool(profile and profile.role == "SUPERVISOR")
+
+
 # -------------------------
 # JWT / API GENERAL
 # -------------------------
@@ -138,6 +152,8 @@ class PanelMeView(APIView):
             "username": getattr(request.user, "username", ""),
             "email": getattr(request.user, "email", ""),
             "role": getattr(profile, "role", None),
+            "is_superuser": bool(getattr(request.user, "is_superuser", False)),
+            "has_panel_full_access": _has_panel_full_access(request.user),
         }, status=status.HTTP_200_OK)
 
 
@@ -154,8 +170,7 @@ class PanelCreateOperativeUserView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        current_profile = getattr(request.user, "profile", None)
-        if not current_profile or current_profile.role != "SUPERVISOR":
+        if not _has_panel_full_access(request.user):
             return Response(
                 {"detail": "No autorizado para crear usuarios."},
                 status=status.HTTP_403_FORBIDDEN
@@ -183,8 +198,7 @@ class PanelUsersListView(APIView):
     authentication_classes = [SessionAuthentication]
 
     def get(self, request):
-        current_profile = getattr(request.user, "profile", None)
-        if not current_profile or current_profile.role != "SUPERVISOR":
+        if not _has_panel_full_access(request.user):
             return Response(
                 {"detail": "No autorizado para visualizar usuarios."},
                 status=status.HTTP_403_FORBIDDEN
@@ -237,8 +251,8 @@ class PanelUserDetailView(APIView):
             "id": str(user.id),
             "username": user.username,
             "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
+            "first_name": getattr(profile, "name", ""),
+            "last_name": getattr(profile, "lastname", ""),
             "phone": user.phone,
             "is_active": user.is_active,
             "created_at": user.created_at,
@@ -247,8 +261,7 @@ class PanelUserDetailView(APIView):
 
     @staticmethod
     def _ensure_supervisor(request):
-        current_profile = getattr(request.user, "profile", None)
-        if not current_profile or current_profile.role != "SUPERVISOR":
+        if not _has_panel_full_access(request.user):
             return Response(
                 {"detail": "No autorizado para editar usuarios."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -303,11 +316,19 @@ class PanelUserDetailView(APIView):
                 return Response({"email": ["Este email ya existe."]}, status=status.HTTP_400_BAD_REQUEST)
             user.email = email
 
+        profile = getattr(user, "profile", None)
+
+        if profile is None:
+            profile = Profile.objects.create(user=user)
+
+        profile_updated_fields = []
         if "first_name" in payload:
-            user.first_name = str(payload.get("first_name", "")).strip()
+            profile.name = str(payload.get("first_name", "")).strip()
+            profile_updated_fields.append("name")
 
         if "last_name" in payload:
-            user.last_name = str(payload.get("last_name", "")).strip()
+            profile.lastname = str(payload.get("last_name", "")).strip()
+            profile_updated_fields.append("lastname")
 
         if "phone" in payload:
             user.phone = str(payload.get("phone", "")).strip()
@@ -316,6 +337,8 @@ class PanelUserDetailView(APIView):
             user.is_active = bool(payload.get("is_active"))
 
         user.save()
+        if profile_updated_fields:
+            profile.save(update_fields=[*profile_updated_fields, "updated_at"])
 
         role = payload.get("role", None)
         if role is not None:

@@ -61,7 +61,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
         fields = ['id', 'user', 'role', 'organization', 'organization_name',
-                  'emergency_contact', 'emergency_phone', 'medical_notes']
+                  'emergency_contact', 'emergency_phone', 'medical_notes', 'name', 'lastname']
 
 
 class OrganizacionSerializer(serializers.ModelSerializer):

@@ -20,6 +20,8 @@ class Perfil(models.Model):
         role: Rol del usuario (ADMIN, SUPERVISOR, OPERATIVE)
         organization: Organización a la que pertenece
         emergency_contact: Nombre del contacto de emergencia
+        name: Nombre completo del usuario
+        lastname: Apellido del usuario
         emergency_phone: Teléfono del contacto de emergencia
         medical_notes: Notas médicas relevantes
         created_at: Fecha de creación
@@ -70,6 +72,18 @@ class Perfil(models.Model):
         blank=True,
         null=True,
         help_text="Información médica relevante (alergias, condiciones, etc.)"
+    )
+    name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Nombre completo del usuario"
+    )
+    lastname = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Apellido del usuario"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

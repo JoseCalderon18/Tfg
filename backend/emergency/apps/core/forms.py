@@ -25,15 +25,17 @@ class SupervisorLoginForm(forms.Form):
             raise forms.ValidationError("Credenciales incorrectas.")
 
         if not user.is_active:
-            raise forms.ValidationError("Credenciales incorrectas.")
+            raise forms.ValidationError("Usuario no activo.")
 
-        profile = Profile.objects.filter(user_id=user.id).first()
+        # Django superusers siempre pueden acceder al panel web.
+        if not user.is_superuser:
+            profile = Profile.objects.filter(user_id=user.id).first()
 
-        if not profile:
-            raise forms.ValidationError("Credenciales incorrectas.")
+            if not profile:
+                raise forms.ValidationError("Credenciales incorrectas.")
 
-        if (profile.role or "").strip().upper() != "SUPERVISOR":
-            raise forms.ValidationError("Credenciales incorrectas.")
+            if (profile.role or "").strip().upper() != "SUPERVISOR":
+                raise forms.ValidationError("Credenciales incorrectas.")
 
         self.user = user
         return cleaned

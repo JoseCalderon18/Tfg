@@ -5,6 +5,8 @@ import { apiFetch } from "../utils/api";
 type MeResponse = {
   authenticated: boolean;
   role?: string;
+  is_superuser?: boolean;
+  has_panel_full_access?: boolean;
 };
 
 type UserRow = {
@@ -33,7 +35,7 @@ export default function ViewUsersPage() {
       }
 
       const meData = (await meRes.json()) as MeResponse;
-      if (meData.role !== "SUPERVISOR") {
+      if (!meData.has_panel_full_access) {
         navigate("/login", { replace: true });
         return;
       }

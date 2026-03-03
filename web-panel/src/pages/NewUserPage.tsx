@@ -6,6 +6,8 @@ type MeResponse = {
   authenticated: boolean;
   email?: string;
   role?: string;
+  is_superuser?: boolean;
+  has_panel_full_access?: boolean;
 };
 
 // Ajusta aquí tu endpoint real:
@@ -34,7 +36,7 @@ export default function NewUserPage() {
         return;
       }
       const data = (await res.json()) as MeResponse;
-      if (data.role !== "SUPERVISOR") {
+      if (!data.has_panel_full_access) {
         navigate("/login", { replace: true });
         return;
       }

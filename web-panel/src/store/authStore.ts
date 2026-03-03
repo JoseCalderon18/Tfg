@@ -8,6 +8,15 @@ interface User {
   role: string;
 }
 
+interface PanelMeResponse {
+  id?: string;
+  username?: string;
+  email?: string;
+  role?: string;
+  is_superuser?: boolean;
+  has_panel_full_access?: boolean;
+}
+
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -50,9 +59,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       return false;
     }
 
-    const me = await meRes.json();
-    const isSupervisor = me?.role === "SUPERVISOR";
-    if (!isSupervisor) {
+    const me = (await meRes.json()) as PanelMeResponse;
+    const hasPanelAccess = Boolean(me?.has_panel_full_access);
+    if (!hasPanelAccess) {
       set({ user: null, isAuthenticated: false });
       return false;
     }
@@ -63,7 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         id: me.id ?? "",
         username: me.username ?? "",
         email: me.email ?? "",
-        role: me.role,
+        role: me.role ?? (me.is_superuser ? "SUPERUSER" : ""),
       },
     });
     return true;
@@ -83,10 +92,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      const me = await res.json();
-      const isSupervisor = me?.role === "SUPERVISOR";
+      const me = (await res.json()) as PanelMeResponse;
+      const hasPanelAccess = Boolean(me?.has_panel_full_access);
 
-      if (!isSupervisor) {
+      if (!hasPanelAccess) {
         set({ user: null, isAuthenticated: false, isCheckingAuth: false });
         return;
       }
@@ -98,7 +107,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           id: me.id ?? "",
           username: me.username ?? "",
           email: me.email ?? "",
-          role: me.role,
+          role: me.role ?? (me.is_superuser ? "SUPERUSER" : ""),
         },
       });
     } catch {
