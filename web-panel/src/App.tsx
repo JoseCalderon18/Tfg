@@ -14,6 +14,7 @@ import NewUserPage from './pages/NewUserPage';
 import ViewUsersPage from './pages/ViewUsersPage';
 import { ViewUnidadesPage } from './pages/ViewUnidadesPage';
 import EditUserPage from './pages/EditUserPage';
+import CreateIncidentPage from './pages/CreateIncidentPage';
 
 /**
  * Componente principal del panel web
@@ -41,6 +42,7 @@ function App() {
         <Route path="viewusers" element={<ViewUsersPage />} />
         <Route path="viewunidades" element={<ViewUnidadesPage />} />
         <Route path="edituser/:id" element={<EditUserPage />} />
+        <Route path="createincident" element={<CreateIncidentPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
