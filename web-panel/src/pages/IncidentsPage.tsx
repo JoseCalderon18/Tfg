@@ -318,6 +318,7 @@ export default function IncidentsPage() {
                   <th className="px-4 py-3 text-left">Estado</th>
                   <th className="px-4 py-3 text-left">Organizacion</th>
                   <th className="px-4 py-3 text-left">Inicio</th>
+                  <th className="px-4 py-3 text-left">Acciones</th>
                 </tr>
               </thead>
 
@@ -366,6 +367,18 @@ export default function IncidentsPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-400">
                         {formatDate(incident.started_at)}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/incidents/${incident.id}`);
+                          }}
+                          className="ml-4 rounded-xl bg-blue-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-blue-500"
+                        >
+                          Editar
+                        </button>
                       </td>
                     </tr>
                   ))
