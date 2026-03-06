@@ -164,6 +164,18 @@ export default function CreateIncidentPage() {
       return;
     }
 
+    if(organizations === undefined) {
+      setError("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la pagina.");
+      return;
+    }
+    if (!ownerOrganization) {
+      setError("Debes seleccionar una organizacion responsable.");
+      return;
+    }
+
+
+
+
     const payload: CreateIncidentPayload = {
       name: name.trim(),
       incident_type: incidentType,
@@ -172,8 +184,9 @@ export default function CreateIncidentPage() {
       location_address: locationAddress.trim() || undefined,
       latitude: parsedLat,
       longitude: parsedLon,
-      owner_organization: ownerOrganization || undefined,
+      owner_organization: ownerOrganization,
     };
+
 
     setSubmitting(true);
     try {

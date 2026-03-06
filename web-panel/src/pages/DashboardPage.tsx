@@ -159,6 +159,11 @@ export default function DashboardPage() {
             desc="Consultar estado y asignación de unidades."
           />
           <CardLink
+            to="/vieworganizations"
+            title="Organizaciones y empresas"
+            desc="Ver y gestionar las organizaciones de emergencias del sistema."
+          />
+          <CardLink
             to="/settings"
             title="Ajustes"
             desc="Configuración del panel y preferencias."
