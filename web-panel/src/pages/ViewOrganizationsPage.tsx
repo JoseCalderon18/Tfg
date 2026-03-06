@@ -138,7 +138,6 @@ export default function ViewOrganizationsPage() {
                 <th className="px-4 py-3 text-left">Telefono</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Creada</th>
-                <th className="px-4 py-3 text-left">Ver ubicación</th>
               </tr>
             </thead>
             <tbody>
@@ -168,15 +167,6 @@ export default function ViewOrganizationsPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-400">
                       {org.created_at ? new Date(org.created_at).toLocaleString() : "Fecha desconocida"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/organizations/${org.id}/locations`)}
-                        className="rounded-lg bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-                      >
-                        Ver ubicación
-                      </button>
                     </td>
                   </tr>
                 ))
