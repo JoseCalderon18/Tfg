@@ -42,11 +42,13 @@ function parsePointLocation(location: unknown): LatLngTuple | null {
 
   if (typeof location === "object") {
     const obj = location as { coordinates?: unknown; x?: unknown; y?: unknown };
+
     if (Array.isArray(obj.coordinates) && obj.coordinates.length >= 2) {
       const lon = Number(obj.coordinates[0]);
       const lat = Number(obj.coordinates[1]);
       if (!Number.isNaN(lat) && !Number.isNaN(lon)) return [lat, lon];
     }
+
     if (obj.x !== undefined && obj.y !== undefined) {
       const lon = Number(obj.x);
       const lat = Number(obj.y);
@@ -56,7 +58,10 @@ function parsePointLocation(location: unknown): LatLngTuple | null {
 
   if (typeof location === "string") {
     // Handles formats like "SRID=4326;POINT (-3.70 40.41)" or "POINT(-3.70 40.41)"
-    const match = location.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
+    const match = location.match(
+      /POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i
+    );
+
     if (match) {
       const lon = Number(match[1]);
       const lat = Number(match[3]);
@@ -65,6 +70,47 @@ function parsePointLocation(location: unknown): LatLngTuple | null {
   }
 
   return null;
+}
+
+async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=es`
+    );
+
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      display_name?: string;
+      address?: {
+        road?: string;
+        pedestrian?: string;
+        house_number?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        municipality?: string;
+        state?: string;
+        country?: string;
+      };
+    };
+
+    const address = data.address;
+    if (!address) return data.display_name ?? null;
+
+    const streetName = address.road || address.pedestrian || "";
+    const houseNumber = address.house_number || "";
+    const city =
+      address.city || address.town || address.village || address.municipality || "";
+    const country = address.country || "";
+
+    const street = [streetName, houseNumber].filter(Boolean).join(" ").trim();
+    const parts = [street, city, country].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(", ") : data.display_name ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeIncidents(raw: unknown): IncidentRow[] {
@@ -111,12 +157,21 @@ function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
 
   return (
     <div className="h-56 overflow-hidden rounded-xl ring-1 ring-slate-800">
-      <MapContainer center={incident.parsedLocation} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      <MapContainer
+        center={incident.parsedLocation}
+        zoom={13}
+        scrollWheelZoom={false}
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <CircleMarker center={incident.parsedLocation} radius={8} pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.8 }}>
+        <CircleMarker
+          center={incident.parsedLocation}
+          radius={8}
+          pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.8 }}
+        >
           <Popup>{incident.name}</Popup>
         </CircleMarker>
       </MapContainer>
@@ -126,6 +181,9 @@ function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
 
 export default function IncidentsPage() {
   const navigate = useNavigate();
+
+  const [resolvedLocation, setResolvedLocation] = useState<string>("");
+  const [resolvingLocation, setResolvingLocation] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -165,6 +223,7 @@ export default function IncidentsPage() {
   const filteredIncidents = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return incidents;
+
     return incidents.filter((incident) =>
       `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
         .toLowerCase()
@@ -173,11 +232,43 @@ export default function IncidentsPage() {
   }, [query, incidents]);
 
   const selectedIncident =
-    filteredIncidents.find((incident) => incident.id === selectedIncidentId) ?? filteredIncidents[0] ?? null;
+    filteredIncidents.find((incident) => incident.id === selectedIncidentId) ??
+    filteredIncidents[0] ??
+    null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadResolvedLocation() {
+      if (!selectedIncident?.parsedLocation) {
+        setResolvedLocation("");
+        setResolvingLocation(false);
+        return;
+      }
+
+      const [lat, lon] = selectedIncident.parsedLocation;
+
+      setResolvingLocation(true);
+      setResolvedLocation("");
+
+      const result = await reverseGeocode(lat, lon);
+
+      if (!cancelled) {
+        setResolvedLocation(result || "");
+        setResolvingLocation(false);
+      }
+    }
+
+    loadResolvedLocation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIncident]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
+      <div className="min-h-screen grid place-items-center bg-slate-950 text-slate-100">
         <p className="text-slate-300">Cargando incidentes...</p>
       </div>
     );
@@ -191,10 +282,11 @@ export default function IncidentsPage() {
             <p className="text-sm text-slate-400">Operaciones</p>
             <h1 className="text-2xl font-bold">Incidentes</h1>
           </div>
+
           <button
             type="button"
             onClick={() => navigate("/createincident")}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition"
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
           >
             Nuevo incidente
           </button>
@@ -211,7 +303,9 @@ export default function IncidentsPage() {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div>
+          <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+            {error}
+          </div>
         )}
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
@@ -226,6 +320,7 @@ export default function IncidentsPage() {
                   <th className="px-4 py-3 text-left">Inicio</th>
                 </tr>
               </thead>
+
               <tbody>
                 {filteredIncidents.length === 0 ? (
                   <tr>
@@ -243,7 +338,14 @@ export default function IncidentsPage() {
                       }`}
                     >
                       <td className="px-4 py-3 font-medium text-slate-100">{incident.name}</td>
-                      <td className="px-4 py-3 text-slate-300">{incident.incident_type}</td>
+                      <td className="px-4 py-3 text-slate-300">
+                        {incident.incident_type === "SEARCH" ? "Búsqueda de personas"
+                          : incident.incident_type === "MEDICAL" ? "Emergencia médica"
+                          : incident.incident_type === "WILDFIRE" ? "Incendio forestal"
+                          : incident.incident_type === "RESCUE" ? "Rescate de persona desaparecida"
+                          : incident.incident_type === "NATURAL_DISASTER" ? "Desastre natural"
+                          : "Otro"}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
@@ -252,11 +354,19 @@ export default function IncidentsPage() {
                               : "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
                           }`}
                         >
-                          {incident.status}
+                          {incident.status === "OPEN"
+                        ? "Abierto"
+                        : incident.status === "CLOSED"
+                        ? "Cerrado"
+                        : "En evaluacion"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-300">{incident.owner_organization || "-"}</td>
-                      <td className="px-4 py-3 text-slate-400">{formatDate(incident.started_at)}</td>
+                      <td className="px-4 py-3 text-slate-300">
+                        {incident.owner_organization || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {formatDate(incident.started_at)}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -276,19 +386,37 @@ export default function IncidentsPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-slate-400">Tipo</p>
-                    <p className="text-slate-100">{selectedIncident.incident_type}</p>
+                    <p className="text-slate-100">{selectedIncident.incident_type === "SEARCH" ? "Búsqueda de personas"
+                    : selectedIncident.incident_type === "MEDICAL" ? "Emergencia médica" 
+                    : selectedIncident.incident_type === "WILDFIRE" ? "Incendio forestal"
+                    : selectedIncident.incident_type === "RESCUE" ? "Rescate de persona desaparecida"
+                    : selectedIncident.incident_type === "NATURAL_DISASTER" ? "Desastre natural" 
+                    : "Otro"}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Estado</p>
-                    <p className="text-slate-100">{selectedIncident.status}</p>
+                    <p className="text-slate-100">
+                      {selectedIncident.status === "OPEN"
+                        ? "Abierto"
+                        : selectedIncident.status === "CLOSED"
+                        ? "Cerrado"
+                        : "En evaluacion"}
+                    </p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Activo</p>
-                    <p className="text-slate-100">{selectedIncident.is_active ? "Si" : "No"}</p>
+                    <p className="text-slate-100">
+                      {selectedIncident.is_active ? "Si" : "No"}
+                    </p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Organizacion</p>
-                    <p className="text-slate-100">{selectedIncident.owner_organization || "-"}</p>
+                    <p className="text-slate-100">
+                      {selectedIncident.owner_organization || "-"}
+                    </p>
                   </div>
                 </div>
 
@@ -297,18 +425,21 @@ export default function IncidentsPage() {
                     <p className="text-slate-400">Descripcion</p>
                     <p className="text-slate-100">{selectedIncident.description || "-"}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Direccion</p>
                     <p className="text-slate-100">{selectedIncident.location_address || "-"}</p>
                   </div>
+
                   <div>
-                    <p className="text-slate-400">Location (raw)</p>
-                    <p className="break-all text-slate-100">
-                      {typeof selectedIncident.location === "string"
-                        ? selectedIncident.location
-                        : JSON.stringify(selectedIncident.location)}
+                    <p className="text-slate-400">Ubicacion legible</p>
+                    <p className="text-slate-100">
+                      {resolvingLocation
+                        ? "Buscando direccion..."
+                        : resolvedLocation || selectedIncident.location_address || "-"}
                     </p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Coordenadas</p>
                     <p className="text-slate-100">
@@ -317,22 +448,27 @@ export default function IncidentsPage() {
                         : "-"}
                     </p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Creado por</p>
                     <p className="text-slate-100">{selectedIncident.created_by || "-"}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Inicio</p>
                     <p className="text-slate-100">{formatDate(selectedIncident.started_at)}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Fin</p>
                     <p className="text-slate-100">{formatDate(selectedIncident.ended_at)}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Creado</p>
                     <p className="text-slate-100">{formatDate(selectedIncident.created_at)}</p>
                   </div>
+
                   <div>
                     <p className="text-slate-400">Actualizado</p>
                     <p className="text-slate-100">{formatDate(selectedIncident.updated_at)}</p>
