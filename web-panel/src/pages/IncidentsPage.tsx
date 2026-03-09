@@ -373,7 +373,7 @@ export default function IncidentsPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/incidents/${incident.id}`);
+                            navigate(`/editIncident/${incident.id}`);
                           }}
                           className="ml-4 rounded-xl bg-blue-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
