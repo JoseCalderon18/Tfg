@@ -190,6 +190,7 @@ export default function IncidentsPage() {
   const [query, setQuery] = useState("");
   const [incidents, setIncidents] = useState<IncidentRow[]>([]);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string>("");
+  const [deletingIncidentId, setDeletingIncidentId] = useState<string>("");
 
   useEffect(() => {
     (async () => {
@@ -266,6 +267,41 @@ export default function IncidentsPage() {
     };
   }, [selectedIncident]);
 
+  async function handleDeleteIncident(incidentId: string) {
+    if (deletingIncidentId) return;
+
+    const confirmed = window.confirm("¿Seguro que quieres borrar este incidente? Esta acción no se puede deshacer.");
+    if (!confirmed) return;
+
+    setError("");
+    setDeletingIncidentId(incidentId);
+    try {
+      const res = await apiFetch(`/incidents/${incidentId}/`, { method: "DELETE" });
+      if (!res.ok) {
+        let detail = "No se pudo borrar el incidente.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") detail = data.detail;
+        } catch {
+          // keep fallback
+        }
+        setError(detail);
+        return;
+      }
+
+      setIncidents((prev) => {
+        const next = prev.filter((incident) => incident.id !== incidentId);
+        setSelectedIncidentId((currentSelectedId) => {
+          if (currentSelectedId !== incidentId) return currentSelectedId;
+          return next[0]?.id ?? "";
+        });
+        return next;
+      });
+    } finally {
+      setDeletingIncidentId("");
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-slate-950 text-slate-100">
@@ -325,7 +361,7 @@ export default function IncidentsPage() {
               <tbody>
                 {filteredIncidents.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                       No hay incidentes para mostrar.
                     </td>
                   </tr>
@@ -368,17 +404,30 @@ export default function IncidentsPage() {
                       <td className="px-4 py-3 text-slate-400">
                         {formatDate(incident.started_at)}
                       </td>
-                      <td>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/editIncident/${incident.id}`);
-                          }}
-                          className="ml-4 rounded-xl bg-blue-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-blue-500"
-                        >
-                          Editar
-                        </button>
+                      <td className="px-4 py-3">
+                        <div className="ml-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/editIncident/${incident.id}`);
+                            }}
+                            className="rounded-xl bg-blue-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-blue-500"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteIncident(incident.id);
+                            }}
+                            disabled={Boolean(deletingIncidentId)}
+                            className="rounded-xl bg-rose-700 px-3 py-1 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
+                          >
+                            {deletingIncidentId === incident.id ? "Borrando..." : "Borrar"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
