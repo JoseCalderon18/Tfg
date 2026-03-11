@@ -1,6 +1,29 @@
 # Backend
 
-## Instalación
+## Instalacion
+
+## Docker (recomendado para equipo)
+
+1. Crear archivo de entorno:
+```bash
+cp .env.example .env
+```
+
+2. Levantar servicios:
+```bash
+docker compose up --build
+```
+
+3. La API quedara disponible en:
+```text
+http://localhost:8000
+```
+
+Notas:
+- El contenedor backend aplica `migrate` y `collectstatic` automaticamente al iniciar.
+- La base de datos PostGIS se inicia en el servicio `db`.
+
+## Instalacion local (sin Docker)
 
 1. Crear entorno virtual:
 ```bash
