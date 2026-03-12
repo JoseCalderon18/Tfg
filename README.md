@@ -75,7 +75,7 @@ Las entidades están definidas en `backend/emergency/apps/core/models/`:
 
 ## 🚀 Guía de Inicio Rápido
 
-### Opción 1: Docker (Recomendado)
+### Opción 1: Docker 
 
 ```bash
 # 1. Clonar el proyecto
@@ -91,32 +91,6 @@ docker-compose up --build
 # Admin: http://localhost:8000/admin
 # Swagger: http://localhost:8000/api/docs/
 ```
-
-### Opción 2: Local (sin Docker)
-
-```bash
-# 1. Instalar PostgreSQL + PostGIS
-# Ver sección de instalación abajo
-
-# 2. Backend
-cd backend
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-
-# 3. Configurar .env
-cp .env.example .env
-
-# 4. Migraciones
-python manage.py migrate
-python manage.py createsuperuser
-
-# 5. Ejecutar
-python manage.py runserver
-```
-
----
 
 ## 🐳 Docker
 
@@ -332,24 +306,4 @@ cd backend
 python manage.py test
 ```
 
----
 
-## 📚 Documentación API
-
-Swagger UI: http://localhost:8000/api/docs/
-ReDoc: http://localhost:8000/api/docs/redoc/
-
----
-
-## Diferencia entre Alert y RiskReport
-
-| Característica | Alert | RiskReport |
-|---------------|-------|-------------|
-| Es una emergencia | ✅ | ❌ |
-| Ejemplo | "SOS!", "Man down" | "Hay humo ahí", "Ramas en la carretera" |
-| Severidad | 1-5 | LOW/MEDIUM/HIGH |
-| Creado por | Cualquier usuario | Cualquier usuario |
-
----
-
-Desarrollado como TFG - Aplicación de Gestión Logística y Seguridad para Cuerpos de Emergencias
