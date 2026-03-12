@@ -26,8 +26,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código
 COPY . .
 
+# Script de arranque (migraciones + static)
+RUN chmod +x /app/entrypoint.sh
+
 # Exponer puerto
 EXPOSE 8000
 
-# Comando para iniciar
+# Arranque por defecto
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

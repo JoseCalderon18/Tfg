@@ -24,22 +24,10 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-# Importamos vistas de autenticación JWT
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
-
 # Definición de rutas URL del proyecto
 urlpatterns = [
     # Panel de administración de Django
     path('admin/', admin.site.urls),
-
-    # API Auth (JWT) - Endpoints de autenticación
-    path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
     # API principal - Incluye todas las rutas de la app api
     path('api/', include('emergency.apps.api.urls')),

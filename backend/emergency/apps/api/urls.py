@@ -1,16 +1,14 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from emergency.apps.api.views.auth_views import (
-    CurrentUserView,
     PanelCreateOperativeUserView,
     PanelLoginView,
     PanelLogoutView,
     PanelMeView,
     PanelUserDetailView,
     PanelUsersListView,
-    ProfileView,
-    RegisterView,
     JWTLoginView,
 )
 
@@ -29,6 +27,9 @@ urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="register"),
     path("auth/me/", auth_views.CurrentUserView.as_view(), name="current_user"),
     path("auth/me/profile/", auth_views.ProfileView.as_view(), name="profile"),
+    path("auth/login/", JWTLoginView.as_view(), name="login"),
+    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("auth/verify/", TokenVerifyView.as_view(), name="token_verify"),
 
     path("tracking/point/", tracking_views.PuntoRastreoCreateView.as_view(), name="tracking_point"),
     path("tracking/batch/", tracking_views.PuntoRastreoBatchCreateView.as_view(), name="tracking_batch"),
@@ -42,15 +43,10 @@ urlpatterns = [
 
     path("", include(router.urls)),
 
-    path("auth/register/", RegisterView.as_view()),
-    path("auth/me/", CurrentUserView.as_view()),
-    path("auth/me/profile/", ProfileView.as_view()),
-
     path("auth/panel/login/", PanelLoginView.as_view()),
     path("auth/panel/logout/", PanelLogoutView.as_view()),
     path("auth/panel/me/", PanelMeView.as_view()),
     path("auth/panel/users/", PanelUsersListView.as_view()),
     path("auth/panel/users/<uuid:user_id>/", PanelUserDetailView.as_view()),
     path("auth/panel/users/create/", PanelCreateOperativeUserView.as_view()),
-    path("auth/login/", JWTLoginView.as_view()),
 ]

@@ -73,7 +73,7 @@ class PuntoRastreo(models.Model):
     )
 
     class Meta:
-        db_table = 'puntos_rastreo'
+        db_table = 'track_points'
         ordering = ['-recorded_at']
         indexes = [
             models.Index(fields=['user', 'recorded_at']),
