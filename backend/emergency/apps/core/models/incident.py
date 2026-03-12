@@ -94,7 +94,7 @@ class Incidente(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'incidentes'
+        db_table = 'incidents'
         ordering = ['-created_at']
 
     def __str__(self):

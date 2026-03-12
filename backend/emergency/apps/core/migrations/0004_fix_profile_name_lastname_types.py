@@ -10,14 +10,24 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql=(
+                "DO $$ "
+                "BEGIN "
+                "IF EXISTS ("
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'profiles' AND column_name = 'name'"
+                ") THEN "
                 "ALTER TABLE profiles "
-                "ALTER COLUMN name TYPE varchar(100) USING name::varchar(100), "
-                "ALTER COLUMN lastname TYPE varchar(100) USING lastname::varchar(100);"
-            ),
-            reverse_sql=(
+                "ALTER COLUMN name TYPE varchar(100) USING name::varchar(100); "
+                "END IF; "
+                "IF EXISTS ("
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'profiles' AND column_name = 'lastname'"
+                ") THEN "
                 "ALTER TABLE profiles "
-                "ALTER COLUMN name TYPE char(1) USING left(coalesce(name, ''), 1), "
-                "ALTER COLUMN lastname TYPE char(1) USING left(coalesce(lastname, ''), 1);"
+                "ALTER COLUMN lastname TYPE varchar(100) USING lastname::varchar(100); "
+                "END IF; "
+                "END $$;"
             ),
+            reverse_sql=migrations.RunSQL.noop,
         ),
     ]

@@ -8,8 +8,8 @@ from .models import (
     PuntoRastreo,
     Alerta,
     Dispositivo,
-    CeldaRiesgo,
     AreaTrabajo,
+    RiskReport,
 )
 
 __all__ = [
@@ -21,6 +21,6 @@ __all__ = [
     'PuntoRastreo',
     'Alerta',
     'Dispositivo',
-    'CeldaRiesgo',
-    'AreaTrabajo',    
+    'AreaTrabajo',
+    'RiskReport',
 ]

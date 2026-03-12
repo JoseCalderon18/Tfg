@@ -68,7 +68,7 @@ class Organizacion(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'organizaciones'
+        db_table = 'organizations'
         ordering = ['name']
         verbose_name = 'Organización'
         verbose_name_plural = 'Organizaciones'

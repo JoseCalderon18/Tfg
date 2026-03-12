@@ -54,7 +54,7 @@ class Dispositivo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'dispositivos'
+        db_table = 'devices'
         unique_together = ['user', 'fcm_token']
         verbose_name = 'Dispositivo'
         verbose_name_plural = 'Dispositivos'
