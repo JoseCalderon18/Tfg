@@ -22,6 +22,15 @@ http://localhost:8000
 Notas:
 - El contenedor backend aplica `migrate` y `collectstatic` automaticamente al iniciar.
 - La base de datos PostGIS se inicia en el servicio `db`.
+- El contenedor **no** ejecuta seeds automaticos para evitar datos inesperados.
+
+## Carga de datos demo
+
+Para poblar datos de prueba una vez que la base de datos esta creada y migrada:
+
+```powershell
+Get-Content .\seed.sql | docker compose exec -T db psql -U postgres -d emergency_db
+```
 
 ## Instalacion local (sin Docker)
 

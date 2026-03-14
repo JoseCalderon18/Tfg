@@ -1,8 +1,85 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --cm-bg: #0f172a;
+    --cm-surface: #1e293b;
+    --cm-surface-2: #334155;
+    --cm-panel-light: #f8fafc;
+    --cm-primary: #2563eb;
+    --cm-primary-strong: #1d4ed8;
+    --cm-accent: #7c3aed;
+    --cm-text: #f8fafc;
+    --cm-text-muted: #cbd5e1;
+    --cm-border: #475569;
+    --cm-danger: #dc2626;
+    --cm-alert: #f97316;
+    --cm-warning: #eab308;
+    --cm-success: #16a34a;
+    --cm-info: #2563eb;
+  }
+
   body {
-    @apply bg-gray-100;
+    @apply antialiased;
+    background-color: var(--cm-bg);
+    color: var(--cm-text);
+  }
+}
+
+@layer components {
+  .cm-shell {
+    background-color: var(--cm-bg);
+    color: var(--cm-text);
+  }
+
+  .cm-surface {
+    background-color: color-mix(in srgb, var(--cm-surface) 88%, black);
+    border: 1px solid var(--cm-border);
+  }
+
+  .cm-button-primary {
+    background-color: var(--cm-primary);
+    color: #ffffff;
+  }
+
+  .cm-button-primary:hover {
+    background-color: var(--cm-primary-strong);
+  }
+
+  .cm-badge-success {
+    background-color: color-mix(in srgb, var(--cm-success) 22%, transparent);
+    color: #b8f5c5;
+    border: 1px solid color-mix(in srgb, var(--cm-success) 40%, transparent);
+  }
+
+  .cm-badge-warning {
+    background-color: color-mix(in srgb, var(--cm-warning) 22%, transparent);
+    color: #ffe2a6;
+    border: 1px solid color-mix(in srgb, var(--cm-warning) 40%, transparent);
+  }
+
+  .cm-badge-alert {
+    background-color: color-mix(in srgb, var(--cm-alert) 22%, transparent);
+    color: #ffd7bf;
+    border: 1px solid color-mix(in srgb, var(--cm-alert) 40%, transparent);
+  }
+
+  .cm-badge-danger {
+    background-color: color-mix(in srgb, var(--cm-danger) 22%, transparent);
+    color: #ffd0ca;
+    border: 1px solid color-mix(in srgb, var(--cm-danger) 40%, transparent);
+  }
+
+  .cm-badge-info {
+    background-color: color-mix(in srgb, var(--cm-info) 22%, transparent);
+    color: #d6e6ff;
+    border: 1px solid color-mix(in srgb, var(--cm-info) 40%, transparent);
+  }
+
+  .cm-badge-special {
+    background-color: color-mix(in srgb, var(--cm-accent) 22%, transparent);
+    color: #e5d5ff;
+    border: 1px solid color-mix(in srgb, var(--cm-accent) 40%, transparent);
   }
 }
 

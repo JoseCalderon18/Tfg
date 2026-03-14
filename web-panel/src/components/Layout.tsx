@@ -2,46 +2,60 @@ import { Link, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 export default function Layout() {
+  // Estado de autenticación global del panel
   const { user, logout, isAuthenticated, isCheckingAuth } = useAuthStore();
 
+  // Pantalla de carga mientras se valida sesión
   if (isCheckingAuth) {
-    return <div className="p-6">Cargando...</div>;
+    return <div className="cm-shell min-h-screen p-6">Cargando...</div>;
   }
 
+  // Redirección si no hay sesión válida
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 text-white">
-        <div className="p-4">
-          <h1 className="text-xl font-bold">Panel de emergencias</h1>
-          <p className="text-sm text-gray-400">{user?.username}</p>
+    <div className="cm-shell flex h-screen">
+      {/* Navegación lateral principal */}
+      <aside className="relative w-60 border-r border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] text-[color:var(--cm-text)]">
+        <div className="border-b border-white/6 px-4 py-4">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--cm-text-muted)]">Emergency</p>
+          <h1 className="mt-1 text-lg font-bold">Panel de emergencias</h1>
+          <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{user?.username}</p>
         </div>
-        <nav className="mt-8">
-          <Link to="/" className="block px-4 py-2 hover:bg-gray-700">
+        <nav className="mt-4 space-y-1 px-2">
+          <Link to="/" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
             Dashboard
           </Link>
-          <Link to="/incidents" className="block px-4 py-2 hover:bg-gray-700">
+          <Link to="/incidents" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-danger)]/20">
             Incidentes
           </Link>
-          <Link to="/alerts" className="block px-4 py-2 hover:bg-gray-700">
+          <Link to="/alerts" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-alert)]/20">
             Alertas
           </Link>
+          <Link to="/viewunidades" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-warning)]/20">
+            Unidades
+          </Link>
+          <Link to="/vieworganizations" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
+            Organizaciones
+          </Link>
+          <Link to="/viewusers" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-accent)]/20">
+            Usuarios
+          </Link>
         </nav>
-        <div className="absolute bottom-0 w-64 p-4">
+        <div className="absolute bottom-0 w-full p-3">
+          {/* Acción para cerrar sesión actual */}
           <button
             onClick={() => void logout()}
-            className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700"
+            className="w-full rounded-xl bg-[color:var(--cm-danger)] py-2.5 text-white transition hover:brightness-110"
           >
             Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Contenido de cada página */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>

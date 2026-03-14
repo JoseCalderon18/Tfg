@@ -492,64 +492,64 @@ export default function IncidentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-slate-950 text-slate-100">
-        <p className="text-slate-300">Cargando incidentes...</p>
+      <div className="cm-shell grid min-h-screen place-items-center">
+        <p className="text-[color:var(--cm-text-muted)]">Cargando incidentes...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="cm-shell min-h-screen">
+      <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm text-slate-400">Operaciones</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Operaciones</p>
             <h1 className="text-2xl font-bold">Incidentes</h1>
           </div>
 
           <button
             type="button"
             onClick={() => navigate("/createincident")}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+            className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Nuevo incidente
           </button>
         </div>
 
-        <div className="mt-6 rounded-2xl bg-slate-900/60 p-4 ring-1 ring-slate-800">
+        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar por nombre, tipo, estado o ubicacion..."
-            className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+          <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
             {error}
           </div>
         )}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-          <section className="overflow-x-auto rounded-2xl bg-slate-900/60 ring-1 ring-slate-800">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-900/90 text-slate-300">
+        <div className="mt-4 grid gap-4 2xl:grid-cols-[1.55fr_1fr]">
+          <section className="overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <table className="min-w-[1120px] w-full text-sm">
+              <thead className="bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
                 <tr>
-                  <th className="px-4 py-3 text-left">Nombre</th>
-                  <th className="px-4 py-3 text-left">Tipo</th>
-                  <th className="px-4 py-3 text-left">Estado</th>
-                  <th className="px-4 py-3 text-left">Organizacion</th>
-                  <th className="px-4 py-3 text-left">Inicio</th>
-                  <th className="px-4 py-3 text-left">Acciones</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Organizacion</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Inicio</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acciones</th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredIncidents.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                       No hay incidentes para mostrar.
                     </td>
                   </tr>
@@ -558,12 +558,12 @@ export default function IncidentsPage() {
                     <tr
                       key={incident.id}
                       onClick={() => setSelectedIncidentId(incident.id)}
-                      className={`cursor-pointer border-t border-slate-800/80 hover:bg-slate-800/40 ${
-                        selectedIncident?.id === incident.id ? "bg-slate-800/60" : ""
+                      className={`cursor-pointer border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60 ${
+                        selectedIncident?.id === incident.id ? "bg-[color:var(--cm-surface-2)]/70" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 font-medium text-slate-100">{incident.name}</td>
-                      <td className="px-4 py-3 text-slate-300">
+                      <td className="px-4 py-3.5 font-medium">{incident.name}</td>
+                      <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
                         {incident.incident_type === "SEARCH" ? "Búsqueda de personas"
                           : incident.incident_type === "MEDICAL" ? "Emergencia médica"
                           : incident.incident_type === "WILDFIRE" ? "Incendio forestal"
@@ -571,12 +571,14 @@ export default function IncidentsPage() {
                           : incident.incident_type === "NATURAL_DISASTER" ? "Desastre natural"
                           : "Otro"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
                             incident.status === "CLOSED"
-                              ? "bg-slate-500/15 text-slate-300 ring-slate-500/30"
-                              : "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
+                              ? "cm-badge-success"
+                              : incident.status === "TRIAGE"
+                              ? "cm-badge-warning"
+                              : "cm-badge-danger"
                           }`}
                         >
                           {incident.status === "OPEN"
@@ -586,21 +588,21 @@ export default function IncidentsPage() {
                         : "En evaluacion"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-300">
+                      <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
                         {incident.owner_organization || "-"}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">
+                      <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
                         {formatDate(incident.started_at)}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="ml-4 flex items-center gap-2">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/editIncident/${incident.id}`);
                             }}
-                            className="rounded-xl bg-blue-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-blue-500"
+                            className="rounded-xl bg-[color:var(--cm-info)] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110"
                           >
                             Editar
                           </button>
@@ -611,7 +613,7 @@ export default function IncidentsPage() {
                               void handleDeleteIncident(incident.id);
                             }}
                             disabled={Boolean(deletingIncidentId)}
-                            className="rounded-xl bg-rose-700 px-3 py-1 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-60"
+                            className="rounded-xl bg-[color:var(--cm-danger)] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                           >
                             {deletingIncidentId === incident.id ? "Borrando..." : "Borrar"}
                           </button>
@@ -624,7 +626,7 @@ export default function IncidentsPage() {
             </table>
           </section>
 
-          <aside className="rounded-2xl bg-slate-900/60 p-4 ring-1 ring-slate-800">
+          <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
         {selectedIncident ? (
           <div className="space-y-6">
             <div>

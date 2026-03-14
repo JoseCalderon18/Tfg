@@ -133,9 +133,7 @@ export default function EditIncidentPage() {
 
   const [name, setName] = useState("");
   const [incidentType, setIncidentType] = useState<IncidentType>("WILDFIRE");
-  const [incidentTypeIndex, setIncidentTypeIndex] = useState(0);
   const [status, setStatus] = useState<IncidentStatus>("OPEN");
-  const [statusIndex, setStatusIndex] = useState(0);
   const [description, setDescription] = useState("");
   const [locationAddress, setLocationAddress] = useState("");
   const [ownerOrganization, setOwnerOrganization] = useState("");
@@ -187,14 +185,10 @@ export default function EditIncidentPage() {
       setName(String(incident.name ?? ""));
 
       const initialType = incidentTypeOptions.find((opt) => opt.value === incident.incident_type)?.value ?? "WILDFIRE";
-      const initialTypeIndex = incidentTypeOptions.findIndex((opt) => opt.value === initialType);
       setIncidentType(initialType);
-      setIncidentTypeIndex(initialTypeIndex >= 0 ? initialTypeIndex : 0);
 
       const initialStatus = statusOptions.find((opt) => opt.value === incident.status)?.value ?? "OPEN";
-      const initialStatusIndex = statusOptions.findIndex((opt) => opt.value === initialStatus);
       setStatus(initialStatus);
-      setStatusIndex(initialStatusIndex >= 0 ? initialStatusIndex : 0);
 
       setDescription(String(incident.description ?? ""));
       setLocationAddress(String(incident.location_address ?? ""));
@@ -373,7 +367,6 @@ export default function EditIncidentPage() {
           value={incidentType}
           onChange={(event) => {
             setIncidentType(event.target.value as IncidentType);
-            setIncidentTypeIndex(event.target.selectedIndex);
           }}
           className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
         >
@@ -395,7 +388,6 @@ export default function EditIncidentPage() {
               onChange={(event) => {
                 if (event.target.checked) {
                   setStatus("OPEN");
-                  setStatusIndex(statusOptions.findIndex((opt) => opt.value === "OPEN"));
                 }
               }}
               className="h-4 w-4 rounded border-slate-700 bg-slate-950/40"
@@ -410,7 +402,6 @@ export default function EditIncidentPage() {
               onChange={(event) => {
                 if (event.target.checked) {
                   setStatus("CLOSED");
-                  setStatusIndex(statusOptions.findIndex((opt) => opt.value === "CLOSED"));
                 }
               }}
               className="h-4 w-4 rounded border-slate-700 bg-slate-950/40"
@@ -425,7 +416,6 @@ export default function EditIncidentPage() {
               onChange={(event) => {
                 if (event.target.checked) {
                   setStatus("TRIAGE");
-                  setStatusIndex(statusOptions.findIndex((opt) => opt.value === "TRIAGE"));
                 }
               }}
               className="h-4 w-4 rounded border-slate-700 bg-slate-950/40"

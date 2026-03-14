@@ -3,14 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 export default function LoginPage() {
+  // Estado del formulario de acceso
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Navegación y acciones de auth
   const navigate = useNavigate();
   const { login, isAuthenticated, isCheckingAuth } = useAuthStore();
 
+  // Redirección al dashboard cuando ya existe sesión
   useEffect(() => {
     if (!isCheckingAuth && isAuthenticated) {
       navigate("/", { replace: true });
@@ -18,6 +21,7 @@ export default function LoginPage() {
   }, [isAuthenticated, isCheckingAuth, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
+    // Validación y envío del formulario al backend
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
@@ -34,18 +38,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="cm-shell relative flex min-h-screen items-center justify-center px-3">
+      <div className="pointer-events-none absolute inset-0 opacity-20">
+        <div className="absolute left-[10%] top-[12%] h-56 w-56 rounded-full bg-[color:var(--cm-danger)] blur-3xl" />
+        <div className="absolute bottom-[12%] right-[8%] h-56 w-56 rounded-full bg-[color:var(--cm-info)] blur-3xl" />
+      </div>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl p-8 space-y-5"
+        className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-2xl"
       >
+        {/* Encabezado del formulario */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white">Emergency Management</h1>
-          <p className="text-slate-400 text-sm mt-1">Panel de supervision</p>
+          <h1 className="text-2xl font-bold text-[color:var(--cm-text)]">Emergency Management</h1>
+          <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">Panel de supervision</p>
         </div>
 
+        {/* Campo de correo */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
             Correo electronico
           </label>
           <input
@@ -55,13 +65,14 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition"
+            className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
             placeholder="usuario@emergency.com"
           />
         </div>
 
+        {/* Campo de contraseña */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
             Contrasena
           </label>
           <input
@@ -71,21 +82,23 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition"
+            className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
             placeholder="********"
           />
         </div>
 
+        {/* Mensaje de error de autenticación */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-300 text-sm p-3 rounded-lg">
+          <div className="cm-badge-danger rounded-lg p-3 text-sm">
             {error}
           </div>
         )}
 
+        {/* Botón principal de acceso */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition shadow-lg shadow-red-600/20"
+          className="cm-button-primary w-full rounded-lg py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Iniciando sesion..." : "Iniciar sesion"}
         </button>
