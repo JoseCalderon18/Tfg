@@ -76,7 +76,7 @@ organizaciones_seed AS (
 )
 INSERT INTO profiles (
     id, user_id, organization_id, role, emergency_contact, emergency_phone,
-    medical_notes, name, lastname, created_at, updated_at
+    medical_notes, created_at, updated_at
 )
 SELECT
     ('30000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid,
@@ -86,8 +86,6 @@ SELECT
     'Contacto familiar ' || g,
     '+34 6' || lpad((20000000 + g)::text, 8, '0'),
     'Sin antecedentes relevantes',
-    (ARRAY['Javier','Maria','Carlos','Lucia','Sergio','Elena','Pablo','Ana','Miguel','Carmen','Adrian','Laura','Diego','Irene','Raul','Patricia','David','Sara','Alberto','Noelia','Hector','Natalia','Ivan','Marta','Victor','Claudia','Ruben','Silvia','Oscar','Beatriz','Jesus','Paula','Manuel','Andrea','Joaquin','Eva','Fernando','Alicia','Gonzalo','Rocio','Jaime','Nerea','Samuel','Pilar','Daniel','Sonia','Guillermo','Ines','Marco','Julia'])[g],
-    (ARRAY['Garcia','Martinez','Lopez','Sanchez','Perez','Gomez','Martin','Jimenez','Ruiz','Hernandez','Diaz','Moreno','Alvarez','Romero','Alonso','Gutierrez','Navarro','Torres','Dominguez','Vazquez','Ramos','Gil','Serrano','Molina','Blanco','Castro','Ortega','Delgado','Suarez','Reyes','Mendez','Cruz','Prieto','Flores','Pena','Iglesias','Medina','Cortes','Calvo','Vega','Fuentes','Campos','Carrasco','Herrera','Santos','Leon','Marin','Rubio','Cano','Aguilar'])[g],
     now() - ((g % 30) || ' days')::interval,
     now()
 FROM nums
@@ -314,17 +312,18 @@ INSERT INTO risk_reports (
     severity, is_active, created_at, updated_at
 )
 SELECT
-    ('90000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid,
+    ('90000000-0000-0000-0000-' || lpad(nums.g::text, 12, '0'))::uuid,
     incidentes_seed.incident_id,
-    (SELECT user_id FROM usuarios_seed u2 WHERE u2.g = (((g + 5) % 50) + 1)),
-    ST_SetSRID(ST_MakePoint(-6.5 + (g * 0.05), 38.2 + (g * 0.04)), 4326),
+    usuarios_seed.user_id,
+    ST_SetSRID(ST_MakePoint(-6.5 + (nums.g * 0.05), 38.2 + (nums.g * 0.04)), 4326),
     'Reporte registrado durante simulacion en zona operativa',
-    (ARRAY['LOW','MEDIUM','HIGH'])[1 + ((g - 1) % 3)],
-    (g % 6 <> 0),
-    now() - ((g % 15) || ' days')::interval,
+    (ARRAY['LOW','MEDIUM','HIGH'])[1 + ((nums.g - 1) % 3)],
+    (nums.g % 6 <> 0),
+    now() - ((nums.g % 15) || ' days')::interval,
     now()
 FROM nums
-JOIN incidentes_seed USING (g)
+JOIN usuarios_seed ON usuarios_seed.g = (((nums.g + 5) % 50) + 1)
+JOIN incidentes_seed ON incidentes_seed.g = nums.g
 ON CONFLICT DO NOTHING;
 
 -- 50 areas de trabajo
