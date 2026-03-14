@@ -201,9 +201,11 @@ SIMPLE_JWT = {
 # CORS Configuration - Orígenes permitidos para conexión desde frontend
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",   # React web panel
+    "http://localhost:3001",   # Vite alternativo si 3000 esta ocupado
     "http://localhost:5173",   # Vite por defecto
     "http://localhost:19006",  # Expo/React Native
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     "http://127.0.0.1:5173",
 ]
 
@@ -211,8 +213,10 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     "http://127.0.0.1:5173",
 ]
 
