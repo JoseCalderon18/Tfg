@@ -2,26 +2,52 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useLocation } from '../context/LocationContext';
+import { useAuth } from '../context/AuthContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 
 export default function AlertScreen({ navigation }: any) {
+  // Estado del formulario de alertas en campo.
   const [alertType, setAlertType] = useState('SOS');
   const [severity, setSeverity] = useState(3);
   const [description, setDescription] = useState('');
   const { location } = useLocation();
+  const { token } = useAuth();
 
   const handleSendAlert = async () => {
     try {
-      // TODO: Enviar alerta al backend
-      console.log('Sending alert:', {
-        type: alertType,
-        severity,
-        description,
-        location: location?.coords,
+      // Validamos sesión y ubicación antes de registrar la alerta operativa.
+      if (!token) {
+        Alert.alert('Error', 'No hay sesión activa.');
+        return;
+      }
+
+      if (!location) {
+        Alert.alert('Error', 'Activa el GPS antes de enviar una alerta.');
+        return;
+      }
+
+      const response = await apiFetch('/alerts/', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({
+          alert_type: alertType,
+          severity,
+          title: `Alerta ${alertType}`,
+          description,
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        }),
       });
+
+      if (!response.ok) {
+        const payload = await parseJsonResponse<{ detail?: string }>(response);
+        throw new Error(payload.detail ?? 'No se pudo registrar la alerta.');
+      }
+
       Alert.alert('Success', 'Alert sent successfully');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to send alert');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send alert');
     }
   };
 
@@ -71,39 +97,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0F172A',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#F8FAFC',
   },
   label: {
     fontSize: 16,
     marginBottom: 5,
     fontWeight: '600',
+    color: '#CBD5E1',
   },
   pickerContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#1E293B',
     borderRadius: 8,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#475569',
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: '#1E293B',
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#475569',
+    color: '#F8FAFC',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   button: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#DC2626',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

@@ -3,16 +3,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Importamos los contextos para manejo de estado global
-import { AuthProvider } from './context/AuthContext';
-import { LocationProvider } from './context/LocationContext';
+import { AuthProvider } from './src/context/AuthContext';
+import { LocationProvider } from './src/context/LocationContext';
 
 // Importamos las pantallas de la aplicación
-import LoginScreen from './screens/LoginScreen';
-import HomeScreen from './screens/HomeScreen';
-import MapScreen from './screens/MapScreen';
-import AlertScreen from './screens/AlertScreen';
-import OperativeScreen from './screens/OperativeScreen';
-import PointsOfInterestScreen from './screens/PointsOfInterestScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import HomeScreen from './src/screens/HomeScreen';
+import MapScreen from './src/screens/MapScreen';
+import AlertScreen from './src/screens/AlertScreen';
+import OperativeScreen from './src/screens/OperativeScreen';
+import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();

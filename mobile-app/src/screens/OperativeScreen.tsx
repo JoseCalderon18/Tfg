@@ -10,15 +10,19 @@ import {
   Dimensions,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from '../context/LocationContext';
 
 const { height } = Dimensions.get('window');
 const BOTTOM_MENU_HEIGHT = height * 0.15;
 
 export default function OperativeScreen({ navigation }: any) {
+  // Estado visual del panel principal del operativo.
   const [menuVisible, setMenuVisible] = useState(false);
   const { user, logout } = useAuth();
+  const { isTracking, startTracking, stopTracking, errorMsg, location } = useLocation();
 
   const handleAlertPress = () => {
+    // Confirmación previa antes de abrir el flujo real de alerta.
     Alert.alert(
       'Confirmación de Alerta',
       '¿Está seguro de que desea enviar una alerta SOS?',
@@ -29,18 +33,18 @@ export default function OperativeScreen({ navigation }: any) {
           style: 'cancel',
         },
         {
-          text: 'Enviar SOS',
-          onPress: () => {
-            console.log('SOS enviado');
-            Alert.alert('Éxito', 'Alerta SOS enviada correctamente');
+            text: 'Enviar SOS',
+            onPress: () => {
+              navigation.navigate('Alert');
+            },
+            style: 'destructive',
           },
-          style: 'destructive',
-        },
       ]
     );
   };
 
   const handleMenuOption = (option: string) => {
+    // Router simple del menú lateral para acciones de campo.
     setMenuVisible(false);
     switch (option) {
       case 'companions':
@@ -88,7 +92,28 @@ export default function OperativeScreen({ navigation }: any) {
 
       {/* Área del Mapa */}
       <View style={styles.mapContainer}>
-        <Text style={styles.mapPlaceholder}>Mapa</Text>
+        <Text style={styles.mapPlaceholder}>Centro operativo</Text>
+        <Text style={styles.statusText}>Seguimiento: {isTracking ? 'Activo' : 'Detenido'}</Text>
+        <Text style={styles.statusSubtext}>
+          {location
+            ? `Lat ${location.coords.latitude.toFixed(4)} · Lng ${location.coords.longitude.toFixed(4)}`
+            : 'Sin posicion registrada'}
+        </Text>
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.quickActionButton, isTracking ? styles.stopQuickAction : styles.startQuickAction]}
+            onPress={isTracking ? stopTracking : startTracking}
+          >
+            <Text style={styles.quickActionText}>{isTracking ? 'Detener GPS' : 'Iniciar GPS'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickActionButton, styles.mapQuickAction]}
+            onPress={() => navigation.navigate('Map')}
+          >
+            <Text style={styles.quickActionText}>Abrir mapa</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Menú Inferior */}
@@ -173,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#0F172A',
     paddingTop: 15,
     paddingBottom: 15,
     paddingHorizontal: 15,
@@ -210,14 +235,52 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#E8F4F8',
+    backgroundColor: '#111827',
     marginBottom: BOTTOM_MENU_HEIGHT,
+    paddingHorizontal: 20,
   },
   mapPlaceholder: {
-    fontSize: 48,
+    fontSize: 34,
     fontWeight: 'bold',
-    color: '#666',
-    opacity: 0.3,
+    color: '#F8FAFC',
+  },
+  statusText: {
+    marginTop: 18,
+    color: '#CBD5E1',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusSubtext: {
+    marginTop: 6,
+    color: '#94A3B8',
+    fontSize: 13,
+  },
+  errorText: {
+    marginTop: 10,
+    color: '#FCA5A5',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
+  quickActionButton: {
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  startQuickAction: {
+    backgroundColor: '#16A34A',
+  },
+  stopQuickAction: {
+    backgroundColor: '#DC2626',
+  },
+  mapQuickAction: {
+    backgroundColor: '#2563EB',
+  },
+  quickActionText: {
+    color: '#F8FAFC',
+    fontWeight: '700',
   },
   bottomMenu: {
     height: BOTTOM_MENU_HEIGHT,

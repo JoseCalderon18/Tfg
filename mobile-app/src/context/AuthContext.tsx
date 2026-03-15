@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { apiFetch, parseJsonResponse } from '../services/api';
 
 /**
  * Interface que define la estructura de un Usuario
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * @param children - Componentes hijos que tendrán acceso al contexto
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Estado global de autenticación para la app móvil
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const storedToken = await SecureStore.getItemAsync('token');
       const storedUser = await SecureStore.getItemAsync('user');
+
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
@@ -67,14 +70,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Inicia sesión con credenciales
-   * TODO: Implementar llamada real a la API de Django
    * 
    * @param username - Nombre de usuario
    * @param password - Contraseña
    */
   const login = async (username: string, password: string) => {
-    console.log('Login:', username, password);
-    // Aquí irá la llamada a la API: POST /api/auth/login/
+    const normalizedUsername = username.trim();
+
+    if (!normalizedUsername || !password.trim()) {
+      throw new Error('Introduce usuario y contraseña.');
+    }
+
+    const response = await apiFetch('/auth/login/', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: normalizedUsername,
+        password,
+      }),
+    });
+
+    const payload = await parseJsonResponse<{
+      access?: string;
+      refresh?: string;
+      user?: User;
+      error?: string;
+    }>(response);
+
+    if (!response.ok || !payload.access || !payload.user) {
+      throw new Error(payload.error ?? 'No se pudo iniciar sesión.');
+    }
+
+    await SecureStore.setItemAsync('token', payload.access);
+    await SecureStore.setItemAsync('user', JSON.stringify(payload.user));
+
+    if (payload.refresh) {
+      await SecureStore.setItemAsync('refreshToken', payload.refresh);
+    }
+
+    setToken(payload.access);
+    setUser(payload.user);
   };
 
   /**
@@ -83,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const logout = async () => {
     await SecureStore.deleteItemAsync('token');
+    await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');
     setToken(null);
     setUser(null);

@@ -2,6 +2,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
+    # Esta migracion solo renombra modelos/tablas para mantener compatibilidad
+    # con el codigo actual sin recrear tablas ya creadas en 0001_initial.
 
     dependencies = [
         ("core", "0001_initial"),

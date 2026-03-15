@@ -2,6 +2,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    # Sincroniza el estado del modelo Perfil con la tabla real `profiles`
+    # anadiendo columnas name/lastname cuando el esquema previo no las tenia.
 
     dependencies = [
         ("core", "0005_normalize_core_table_names"),

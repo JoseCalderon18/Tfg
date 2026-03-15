@@ -370,6 +370,7 @@ class JWTLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # El mobile puede autenticarse con username o con email.
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -378,9 +379,17 @@ class JWTLoginView(APIView):
                 {'error': 'Username and password required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
+        
+        # Primero intentamos autenticación directa con el username recibido.
         from django.contrib.auth import authenticate
-        user = authenticate(username=username, password=password)
+        normalized_username = str(username).strip()
+        user = authenticate(username=normalized_username, password=password)
+
+        # Si el cliente móvil manda email, resolvemos el username real y repetimos autenticación.
+        if user is None and '@' in normalized_username:
+            candidate = User.objects.filter(email__iexact=normalized_username).first()
+            if candidate is not None:
+                user = authenticate(username=candidate.username, password=password)
 
         if user is None:
             return Response(
@@ -394,6 +403,7 @@ class JWTLoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
+        # Devolvemos access/refresh para que Expo los persista en SecureStore.
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),

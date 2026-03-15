@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Location from 'expo-location';
+import { useAuth } from './AuthContext';
+import { apiFetch } from '../services/api';
 
 /**
  * Interface que define el contexto de ubicación
@@ -27,10 +29,12 @@ const LocationContext = createContext<LocationContextType | undefined>(undefined
  * @param children - Componentes hijos que tendrán acceso al contexto
  */
 export function LocationProvider({ children }: { children: ReactNode }) {
+  // Estado del seguimiento GPS y errores de permisos/envío.
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
+  const { token } = useAuth();
 
   // Solicitar permisos al montar el componente
   useEffect(() => {
@@ -64,10 +68,30 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           timeInterval: 5000,                // Actualizar cada 5 segundos
           distanceInterval: 10,              // O cada 10 metros
         },
-        (newLocation) => {
+        async (newLocation) => {
           setLocation(newLocation);
-          // TODO: Enviar al backend: POST /api/tracking/point/
-          console.log('New location:', newLocation);
+
+          if (!token) {
+            return;
+          }
+
+          try {
+            await apiFetch('/tracking/point/', {
+              method: 'POST',
+              token,
+              body: JSON.stringify({
+                latitude: newLocation.coords.latitude,
+                longitude: newLocation.coords.longitude,
+                accuracy_m: newLocation.coords.accuracy,
+                altitude: newLocation.coords.altitude,
+                speed: newLocation.coords.speed,
+                recorded_at: new Date(newLocation.timestamp).toISOString(),
+              }),
+            });
+            setErrorMsg(null);
+          } catch {
+            setErrorMsg('No se pudo enviar la ubicación al servidor.');
+          }
         }
       );
       setLocationSubscription(subscription);
