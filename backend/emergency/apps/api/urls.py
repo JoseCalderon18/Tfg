@@ -13,7 +13,7 @@ from emergency.apps.api.views.auth_views import (
     JWTLoginView,
 )
 
-from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views
+from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views
 
 app_name = "api"
 
@@ -23,6 +23,7 @@ router.register(r"alerts", alert_views.AlertaViewSet, basename="alert")
 router.register(r"users", user_views.UserViewSet, basename="user")
 router.register(r"organizations", user_views.OrganizationViewSet, basename="organization")
 router.register(r"risk-reports", risk_report_views.RiskReportViewSet, basename="risk-report")
+router.register(r"lightning", lightning_views.LightningViewSet, basename="lightning")
 
 urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="register"),

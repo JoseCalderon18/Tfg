@@ -10,6 +10,7 @@ from .models import (
     Dispositivo,
     AreaTrabajo,
     RiskReport,
+    LightningStrike,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     'Dispositivo',
     'AreaTrabajo',
     'RiskReport',
+    'LightningStrike',
 ]

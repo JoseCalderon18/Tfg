@@ -26,7 +26,13 @@ export default function Layout() {
         </div>
         <nav className="mt-4 space-y-1 px-2">
           <Link to="/" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
-            Dashboard
+            Inicio
+          </Link>
+          <Link to="/weather" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
+            Meteorología
+          </Link>
+          <Link to="/lightning" className="block rounded-xl px-3 py-2.5 transition hover:bg-yellow-400/25">
+            Rayos
           </Link>
           <Link to="/incidents" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-danger)]/20">
             Incidentes

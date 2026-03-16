@@ -18,6 +18,7 @@ from .alert_serializers import (
     AlertCloseSerializer,
 )
 from .organization_serializers import OrganizationSerializer, OrganizationCreateSerializer
+from .lightning_serializers import LightningStrikeSerializer, LightningStrikeListSerializer
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
 
 # Alias en espanol para compatibilidad con vistas existentes

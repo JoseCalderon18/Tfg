@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
 import AlertsPage from './pages/AlertsPage';
+import WeatherPage from './pages/WeatherPage';
 import Layout from './components/Layout';
 import NewUserPage from './pages/NewUserPage';
 import ViewUsersPage from './pages/ViewUsersPage';
@@ -17,6 +18,7 @@ import EditUserPage from './pages/EditUserPage';
 import CreateIncidentPage from './pages/CreateIncidentPage';
 import ViewOrganizationsPage from './pages/ViewOrganizationsPage';
 import EditIncidentPage from './pages/EditIncidentPage';
+import LightningMapPage from './pages/LightningMapPage';
 
 /**
  * Componente principal del panel web
@@ -40,12 +42,14 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
+        <Route path="weather" element={<WeatherPage />} />
         <Route path="newuser" element={<NewUserPage />} />
         <Route path="viewusers" element={<ViewUsersPage />} />
         <Route path="viewunidades" element={<ViewUnidadesPage />} />
         <Route path="edituser/:id" element={<EditUserPage />} />
         <Route path="createincident" element={<CreateIncidentPage />} />
         <Route path="vieworganizations" element={<ViewOrganizationsPage />} />
+        <Route path="lightning" element={<LightningMapPage />} />
         <Route path="editIncident/:id" element={<EditIncidentPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />

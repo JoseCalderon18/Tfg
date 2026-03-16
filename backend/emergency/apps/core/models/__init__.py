@@ -18,6 +18,7 @@ from .track_point import PuntoRastreo as TrackPoint
 from .incident_member import IncidentMember
 from .workarea import AreaTrabajo
 from .workarea import AreaTrabajo as WorkArea
+from .lightning import LightningStrike
 from .risk_report import RiskReport
 
 __all__ = [
