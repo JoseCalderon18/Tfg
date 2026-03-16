@@ -57,11 +57,14 @@ class PerfilSerializer(serializers.ModelSerializer):
     """Serializer de perfil"""
     user = UserSerializer(read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
+    avatar = serializers.FileField(read_only=True)
 
     class Meta:
         model = Perfil
         fields = ['id', 'user', 'role', 'organization', 'organization_name',
-                  'emergency_contact', 'emergency_phone', 'medical_notes', 'name', 'lastname']
+                  'emergency_contact', 'emergency_phone', 'medical_notes', 'name', 'lastname',
+                  'dni', 'avatar', 'language', 'city', 'province', 'country', 'birth_date',
+                  'specialties', 'operative_schedule', 'blood_type', 'device', 'assigned_supervisor']
 
 
 class OrganizacionSerializer(serializers.ModelSerializer):

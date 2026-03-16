@@ -8,6 +8,7 @@ from emergency.apps.api.views.auth_views import (
     PanelLogoutView,
     PanelMeView,
     PanelUserDetailView,
+    PanelUserFormOptionsView,
     PanelUsersListView,
     JWTLoginView,
 )
@@ -47,6 +48,7 @@ urlpatterns = [
     path("auth/panel/logout/", PanelLogoutView.as_view()),
     path("auth/panel/me/", PanelMeView.as_view()),
     path("auth/panel/users/", PanelUsersListView.as_view()),
+    path("auth/panel/users/form-options/", PanelUserFormOptionsView.as_view()),
     path("auth/panel/users/<uuid:user_id>/", PanelUserDetailView.as_view()),
     path("auth/panel/users/create/", PanelCreateOperativeUserView.as_view()),
 ]
