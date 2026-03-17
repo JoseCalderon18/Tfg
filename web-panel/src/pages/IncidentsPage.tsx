@@ -294,6 +294,7 @@ function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
 
 export default function IncidentsPage() {
   const navigate = useNavigate();
+  const INCIDENTES_POR_PAGINA = 10;
 
   const [resolvedLocation, setResolvedLocation] = useState<string>("");
   const [resolvingLocation, setResolvingLocation] = useState(false);
@@ -308,6 +309,7 @@ export default function IncidentsPage() {
   const [selectedIncidentId, setSelectedIncidentId] = useState<string>("");
   const [deletingIncidentId, setDeletingIncidentId] = useState<string>("");
   const [pendingDeleteIncidentId, setPendingDeleteIncidentId] = useState<string>("");
+  const [paginaActual, setPaginaActual] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -363,6 +365,14 @@ export default function IncidentsPage() {
     );
   }, [query, incidents]);
 
+  const totalPaginas = Math.max(1, Math.ceil(filteredIncidents.length / INCIDENTES_POR_PAGINA));
+
+  const incidentesPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * INCIDENTES_POR_PAGINA;
+    const fin = inicio + INCIDENTES_POR_PAGINA;
+    return filteredIncidents.slice(inicio, fin);
+  }, [filteredIncidents, paginaActual, INCIDENTES_POR_PAGINA]);
+
   const selectedIncident =
     filteredIncidents.find((incident) => incident.id === selectedIncidentId) ??
     filteredIncidents[0] ??
@@ -370,6 +380,12 @@ export default function IncidentsPage() {
   const alertasDelIncidenteSeleccionado = selectedIncident
     ? alertasPorIncidente[selectedIncident.id] ?? []
     : [];
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
 
   useEffect(() => {
     let cancelled = false;
@@ -520,7 +536,10 @@ export default function IncidentsPage() {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPaginaActual(1);
+            }}
             placeholder="Buscar por nombre, tipo, estado o ubicacion..."
             className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
@@ -554,7 +573,7 @@ export default function IncidentsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredIncidents.map((incident) => (
+                  incidentesPaginados.map((incident) => (
                     <tr
                       key={incident.id}
                       onClick={() => setSelectedIncidentId(incident.id)}
@@ -624,6 +643,34 @@ export default function IncidentsPage() {
                 )}
               </tbody>
             </table>
+
+            {filteredIncidents.length > 0 && (
+              <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-[color:var(--cm-text-muted)]">
+                  Pagina {paginaActual} de {totalPaginas} · Mostrando {incidentesPaginados.length} de {filteredIncidents.length} incidentes
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                    disabled={paginaActual === 1}
+                    className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                    disabled={paginaActual === totalPaginas}
+                    className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
 
           <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">

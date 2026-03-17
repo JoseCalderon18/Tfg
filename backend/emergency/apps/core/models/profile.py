@@ -70,6 +70,7 @@ class Perfil(models.Model):
         null=True,
         help_text="Imagen de avatar del usuario",
     )
+
     language = models.CharField(
         max_length=20,
         blank=True,
