@@ -26,6 +26,8 @@ function normalizeOrganizations(raw: unknown): Organization[] {
     ? raw
     : (raw as { results?: unknown[] } | null)?.results ?? [];
 
+
+
   return source
     .map((item) => item as Partial<Organization>)
     .filter((row) => typeof row?.id === "string" && typeof row?.name === "string")
@@ -87,6 +89,20 @@ export default function ViewOrganizationsPage() {
     );
   }, [query, organizations]);
 
+  const [paginaActual, setPaginaActual] = useState(1);
+  const ELEMENTOS_POR_PAGINA = 10;
+  const totalPaginas = Math.max(1, Math.ceil(filteredOrganizations.length / ELEMENTOS_POR_PAGINA));
+  const organizacionesPaginadas = filteredOrganizations.slice(
+    (paginaActual - 1) * ELEMENTOS_POR_PAGINA,
+    paginaActual * ELEMENTOS_POR_PAGINA
+  );
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
@@ -116,7 +132,10 @@ export default function ViewOrganizationsPage() {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPaginaActual(1);
+            }}
             placeholder="Buscar por nombre, tipo o contacto..."
             className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
           />
@@ -150,7 +169,7 @@ export default function ViewOrganizationsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredOrganizations.map((org) => (
+                organizacionesPaginadas.map((org) => (
                   <tr key={org.id} className="border-t border-slate-800/80">
                     <td className="px-4 py-3 font-medium text-slate-100">{org.name}</td>
                     <td className="px-4 py-3 text-slate-300">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
@@ -191,8 +210,35 @@ export default function ViewOrganizationsPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredOrganizations.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-400">
+              Pagina {paginaActual} de {totalPaginas} · Mostrando {organizacionesPaginadas.length} de {filteredOrganizations.length} organizaciones
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                disabled={paginaActual === 1}
+                className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                disabled={paginaActual === totalPaginas}
+                className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
