@@ -56,6 +56,19 @@ def _normalizar_booleano(valor):
     return bool(valor)
 
 
+def _construir_url_avatar(request, perfil):
+    avatar = getattr(perfil, "avatar", None)
+    if not avatar:
+        return ""
+
+    try:
+        url_avatar = avatar.url
+    except ValueError:
+        return ""
+
+    return request.build_absolute_uri(url_avatar)
+
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
@@ -248,9 +261,8 @@ class PanelUserDetailView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @staticmethod
-    def _serialize_user(user):
+    def _serialize_user(user, request):
         profile = getattr(user, "profile", None)
-        avatar = getattr(profile, "avatar", None)
         return {
             "id": str(user.id),
             "username": user.username,
@@ -266,7 +278,7 @@ class PanelUserDetailView(APIView):
             "medical_notes": getattr(profile, "medical_notes", []) or [],
             "organization_id": str(getattr(profile, "organization_id", "") or ""),
             "dni": getattr(profile, "dni", ""),
-            "avatar": avatar.url if avatar else "",
+            "avatar": _construir_url_avatar(request, profile) if profile else "",
             "language": getattr(profile, "language", ""),
             "city": getattr(profile, "city", ""),
             "province": getattr(profile, "province", ""),
@@ -294,7 +306,7 @@ class PanelUserDetailView(APIView):
         if not user:
             return Response({"detail": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
+        return Response(self._serialize_user(user, request), status=status.HTTP_200_OK)
 
     @transaction.atomic
     def patch(self, request, user_id):
@@ -378,9 +390,9 @@ class PanelUserDetailView(APIView):
             profile_updated_fields.append("dni")
 
         if "avatar" in payload:
-            avatar = payload.get("avatar")
-            if avatar:
-                profile.avatar = avatar
+            archivo_avatar = payload.get("avatar")
+            if archivo_avatar:
+                profile.avatar = archivo_avatar
                 profile_updated_fields.append("avatar")
 
         if "language" in payload:
@@ -456,7 +468,7 @@ class PanelUserDetailView(APIView):
             profile.save(update_fields=["role", "updated_at"])
 
         user.refresh_from_db()
-        return Response(self._serialize_user(user), status=status.HTTP_200_OK)
+        return Response(self._serialize_user(user, request), status=status.HTTP_200_OK)
 
 
 class JWTLoginView(APIView):

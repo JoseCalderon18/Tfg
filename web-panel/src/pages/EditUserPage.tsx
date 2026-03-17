@@ -117,7 +117,7 @@ export default function EditUserPage() {
   const [organizacionId, setOrganizacionId] = useState("");
   const [dni, setDni] = useState("");
   const [archivoAvatar, setArchivoAvatar] = useState<File | null>(null);
-  const [vistaAvatar, setVistaAvatar] = useState("");
+  const [vistaPreviaAvatar, setVistaPreviaAvatar] = useState("");
   const [idioma, setIdioma] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [provincia, setProvincia] = useState("");
@@ -189,7 +189,7 @@ export default function EditUserPage() {
       setNotasMedicas((usuario.medical_notes ?? []).join("\n"));
       setOrganizacionId(usuario.organization_id ?? "");
       setDni(usuario.dni ?? "");
-      setVistaAvatar(usuario.avatar ?? "");
+      setVistaPreviaAvatar(usuario.avatar ?? "");
       setIdioma(usuario.language ?? "");
       setCiudad(usuario.city ?? "");
       setProvincia(usuario.province ?? "");
@@ -205,10 +205,11 @@ export default function EditUserPage() {
   }, [id, navigate]);
 
   function manejarCambioAvatar(evento: ChangeEvent<HTMLInputElement>) {
-    const fichero = evento.target.files?.[0] ?? null;
-    setArchivoAvatar(fichero);
-    if (fichero) {
-      setVistaAvatar(URL.createObjectURL(fichero));
+    const nuevoArchivoAvatar = evento.target.files?.[0] ?? null;
+    setArchivoAvatar(nuevoArchivoAvatar);
+
+    if (nuevoArchivoAvatar) {
+      setVistaPreviaAvatar(URL.createObjectURL(nuevoArchivoAvatar));
     }
   }
 
@@ -298,7 +299,8 @@ export default function EditUserPage() {
       setNotasMedicas((usuarioActualizado.medical_notes ?? []).join("\n"));
       setOrganizacionId(usuarioActualizado.organization_id ?? "");
       setDni(usuarioActualizado.dni ?? "");
-      setVistaAvatar(usuarioActualizado.avatar ?? vistaAvatar);
+      setVistaPreviaAvatar(usuarioActualizado.avatar ?? "");
+      setArchivoAvatar(null);
       setIdioma(usuarioActualizado.language ?? "");
       setCiudad(usuarioActualizado.city ?? "");
       setProvincia(usuarioActualizado.province ?? "");
@@ -309,7 +311,6 @@ export default function EditUserPage() {
       setGrupoSanguineo(usuarioActualizado.blood_type ?? "");
       setDispositivoId(usuarioActualizado.device_id ?? "");
       setSupervisorAsignadoId(usuarioActualizado.assigned_supervisor_id ?? "");
-      setArchivoAvatar(null);
       setExito("Usuario actualizado correctamente.");
     } finally {
       setGuardando(false);
@@ -479,6 +480,9 @@ export default function EditUserPage() {
                   onChange={manejarCambioAvatar}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-300 ring-1 ring-slate-800 outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-red-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-red-500 focus:ring-2 focus:ring-red-500"
                 />
+                <p className="mt-2 text-xs text-slate-400">
+                  Selecciona una imagen y se subira al backend para dejarla disponible desde el panel.
+                </p>
               </div>
 
               <div>
@@ -497,9 +501,9 @@ export default function EditUserPage() {
               </div>
 
               <div className="flex items-end">
-                {vistaAvatar ? (
+                {vistaPreviaAvatar ? (
                   <img
-                    src={vistaAvatar}
+                    src={vistaPreviaAvatar}
                     alt="Avatar del usuario"
                     className="h-20 w-20 rounded-2xl object-cover ring-1 ring-slate-700"
                   />
