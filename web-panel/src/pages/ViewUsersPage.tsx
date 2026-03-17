@@ -21,11 +21,13 @@ type UserRow = {
 export default function ViewUsersPage() {
   // Navegación y estado principal de la vista
   const navigate = useNavigate();
+  const USUARIOS_POR_PAGINA = 10;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -62,6 +64,20 @@ export default function ViewUsersPage() {
     );
   }, [query, users]);
 
+  const totalPaginas = Math.max(1, Math.ceil(filteredUsers.length / USUARIOS_POR_PAGINA));
+
+  const usuariosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * USUARIOS_POR_PAGINA;
+    const fin = inicio + USUARIOS_POR_PAGINA;
+    return filteredUsers.slice(inicio, fin);
+  }, [filteredUsers, paginaActual, USUARIOS_POR_PAGINA]);
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
@@ -91,7 +107,10 @@ export default function ViewUsersPage() {
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPaginaActual(1);
+            }}
             placeholder="Buscar por username, email o rol..."
             className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
@@ -123,7 +142,7 @@ export default function ViewUsersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
+                usuariosPaginados.map((u) => (
                   <tr key={u.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                     <td className="px-4 py-3.5 font-medium whitespace-nowrap">{u.username}</td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{u.email}</td>
@@ -157,6 +176,34 @@ export default function ViewUsersPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredUsers.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-[color:var(--cm-text-muted)]">
+              Pagina {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                disabled={paginaActual === 1}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                disabled={paginaActual === totalPaginas}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
