@@ -31,7 +31,6 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
   return null;
 }
 
-
 type MeResponse = {
   authenticated: boolean;
   email?: string;
@@ -67,21 +66,29 @@ type IncidentWeather = {
   updatedAt: string;
 };
 
-type LayerType = "solar" | "soil" | "ignition";
+type LayerType = "satellite" | "relief" | "vegetation";
 
-  const tileUrls: Record<LayerType, string> = {
-    solar: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    soil: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
-    ignition: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  };
+const tileUrls: Record<LayerType, { url: string; attribution: string }> = {
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; Esri, DigitalGlobe, Earthstar Geographics',
+  },
+  relief: {
+    url: "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; OpenTopoMap, &copy; OpenStreetMap contributors',
+  },
+  vegetation: {
+    url: "https://tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png",
+    attribution: '&copy; OpenStreetMap, Humanitarian OpenStreetMap Team',
+  },
+};
 
 export default function DashboardPage() {
-  // Estado local del dashboard
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [incidentWeather, setIncidentWeather] = useState<Record<string, IncidentWeather>>({});
-  const [activeLayer, setActiveLayer] = useState<LayerType>("ignition");
+  const [activeLayer, setActiveLayer] = useState<LayerType>("satellite");
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -96,8 +103,6 @@ export default function DashboardPage() {
 
   const positions = useMemo(() => positionedIncidents.map((p) => p.latLng), [positionedIncidents]);
 
-
-  // Carga inicial de sesion y permisos de panel
   useEffect(() => {
     (async () => {
       const res = await apiFetch("/auth/panel/me/");
@@ -115,14 +120,12 @@ export default function DashboardPage() {
 
       setMe(data);
 
-      // Cargar incidentes
       const incidentsRes = await apiFetch("/incidents/");
       if (incidentsRes.ok) {
         const incidentsData = await incidentsRes.json();
         const incidentItems: Incident[] = Array.isArray(incidentsData)
           ? incidentsData
           : incidentsData.results || [];
-
         setIncidents(incidentItems);
       } else {
         console.error("Error cargando incidentes:", incidentsRes.status);
@@ -132,7 +135,6 @@ export default function DashboardPage() {
     })();
   }, [navigate]);
 
-  // Carga datos meteorologicos especializados por incidente (para capas)
   useEffect(() => {
     if (!positionedIncidents.length) return;
 
@@ -163,9 +165,7 @@ export default function DashboardPage() {
             updatedAt: data.current_weather.time,
           },
         }));
-      } catch (err) {
-        // Silencioso: no rompa la carga principal
-      }
+      } catch (err) {}
     };
 
     positionedIncidents.slice(0, 25).forEach(({ incident, latLng }) => {
@@ -173,7 +173,6 @@ export default function DashboardPage() {
     });
   }, [positionedIncidents]);
 
-  // Accion de cierre de sesion desde dashboard
   async function handleLogout() {
     await apiFetch("/auth/panel/logout/", { method: "POST" });
     navigate("/login", { replace: true });
@@ -192,14 +191,12 @@ export default function DashboardPage() {
 
   return (
     <div className="cm-shell min-h-screen">
-      {/* Fondo decorativo del centro de mando */}
       <div className="pointer-events-none fixed inset-0 opacity-20">
         <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-[color:var(--cm-danger)] blur-3xl" />
         <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-[color:var(--cm-info)] blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col">
-        {/* Header principal */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 lg:px-5 lg:py-5 2xl:px-6">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[color:var(--cm-danger)]/15 ring-1 ring-[color:var(--cm-danger)]/35">
@@ -222,37 +219,39 @@ export default function DashboardPage() {
 
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setActiveLayer("solar")}
+                onClick={() => setActiveLayer("satellite")}
                 className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                  activeLayer === "solar"
+                  activeLayer === "satellite"
                     ? "border-[color:var(--cm-warning)] bg-[color:var(--cm-warning)]/15"
                     : "border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] hover:border-[color:var(--cm-warning)]/50 hover:bg-[color:var(--cm-surface-2)]"
                 }`}
                 type="button"
               >
-                Radiación
+                📡 Satélite
               </button>
+
               <button
-                onClick={() => setActiveLayer("soil")}
+                onClick={() => setActiveLayer("relief")}
                 className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                  activeLayer === "soil"
+                  activeLayer === "relief"
                     ? "border-[color:var(--cm-info)] bg-[color:var(--cm-info)]/15"
                     : "border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] hover:border-[color:var(--cm-info)]/50 hover:bg-[color:var(--cm-surface-2)]"
                 }`}
                 type="button"
               >
-                Humedad
+                ⛰️ Relieve
               </button>
+
               <button
-                onClick={() => setActiveLayer("ignition")}
+                onClick={() => setActiveLayer("vegetation")}
                 className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                  activeLayer === "ignition"
-                    ? "border-[color:var(--cm-danger)] bg-[color:var(--cm-danger)]/15"
-                    : "border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] hover:border-[color:var(--cm-danger)]/50 hover:bg-[color:var(--cm-surface-2)]"
+                  activeLayer === "vegetation"
+                    ? "border-green-500 bg-green-600/15"
+                    : "border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] hover:border-green-500/50 hover:bg-[color:var(--cm-surface-2)]"
                 }`}
                 type="button"
               >
-                Ignición
+                🌲 Vegetación
               </button>
             </div>
 
@@ -266,7 +265,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Mapa de incidentes */}
         <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
           <div className="h-[calc(100vh-120px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
             {incidents.length === 0 && (
@@ -292,8 +290,8 @@ export default function DashboardPage() {
               scrollWheelZoom={true}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url={tileUrls[activeLayer]}
+                attribution={tileUrls[activeLayer].attribution}
+                url={tileUrls[activeLayer].url}
               />
               {positions.length > 0 && <FitBounds positions={positions} />}
               {positionedIncidents.map(({ incident, latLng }) => {
