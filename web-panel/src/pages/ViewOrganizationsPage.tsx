@@ -136,8 +136,10 @@ export default function ViewOrganizationsPage() {
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Telefono</th>
+                <th className="px-4 py-3 text-left">Direccion</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Creada</th>
+                <th className="px-4 py-3 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -151,9 +153,17 @@ export default function ViewOrganizationsPage() {
                 filteredOrganizations.map((org) => (
                   <tr key={org.id} className="border-t border-slate-800/80">
                     <td className="px-4 py-3 font-medium text-slate-100">{org.name}</td>
-                    <td className="px-4 py-3 text-slate-300">{org.org_type}</td>
-                    <td className="px-4 py-3 text-slate-300">{org.contact_email || "-"}</td>
+                    <td className="px-4 py-3 text-slate-300">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
+                    org.org_type === "MEDICAL" ? "Servicio Médico" :
+                    org.org_type === "POLICE" ? "Departamento de Policía" :
+                    org.org_type === "RESCUE" ? "Servicio de Rescate" :
+                    org.org_type === "OTHER" ? "Otro" : org.org_type
+                    }</td>
+                    <a href={`mailto:${org.contact_email}`} target="_blank" rel="noopener noreferrer">
+                      <td className="px-4 py-3 text-slate-300">{org.contact_email || "-"}</td>
+                    </a>
                     <td className="px-4 py-3 text-slate-300">{org.contact_phone || "-"}</td>
+                    <td className="px-4 py-3 text-slate-300">{org.address || "-"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
@@ -168,6 +178,13 @@ export default function ViewOrganizationsPage() {
                     <td className="px-4 py-3 text-slate-400">
                       {org.created_at ? new Date(org.created_at).toLocaleString() : "Fecha desconocida"}
                     </td>
+                    <td className="px-4 py-3">
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/editorganization/${org.id}`)}
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                      >Editar</button>
+                      </td>
                   </tr>
                 ))
               )}

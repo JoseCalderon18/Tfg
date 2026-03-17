@@ -17,6 +17,7 @@ import EditUserPage from './pages/EditUserPage';
 import CreateIncidentPage from './pages/CreateIncidentPage';
 import ViewOrganizationsPage from './pages/ViewOrganizationsPage';
 import EditIncidentPage from './pages/EditIncidentPage';
+import EditOrganizationPage from './pages/EditOrganizationPage';
 
 /**
  * Componente principal del panel web
@@ -47,6 +48,7 @@ function App() {
         <Route path="createincident" element={<CreateIncidentPage />} />
         <Route path="vieworganizations" element={<ViewOrganizationsPage />} />
         <Route path="editIncident/:id" element={<EditIncidentPage />} />
+        <Route path="editorganization/:id" element={<EditOrganizationPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
