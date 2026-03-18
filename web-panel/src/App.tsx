@@ -21,7 +21,7 @@ import EditIncidentPage from './pages/EditIncidentPage';
 import LightningMapPage from './pages/LightningMapPage';
 import EditOrganizationPage from './pages/EditOrganizationPage';
 import EditUnitPage from './pages/EditUnitPage';
-
+import ResetPasswordPage from './pages/ResetPasswordPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -38,6 +38,7 @@ function App() {
     <Routes>
       {/* Ruta pública de login */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* Rutas protegidas con layout */}
       <Route path="/" element={<Layout />}>

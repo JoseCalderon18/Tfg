@@ -5,7 +5,7 @@ from .models import (
     Incidente, Incident, Alerta, Alert,
     Dispositivo, Device,
     PuntoRastreo, TrackPoint, IncidentMember, AreaTrabajo, WorkArea,
-    RiskReport
+    RiskReport, CodigoResetPassword
 )
 
 
@@ -88,3 +88,10 @@ class AreaTrabajoAdmin(GISModelAdmin):
     list_filter = ['area_type','active','created_at']
     search_fields = ['name','incident__name']
     gis_widget_kwargs = {'attrs': {'default_zoom': 13,'map_width': 800,'map_height': 500,}}
+
+
+@admin.register(CodigoResetPassword)
+class CodigoResetPasswordAdmin(admin.ModelAdmin):
+    list_display = ['email', 'codigo', 'user', 'creado_en', 'expira_en', 'verificado_en', 'usado_en']
+    list_filter = ['creado_en', 'expira_en', 'verificado_en', 'usado_en']
+    search_fields = ['email', 'user__username', 'user__email', 'codigo']

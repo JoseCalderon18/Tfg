@@ -1,9 +1,17 @@
 import json
+import secrets
+from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
+from django.contrib.auth.password_validation import validate_password
+from django.core.mail import send_mail
+from django.core.validators import validate_email
 from django.db import transaction
+from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import generics, permissions, status
 from rest_framework.authentication import SessionAuthentication
@@ -14,7 +22,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from emergency.apps.core.forms import SupervisorLoginForm
-from emergency.apps.core.models import Dispositivo, Organizacion, Profile, User
+from emergency.apps.core.models import CodigoResetPassword, Dispositivo, Organizacion, Profile, User
 
 from ..serializers import ProfileSerializer, UserCreateSerializer, UserSerializer
 
@@ -69,6 +77,24 @@ def _construir_url_avatar(request, perfil):
     return request.build_absolute_uri(url_avatar)
 
 
+def _generar_codigo_numerico():
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def _buscar_codigo_activo(email):
+    ahora = timezone.now()
+    return (
+        CodigoResetPassword.objects.select_related("user")
+        .filter(
+            email__iexact=email,
+            expira_en__gt=ahora,
+            usado_en__isnull=True,
+        )
+        .order_by("-creado_en")
+        .first()
+    )
+
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
@@ -121,6 +147,170 @@ class PanelLoginView(APIView):
             django_login(request, form.user, backend="django.contrib.auth.backends.ModelBackend")
             return Response({"ok": True}, status=status.HTTP_200_OK)
         return Response({"ok": False, "errors": form.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    @transaction.atomic
+    def post(self, request):
+        email = str(request.data.get("email", "")).strip().lower()
+
+        if not email:
+            return Response({"email": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return Response({"email": ["Introduce un correo electronico valido."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        if user is None:
+            return Response(
+                {"detail": "Si existe una cuenta asociada, se ha enviado un codigo de verificacion."},
+                status=status.HTTP_200_OK,
+            )
+
+        CodigoResetPassword.objects.filter(
+            user=user,
+            usado_en__isnull=True,
+            expira_en__gt=timezone.now(),
+        ).update(expira_en=timezone.now())
+
+        codigo = _generar_codigo_numerico()
+        token_reseteo_debug = secrets.token_urlsafe(32) if settings.DEBUG else ""
+        registro = CodigoResetPassword.crear_con_expiracion(
+            user=user,
+            email=user.email.lower(),
+            codigo=codigo,
+            token_verificado=token_reseteo_debug,
+            verificado_en=timezone.now() if settings.DEBUG else None,
+        )
+
+        asunto = "Codigo de verificacion para resetear tu password"
+        mensaje = (
+            f"Hola {user.username},\n\n"
+            f"Tu codigo de verificacion es: {codigo}\n\n"
+            "Este codigo caduca en 10 minutos.\n"
+            "Si no has solicitado este cambio, puedes ignorar este correo."
+        )
+
+        send_mail(
+            subject=asunto,
+            message=mensaje,
+            from_email=None,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        respuesta = {
+            "detail": "Si existe una cuenta asociada, se ha enviado un codigo de verificacion.",
+            "caduca_en": registro.expira_en,
+        }
+        if settings.DEBUG:
+            respuesta["reset_token_debug"] = token_reseteo_debug
+
+        return Response(respuesta, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordResetVerifyCodeView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    @transaction.atomic
+    def post(self, request):
+        email = str(request.data.get("email", "")).strip().lower()
+        codigo = str(request.data.get("code", "")).strip()
+
+        if not email:
+            return Response({"email": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+        if not codigo:
+            return Response({"code": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+        if not codigo.isdigit() or len(codigo) != 6:
+            return Response({"code": ["El codigo debe tener 6 digitos numericos."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        registro = _buscar_codigo_activo(email)
+        if registro is None:
+            return Response({"detail": "El codigo no es valido o ha caducado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if registro.intentos_verificacion >= 5:
+            registro.expira_en = timezone.now()
+            registro.save(update_fields=["expira_en"])
+            return Response({"detail": "Se ha superado el numero maximo de intentos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if registro.codigo != codigo:
+            registro.intentos_verificacion += 1
+            registro.save(update_fields=["intentos_verificacion"])
+            return Response({"detail": "El codigo no es valido o ha caducado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_reseteo = secrets.token_urlsafe(32)
+        registro.token_verificado = token_reseteo
+        registro.verificado_en = timezone.now()
+        registro.save(update_fields=["token_verificado", "verificado_en"])
+
+        return Response(
+            {
+                "detail": "Codigo verificado correctamente.",
+                "reset_token": token_reseteo,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    @transaction.atomic
+    def post(self, request):
+        email = str(request.data.get("email", "")).strip().lower()
+        token_reseteo = str(request.data.get("reset_token", "")).strip()
+        nueva_password = str(request.data.get("new_password", ""))
+
+        if not email:
+            return Response({"email": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+        if not token_reseteo:
+            return Response({"reset_token": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+        if not nueva_password:
+            return Response({"new_password": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        registro = (
+            CodigoResetPassword.objects.select_related("user")
+            .filter(
+                email__iexact=email,
+                token_verificado=token_reseteo,
+                expira_en__gt=timezone.now(),
+                usado_en__isnull=True,
+                verificado_en__isnull=False,
+            )
+            .order_by("-creado_en")
+            .first()
+        )
+
+        if registro is None:
+            return Response({"detail": "La solicitud de reseteo no es valida o ha caducado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(nueva_password, user=registro.user)
+        except DjangoValidationError as exc:
+            return Response({"new_password": list(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+        registro.user.set_password(nueva_password)
+        registro.user.save(update_fields=["password"])
+        registro.usado_en = timezone.now()
+        registro.save(update_fields=["usado_en"])
+
+        CodigoResetPassword.objects.filter(
+            user=registro.user,
+            usado_en__isnull=True,
+            expira_en__gt=timezone.now() - timedelta(days=1),
+        ).exclude(id=registro.id).update(expira_en=timezone.now(), usado_en=timezone.now())
+
+        return Response({"detail": "Password actualizada correctamente."}, status=status.HTTP_200_OK)
 
 
 @method_decorator(csrf_protect, name="dispatch")

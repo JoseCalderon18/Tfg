@@ -20,6 +20,7 @@ from .workarea import AreaTrabajo
 from .workarea import AreaTrabajo as WorkArea
 from .lightning import LightningStrike
 from .risk_report import RiskReport
+from .password_reset import CodigoResetPassword
 
 __all__ = [
     'User',
@@ -39,4 +40,5 @@ __all__ = [
     'AreaTrabajo',
     'WorkArea',
     'RiskReport',
+    'CodigoResetPassword',
 ]

@@ -1,19 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 export default function LoginPage() {
-  // Estado del formulario de acceso
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Navegación y acciones de auth
   const navigate = useNavigate();
   const { login, isAuthenticated, isCheckingAuth } = useAuthStore();
 
-  // Redirección al dashboard cuando ya existe sesión
   useEffect(() => {
     if (!isCheckingAuth && isAuthenticated) {
       navigate("/", { replace: true });
@@ -21,7 +18,6 @@ export default function LoginPage() {
   }, [isAuthenticated, isCheckingAuth, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
-    // Validación y envío del formulario al backend
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
@@ -30,7 +26,7 @@ export default function LoginPage() {
     setIsSubmitting(false);
 
     if (!ok) {
-      setError("Credenciales inválidas o acceso no autorizado.");
+      setError("Credenciales invalidas o acceso no autorizado.");
       return;
     }
 
@@ -43,17 +39,16 @@ export default function LoginPage() {
         <div className="absolute left-[10%] top-[12%] h-56 w-56 rounded-full bg-[color:var(--cm-danger)] blur-3xl" />
         <div className="absolute bottom-[12%] right-[8%] h-56 w-56 rounded-full bg-[color:var(--cm-info)] blur-3xl" />
       </div>
+
       <form
         onSubmit={handleSubmit}
         className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-2xl"
       >
-        {/* Encabezado del formulario */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-[color:var(--cm-text)]">Emergency Management</h1>
           <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">Panel de supervision</p>
         </div>
 
-        {/* Campo de correo */}
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
             Correo electronico
@@ -70,7 +65,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Campo de contraseña */}
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
             Contrasena
@@ -87,14 +81,8 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Mensaje de error de autenticación */}
-        {error && (
-          <div className="cm-badge-danger rounded-lg p-3 text-sm">
-            {error}
-          </div>
-        )}
+        {error ? <div className="cm-badge-danger rounded-lg p-3 text-sm">{error}</div> : null}
 
-        {/* Botón principal de acceso */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -102,6 +90,13 @@ export default function LoginPage() {
         >
           {isSubmitting ? "Iniciando sesion..." : "Iniciar sesion"}
         </button>
+
+        <div className="text-center text-sm text-[color:var(--cm-text-muted)]">
+          <p>No recuerdas la password?</p>
+          <Link to="/reset-password" className="text-[color:var(--cm-info)] hover:underline">
+            Resetear contrasena
+          </Link>
+        </div>
       </form>
     </div>
   );
