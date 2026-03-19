@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { apiFetch } from "../utils/api";
 
 const OPCIONES_ROL = [
   { value: "SUPERVISOR", label: "Supervisor" },
@@ -13,16 +14,63 @@ const OPCIONES_ESTADO = [
   { value: "NO_DISPONIBLE", label: "No disponible" },
 ];
 
+type RespuestaDetalleUnidad = {
+  id: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  role?: "SUPERVISOR" | "OPERATIVE";
+  is_active: boolean;
+  emergency_contact?: string;
+  emergency_phone?: string;
+  medical_notes?: string[];
+  organization_id?: string;
+  specialties?: string[];
+  operative_schedule?: string;
+  device_id?: string;
+  assigned_supervisor_id?: string;
+};
+
+type OpcionOrganizacion = {
+  id: string;
+  name: string;
+};
+
+type OpcionSupervisor = {
+  id: string;
+  username: string;
+  display_name: string;
+};
+
+type OpcionDispositivo = {
+  id: string;
+  name: string;
+  platform: string;
+  user_id: string;
+};
+
+type RespuestaOpcionesFormulario = {
+  organizations: OpcionOrganizacion[];
+  supervisors: OpcionSupervisor[];
+  devices: OpcionDispositivo[];
+};
+
 export default function EditUnitPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+  const [exito, setExito] = useState("");
   const [nombreUsuario, setNombreUsuario] = useState("");
+  const [nombreReal, setNombreReal] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [rol, setRol] = useState("OPERATIVE");
   const [organizacion, setOrganizacion] = useState("");
-  const [supervisorAsignado, setSupervisorAsignado] = useState("");
   const [dispositivoAsignado, setDispositivoAsignado] = useState("");
   const [estadoOperativo, setEstadoOperativo] = useState("DISPONIBLE");
   const [incidenteActual, setIncidenteActual] = useState("");
@@ -33,6 +81,14 @@ export default function EditUnitPage() {
   const [telefonoEmergencia, setTelefonoEmergencia] = useState("");
   const [notasOperativas, setNotasOperativas] = useState("");
   const [unidadActiva, setUnidadActiva] = useState(true);
+  const [organizacionId, setOrganizacionId] = useState("");
+  const [supervisorAsignadoId, setSupervisorAsignadoId] = useState("");
+  const [dispositivoAsignadoId, setDispositivoAsignadoId] = useState("");
+  const [opcionesFormulario, setOpcionesFormulario] = useState<RespuestaOpcionesFormulario>({
+    organizations: [],
+    supervisors: [],
+    devices: [],
+  });
 
   const resumenUnidad = useMemo(() => {
     return {
@@ -42,7 +98,185 @@ export default function EditUnitPage() {
     };
   }, [rol, estadoOperativo]);
 
+  const [edicionDesbloqueada, setEdicionDesbloqueada] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      if (!id) {
+        setError("Unidad no valida.");
+        setCargando(false);
+        return;
+      }
+
+      try {
+        const [respuestaOpciones, respuestaUnidad] = await Promise.all([
+          apiFetch("/auth/panel/users/form-options/"),
+          apiFetch(`/auth/panel/users/${id}/`),
+        ]);
+
+        if (!respuestaOpciones.ok || !respuestaUnidad.ok) {
+          setError("No se pudieron cargar los datos de la unidad.");
+          setCargando(false);
+          return;
+        }
+
+        const opciones = (await respuestaOpciones.json()) as RespuestaOpcionesFormulario;
+        const unidad = (await respuestaUnidad.json()) as RespuestaDetalleUnidad;
+        setOpcionesFormulario(opciones);
+
+        const organizacionEncontrada = (opciones.organizations ?? []).find(
+          (opcion) => opcion.id === (unidad.organization_id ?? "")
+        );
+        const dispositivoEncontrado = (opciones.devices ?? []).find(
+          (opcion) => opcion.id === (unidad.device_id ?? "")
+        );
+
+        setNombreUsuario(unidad.username ?? "");
+        setNombreReal(`${unidad.first_name ?? ""} ${unidad.last_name ?? ""}`.trim());
+        setCorreo(unidad.email ?? "");
+        setTelefono(unidad.phone ?? "");
+        setRol(unidad.role ?? "OPERATIVE");
+        setOrganizacionId(unidad.organization_id ?? "");
+        setSupervisorAsignadoId(unidad.assigned_supervisor_id ?? "");
+        setDispositivoAsignadoId(unidad.device_id ?? "");
+        setOrganizacion(organizacionEncontrada?.name ?? "");
+        setDispositivoAsignado(
+          dispositivoEncontrado ? `${dispositivoEncontrado.name} · ${dispositivoEncontrado.platform}` : ""
+        );
+        setEspecialidadPrincipal((unidad.specialties ?? [])[0] ?? "");
+        setHorarioOperativo(unidad.operative_schedule ?? "");
+        setContactoEmergencia(unidad.emergency_contact ?? "");
+        setTelefonoEmergencia(unidad.emergency_phone ?? "");
+        setNotasOperativas((unidad.medical_notes ?? []).join("\n"));
+        setUnidadActiva(Boolean(unidad.is_active));
+      } catch {
+        setError("Error de red al cargar la unidad.");
+      } finally {
+        setCargando(false);
+      }
+    })();
+  }, [id]);
+
+  async function manejarGuardar(evento: React.FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+
+    if (!id) {
+      setError("Unidad no valida.");
+      return;
+    }
+
+    const organizacionEncontrada = (opcionesFormulario.organizations ?? []).find(
+      (opcion) => opcion.name.trim().toLowerCase() === organizacion.trim().toLowerCase()
+    );
+    const dispositivoEncontrado = (opcionesFormulario.devices ?? []).find((opcion) => {
+      const etiqueta = `${opcion.name} · ${opcion.platform}`.trim().toLowerCase();
+      return etiqueta === dispositivoAsignado.trim().toLowerCase() || opcion.name.trim().toLowerCase() === dispositivoAsignado.trim().toLowerCase();
+    });
+
+    setError("");
+    setExito("");
+    setGuardando(true);
+
+    try {
+      const datosFormulario = new FormData();
+      datosFormulario.append("username", nombreUsuario.trim());
+      datosFormulario.append("email", correo.trim());
+      datosFormulario.append("phone", telefono.trim());
+      datosFormulario.append("role", rol);
+      datosFormulario.append("is_active", String(unidadActiva));
+      datosFormulario.append("emergency_contact", contactoEmergencia.trim());
+      datosFormulario.append("emergency_phone", telefonoEmergencia.trim());
+      datosFormulario.append(
+        "medical_notes",
+        JSON.stringify(
+          notasOperativas
+            .split("\n")
+            .map((valor) => valor.trim())
+            .filter(Boolean)
+        )
+      );
+      datosFormulario.append("organization_id", organizacionEncontrada?.id ?? organizacionId);
+      datosFormulario.append(
+        "specialties",
+        JSON.stringify(
+          [especialidadPrincipal]
+            .map((valor) => valor.trim())
+            .filter(Boolean)
+        )
+      );
+      datosFormulario.append("operative_schedule", horarioOperativo.trim());
+      datosFormulario.append("device_id", dispositivoEncontrado?.id ?? dispositivoAsignadoId);
+      datosFormulario.append("assigned_supervisor_id", supervisorAsignadoId);
+
+      const respuesta = await apiFetch(`/auth/panel/users/${id}/`, {
+        method: "PATCH",
+        body: datosFormulario,
+      });
+
+      if (!respuesta.ok) {
+        let detalle = "No se pudo guardar la unidad.";
+        try {
+          const datosError = await respuesta.json();
+          if (datosError?.detail) {
+            detalle = String(datosError.detail);
+          } else if (typeof datosError === "object" && datosError !== null) {
+            const primeraClave = Object.keys(datosError)[0];
+            if (primeraClave) {
+              const valor = (datosError as Record<string, unknown>)[primeraClave];
+              detalle = Array.isArray(valor)
+                ? `${primeraClave}: ${String(valor[0])}`
+                : `${primeraClave}: ${String(valor)}`;
+            }
+          }
+        } catch {
+          // Ignoramos errores de parseo para mostrar el mensaje por defecto.
+        }
+        setError(detalle);
+        return;
+      }
+
+      const unidadActualizada = (await respuesta.json()) as RespuestaDetalleUnidad;
+      const organizacionActualizada = (opcionesFormulario.organizations ?? []).find(
+        (opcion) => opcion.id === (unidadActualizada.organization_id ?? "")
+      );
+      const dispositivoActualizado = (opcionesFormulario.devices ?? []).find(
+        (opcion) => opcion.id === (unidadActualizada.device_id ?? "")
+      );
+
+      setNombreUsuario(unidadActualizada.username ?? "");
+      setCorreo(unidadActualizada.email ?? "");
+      setTelefono(unidadActualizada.phone ?? "");
+      setRol(unidadActualizada.role ?? "OPERATIVE");
+      setUnidadActiva(Boolean(unidadActualizada.is_active));
+      setContactoEmergencia(unidadActualizada.emergency_contact ?? "");
+      setTelefonoEmergencia(unidadActualizada.emergency_phone ?? "");
+      setHorarioOperativo(unidadActualizada.operative_schedule ?? "");
+      setEspecialidadPrincipal((unidadActualizada.specialties ?? [])[0] ?? "");
+      setNotasOperativas((unidadActualizada.medical_notes ?? []).join("\n"));
+      setOrganizacionId(unidadActualizada.organization_id ?? "");
+      setSupervisorAsignadoId(unidadActualizada.assigned_supervisor_id ?? "");
+      setDispositivoAsignadoId(unidadActualizada.device_id ?? "");
+      setOrganizacion(organizacionActualizada?.name ?? organizacion);
+      setDispositivoAsignado(
+        dispositivoActualizado ? `${dispositivoActualizado.name} · ${dispositivoActualizado.platform}` : dispositivoAsignado
+      );
+      setExito("Unidad guardada correctamente.");
+      setEdicionDesbloqueada(false);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (cargando) {
+    return (
+      <div className="cm-shell grid min-h-screen place-items-center">
+        <p className="text-[color:var(--cm-text-muted)]">Cargando unidad...</p>
+      </div>
+    );
+  }
+
   return (
+    <form onSubmit={manejarGuardar}>
     <div className="cm-shell min-h-screen">
       <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -62,17 +296,13 @@ export default function EditUnitPage() {
             >
               Volver a unidades
             </button>
-            <button
-              type="button"
-              className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Guardar cambios
-            </button>
           </div>
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
           <div className="space-y-4">
+            {error ? <div className="cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
+            {exito ? <div className="cm-badge-success rounded-xl p-3 text-sm">{exito}</div> : null}
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <div className="mb-5">
                 <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Identidad</p>
@@ -84,6 +314,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Nombre de usuario</label>
                   <input
                     value={nombreUsuario}
+                    disabled = {true}
                     onChange={(e) => setNombreUsuario(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="usuario_operativo_01"
@@ -94,6 +325,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Correo</label>
                   <input
                     value={correo}
+                    disabled ={true}
                     onChange={(e) => setCorreo(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="operativo@equipo.local"
@@ -101,9 +333,21 @@ export default function EditUnitPage() {
                 </div>
 
                 <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Nombre real</label>
+                  <input
+                    value={nombreReal}
+                    disabled ={true}
+                    onChange={(e) => setNombreReal(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                    placeholder="Nombre Apellido"
+                  />
+                </div>
+
+                <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Teléfono</label>
                   <input
                     value={telefono}
+                    disabled ={true}
                     onChange={(e) => setTelefono(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="+34 600 000 000"
@@ -114,6 +358,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Rol</label>
                   <select
                     value={rol}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setRol(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                   >
@@ -138,6 +383,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Organización</label>
                   <input
                     value={organizacion}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setOrganizacion(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Unidad Operativa Madrid Norte"
@@ -146,18 +392,29 @@ export default function EditUnitPage() {
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Supervisor asignado</label>
-                  <input
-                    value={supervisorAsignado}
-                    onChange={(e) => setSupervisorAsignado(e.target.value)}
+                  <select
+                    value={supervisorAsignadoId}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => {
+                      const nuevoSupervisorId = e.target.value;
+                      setSupervisorAsignadoId(nuevoSupervisorId);
+                    }}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
-                    placeholder="supervisor_01"
-                  />
+                  >
+                    <option value="">Sin supervisor</option>
+                    {(opcionesFormulario.supervisors ?? []).map((supervisor) => (
+                      <option key={supervisor.id} value={supervisor.id}>
+                        {supervisor.display_name || supervisor.username}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Dispositivo asignado</label>
                   <input
                     value={dispositivoAsignado}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setDispositivoAsignado(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Terminal 014 · ANDROID"
@@ -168,6 +425,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Incidente actual</label>
                   <input
                     value={incidenteActual}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setIncidenteActual(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Incendio forestal #04"
@@ -187,6 +445,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Estado operativo</label>
                   <select
                     value={estadoOperativo}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setEstadoOperativo(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                   >
@@ -202,6 +461,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Especialidad principal</label>
                   <input
                     value={especialidadPrincipal}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setEspecialidadPrincipal(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Rescate, comunicaciones, primeros auxilios..."
@@ -212,16 +472,18 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Horario operativo</label>
                   <input
                     value={horarioOperativo}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setHorarioOperativo(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Guardia 24h / Turno mañana"
                   />
-                </div>
+                </div>  
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Última ubicación conocida</label>
                   <input
                     value={ultimaUbicacion}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setUltimaUbicacion(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="40.4168, -3.7038 · Madrid"
@@ -241,6 +503,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Contacto de emergencia</label>
                   <input
                     value={contactoEmergencia}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setContactoEmergencia(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="Nombre del contacto"
@@ -251,6 +514,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Teléfono de emergencia</label>
                   <input
                     value={telefonoEmergencia}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setTelefonoEmergencia(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     placeholder="+34 600 000 000"
@@ -261,6 +525,7 @@ export default function EditUnitPage() {
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Notas operativas</label>
                   <textarea
                     value={notasOperativas}
+                    disabled ={!edicionDesbloqueada}
                     onChange={(e) => setNotasOperativas(e.target.value)}
                     rows={5}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
@@ -307,26 +572,33 @@ export default function EditUnitPage() {
                 <input
                   type="checkbox"
                   checked={unidadActiva}
+                  disabled ={!edicionDesbloqueada}
                   onChange={(e) => setUnidadActiva(e.target.checked)}
                   className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"
                 />
                 Unidad activa en el sistema
               </label>
             </section>
-
-            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Uso recomendado</p>
-              <h2 className="mt-2 text-lg font-bold">Ideas para ampliar</h2>
-              <ul className="mt-4 space-y-2 text-sm text-[color:var(--cm-text-muted)]">
-                <li>Histórico de ubicaciones y mapa de seguimiento.</li>
-                <li>Asignación a incidentes activos y supervisor real.</li>
-                <li>Dispositivo, batería y última sincronización.</li>
-                <li>Checklist de perfil completo y preparación operativa.</li>
-              </ul>
-            </section>
           </aside>
+        </div>
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--cm-info)]/40 bg-gradient-to-r from-[color:var(--cm-info)] to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(6,182,212,0.28)] transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-info)]/50"
+            onClick={() => setEdicionDesbloqueada((valor) => !valor)}
+          >
+            {edicionDesbloqueada ? "Bloquear edición" : "Desbloquear edición"}
+          </button>
+          <button
+            type="submit"
+            disabled={!edicionDesbloqueada || guardando}
+            className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--cm-danger)]/40 bg-gradient-to-r from-[color:var(--cm-danger)] to-rose-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(244,63,94,0.28)] transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-danger)]/50"
+          >
+            {guardando ? "Guardando..." : "Guardar cambios"}
+          </button>
         </div>
       </div>
     </div>
+    </form>
   );
 }
