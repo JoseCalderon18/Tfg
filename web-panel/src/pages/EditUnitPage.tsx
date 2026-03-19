@@ -165,14 +165,6 @@ export default function EditUnitPage() {
       return;
     }
 
-    const organizacionEncontrada = (opcionesFormulario.organizations ?? []).find(
-      (opcion) => opcion.name.trim().toLowerCase() === organizacion.trim().toLowerCase()
-    );
-    const dispositivoEncontrado = (opcionesFormulario.devices ?? []).find((opcion) => {
-      const etiqueta = `${opcion.name} · ${opcion.platform}`.trim().toLowerCase();
-      return etiqueta === dispositivoAsignado.trim().toLowerCase() || opcion.name.trim().toLowerCase() === dispositivoAsignado.trim().toLowerCase();
-    });
-
     setError("");
     setExito("");
     setGuardando(true);
@@ -195,7 +187,7 @@ export default function EditUnitPage() {
             .filter(Boolean)
         )
       );
-      datosFormulario.append("organization_id", organizacionEncontrada?.id ?? organizacionId);
+      datosFormulario.append("organization_id", organizacionId);
       datosFormulario.append(
         "specialties",
         JSON.stringify(
@@ -205,7 +197,7 @@ export default function EditUnitPage() {
         )
       );
       datosFormulario.append("operative_schedule", horarioOperativo.trim());
-      datosFormulario.append("device_id", dispositivoEncontrado?.id ?? dispositivoAsignadoId);
+      datosFormulario.append("device_id", dispositivoAsignadoId);
       datosFormulario.append("assigned_supervisor_id", supervisorAsignadoId);
 
       const respuesta = await apiFetch(`/auth/panel/users/${id}/`, {
@@ -381,13 +373,26 @@ export default function EditUnitPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Organización</label>
-                  <input
-                    value={organizacion}
-                    disabled ={!edicionDesbloqueada}
-                    onChange={(e) => setOrganizacion(e.target.value)}
+                  <select
+                    value={organizacionId}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => {
+                      const nuevaOrganizacionId = e.target.value;
+                      const organizacionSeleccionada = (opcionesFormulario.organizations ?? []).find(
+                        (opcion) => opcion.id === nuevaOrganizacionId
+                      );
+                      setOrganizacionId(nuevaOrganizacionId);
+                      setOrganizacion(organizacionSeleccionada?.name ?? "");
+                    }}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
-                    placeholder="Unidad Operativa Madrid Norte"
-                  />
+                  >
+                    <option value="">Sin organizaciÃ³n</option>
+                    {(opcionesFormulario.organizations ?? []).map((organizacionOpcion) => (
+                      <option key={organizacionOpcion.id} value={organizacionOpcion.id}>
+                        {organizacionOpcion.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -412,13 +417,30 @@ export default function EditUnitPage() {
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Dispositivo asignado</label>
-                  <input
-                    value={dispositivoAsignado}
-                    disabled ={!edicionDesbloqueada}
-                    onChange={(e) => setDispositivoAsignado(e.target.value)}
+                  <select
+                    value={dispositivoAsignadoId}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => {
+                      const nuevoDispositivoId = e.target.value;
+                      const dispositivoSeleccionado = (opcionesFormulario.devices ?? []).find(
+                        (opcion) => opcion.id === nuevoDispositivoId
+                      );
+                      setDispositivoAsignadoId(nuevoDispositivoId);
+                      setDispositivoAsignado(
+                        dispositivoSeleccionado
+                          ? `${dispositivoSeleccionado.name} · ${dispositivoSeleccionado.platform}`
+                          : ""
+                      );
+                    }}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
-                    placeholder="Terminal 014 · ANDROID"
-                  />
+                  >
+                    <option value="">Sin dispositivo</option>
+                    {(opcionesFormulario.devices ?? []).map((dispositivo) => (
+                      <option key={dispositivo.id} value={dispositivo.id}>
+                        {dispositivo.name} · {dispositivo.platform}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
