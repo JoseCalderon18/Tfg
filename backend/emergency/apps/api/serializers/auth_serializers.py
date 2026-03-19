@@ -14,11 +14,13 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer básico de usuario"""
     role = serializers.CharField(source='profile.role', read_only=True)
     organization_name = serializers.CharField(source='profile.organization.name', read_only=True)
+    specialties = serializers.ListField(source='profile.specialties', child=serializers.CharField(), read_only=True)
+    dni = serializers.CharField(source='profile.dni', read_only=True)
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                  'role', 'organization_name', 'phone', 'is_active', 'created_at']
+                  'role', 'organization_name', 'phone', 'is_active', 'created_at', 'specialties', 'dni']
         read_only_fields = ['id', 'created_at']
 
 

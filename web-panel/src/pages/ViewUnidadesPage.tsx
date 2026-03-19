@@ -10,6 +10,12 @@ type UnidadOperativa = {
   organization_name?: string;
   is_active: boolean;
   created_at: string;
+  especialidades?: string[];
+  dni?: string;
+};
+
+type UnidadOperativaApi = UnidadOperativa & {
+  specialties?: string[];
 };
 
 type PagedResponse<T> = {
@@ -21,14 +27,80 @@ type PagedResponse<T> = {
 
 function normalizeUnits(payload: unknown): UnidadOperativa[] {
   if (Array.isArray(payload)) {
-    return payload as UnidadOperativa[];
+    return (payload as UnidadOperativaApi[]).map((unidad) => ({
+      ...unidad,
+      especialidades: Array.isArray(unidad.especialidades)
+        ? unidad.especialidades
+        : Array.isArray(unidad.specialties)
+          ? unidad.specialties
+          : [],
+    }));
   }
 
-  if (payload && typeof payload === "object" && Array.isArray((payload as PagedResponse<UnidadOperativa>).results)) {
-    return (payload as PagedResponse<UnidadOperativa>).results ?? [];
+  if (payload && typeof payload === "object" && Array.isArray((payload as PagedResponse<UnidadOperativaApi>).results)) {
+    return ((payload as PagedResponse<UnidadOperativaApi>).results ?? []).map((unidad) => ({
+      ...unidad,
+      especialidades: Array.isArray(unidad.especialidades)
+        ? unidad.especialidades
+        : Array.isArray(unidad.specialties)
+          ? unidad.specialties
+          : [],
+    }));
   }
 
   return [];
+}
+
+function obtenerResultadosPaginados(payload: unknown): UnidadOperativaApi[] | null {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    Array.isArray((payload as PagedResponse<UnidadOperativaApi>).results)
+  ) {
+    return (payload as PagedResponse<UnidadOperativaApi>).results ?? [];
+  }
+
+  return null;
+}
+
+async function cargarTodasLasUnidades(): Promise<{ unidades: UnidadOperativa[]; total: number }> {
+  const unidadesAcumuladas: UnidadOperativaApi[] = [];
+  let urlSiguiente: string | null = "/users/";
+  let totalRegistros = 0;
+
+  while (urlSiguiente) {
+    const respuesta = urlSiguiente.startsWith("http")
+      ? await fetch(urlSiguiente, {
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        })
+      : await apiFetch(urlSiguiente);
+
+    if (!respuesta.ok) {
+      throw new Error("No se pudieron cargar las unidades.");
+    }
+
+    const datos = (await respuesta.json()) as unknown;
+    const resultadosPaginados = obtenerResultadosPaginados(datos);
+
+    if (resultadosPaginados) {
+      unidadesAcumuladas.push(...resultadosPaginados);
+      totalRegistros = Number((datos as PagedResponse<UnidadOperativaApi>).count ?? unidadesAcumuladas.length);
+      urlSiguiente = (datos as PagedResponse<UnidadOperativaApi>).next ?? null;
+      continue;
+    }
+
+    const unidadesNormalizadas = normalizeUnits(datos);
+    return {
+      unidades: unidadesNormalizadas,
+      total: Array.isArray(datos) ? unidadesNormalizadas.length : totalRegistros || unidadesNormalizadas.length,
+    };
+  }
+
+  return {
+    unidades: normalizeUnits(unidadesAcumuladas),
+    total: totalRegistros || unidadesAcumuladas.length,
+  };
 }
 
 function obtenerEtiquetaRol(role?: string) {
@@ -51,6 +123,7 @@ export function ViewUnidadesPage() {
   const [unidades, setUnidades] = useState<UnidadOperativa[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchEspecialidad, setSearchEspecialidad] = useState("");
   const [error, setError] = useState("");
   const [total, setTotal] = useState(0);
   const [filtroRol, setFiltroRol] = useState<"TODAS" | "SUPERVISOR" | "OPERATIVE" | "ADMIN">("TODAS");
@@ -59,17 +132,9 @@ export function ViewUnidadesPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("/users/");
-        if (!res.ok) {
-          setError("No se pudieron cargar las unidades.");
-          setLoading(false);
-          return;
-        }
-
-        const data = (await res.json()) as unknown;
-        const normalized = normalizeUnits(data);
-        setUnidades(normalized);
-        setTotal(Array.isArray(data) ? normalized.length : Number((data as PagedResponse<UnidadOperativa>)?.count ?? normalized.length));
+        const { unidades: unidadesCargadas, total: totalCargado } = await cargarTodasLasUnidades();
+        setUnidades(unidadesCargadas);
+        setTotal(totalCargado);
       } catch {
         setError("Error de red al cargar unidades.");
       } finally {
@@ -80,6 +145,7 @@ export function ViewUnidadesPage() {
 
   const unidadesFiltradas = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const queryEspecialidad = searchEspecialidad.trim().toLowerCase();
 
     return unidades.filter((unidad) => {
       if (unidad.role === "ADMIN") {
@@ -90,8 +156,14 @@ export function ViewUnidadesPage() {
         !query ||
         unidad.username.toLowerCase().includes(query) ||
         unidad.email.toLowerCase().includes(query) ||
+        unidad.dni?.toLowerCase().includes(query) ||
         (unidad.organization_name ?? "").toLowerCase().includes(query) ||
+        (unidad.especialidades ?? []).some((esp) => esp.toLowerCase().includes(query)) ||
         (unidad.role ?? "").toLowerCase().includes(query);
+
+      const coincideEspecialidad =
+        !queryEspecialidad ||
+        (unidad.especialidades ?? []).some((esp) => esp.toLowerCase().includes(queryEspecialidad));
 
       const coincideRol = filtroRol === "TODAS" || unidad.role === filtroRol;
       const coincideEstado =
@@ -99,9 +171,9 @@ export function ViewUnidadesPage() {
         (filtroEstado === "ACTIVAS" && unidad.is_active) ||
         (filtroEstado === "INACTIVAS" && !unidad.is_active);
 
-      return coincideTexto && coincideRol && coincideEstado;
+      return coincideTexto && coincideEspecialidad && coincideRol && coincideEstado;
     });
-  }, [search, unidades, filtroRol, filtroEstado]);
+  }, [search, searchEspecialidad, unidades, filtroRol, filtroEstado]);
 
   const metricas = useMemo(() => {
     const unidadesOperativas = unidades.filter((unidad) => unidad.role !== "ADMIN");
@@ -203,29 +275,34 @@ export function ViewUnidadesPage() {
 
         <div className="mt-5 grid gap-4 2xl:grid-cols-[1.65fr_0.95fr]">
           <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_11rem_11rem]">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por usuario, email, rol u organización"
-                className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                placeholder="Buscar por usuario, email, dni, rol u organización"
+                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+              />
+              <input
+                value={searchEspecialidad}
+                onChange={(e) => setSearchEspecialidad(e.target.value)}
+                placeholder="Buscar por especialidad"
+                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
               />
 
               <select
                 value={filtroRol}
                 onChange={(e) => setFiltroRol(e.target.value as typeof filtroRol)}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
               >
                 <option value="TODAS">Todos los roles</option>
                 <option value="SUPERVISOR">Supervisores</option>
                 <option value="OPERATIVE">Operativos</option>
-                <option value="ADMIN">Admins</option>
               </select>
 
               <select
                 value={filtroEstado}
                 onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
               >
                 <option value="TODAS">Todos los estados</option>
                 <option value="ACTIVAS">Solo activas</option>
@@ -241,9 +318,11 @@ export function ViewUnidadesPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Unidad</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Correo</th>
+                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">DNI</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Rol operativo</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Organización</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Disponibilidad</th>
+                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Especialidades</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Alta</th>
                     <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acción</th>
                   </tr>
@@ -264,6 +343,7 @@ export function ViewUnidadesPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{unidad.email}</td>
+                        <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{unidad.dni}</td>
                         <td className="px-4 py-3.5">
                           <span className={`rounded-full px-2.5 py-1 text-xs ring-1 ${obtenerClaseRol(unidad.role)}`}>
                             {obtenerEtiquetaRol(unidad.role)}
@@ -274,6 +354,15 @@ export function ViewUnidadesPage() {
                           <span className={unidad.is_active ? "cm-badge-success rounded-full px-2.5 py-1 text-xs" : "cm-badge-warning rounded-full px-2.5 py-1 text-xs"}>
                             {unidad.is_active ? "Disponible" : "No disponible"}
                           </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex flex-wrap gap-1">
+                            {unidad.especialidades?.map((esp, index) => (
+                              <span key={index} className="rounded-full bg-[color:var(--cm-info)] px-2.5 py-1 text-xs text-white">
+                                {esp}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{new Date(unidad.created_at).toLocaleString()}</td>
                         <td className="px-4 py-3.5">
@@ -311,7 +400,7 @@ export function ViewUnidadesPage() {
                   <p className="mt-1 text-2xl font-bold">{metricas.operativos}</p>
                 </div>
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Roles sin organización</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Operativos sin organización</p>
                   <p className="mt-1 text-2xl font-bold">{metricas.sinOrganizacion}</p>
                 </div>
               </div>

@@ -22,10 +22,10 @@ function obtenerMensajeError(data: unknown, mensajePorDefecto: string) {
 
   const valor = (data as Record<string, unknown>)[primeraClave];
   if (Array.isArray(valor) && typeof valor[0] === "string") {
-    return valor[0];
+    return `${primeraClave}: ${valor[0]}`;
   }
   if (typeof valor === "string") {
-    return valor;
+    return `${primeraClave}: ${valor}`;
   }
 
   return mensajePorDefecto;
@@ -126,11 +126,6 @@ export default function ResetPasswordPage() {
 
     if (nuevaPassword.includes(" ")) {
       setErrorNuevaPassword("La nueva password no puede contener espacios.");
-      return;
-    }
-
-    if (nuevaPassword.includes("1234567890") || nuevaPassword.includes("0123456789")) {
-      setErrorNuevaPassword("La nueva password no puede contener numeros seguidos.");
       return;
     }
 
