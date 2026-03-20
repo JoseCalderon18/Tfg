@@ -7,11 +7,11 @@ type MeResponse = {
   has_panel_full_access?: boolean;
 };
 
-type OrganizationType = "FIRE_DEPT" | "POLICE" | "RESCUE" | "MEDICAL" | "OTHER";
+type TipoOrganzacion = "FIRE_DEPT" | "POLICE" | "RESCUE" | "MEDICAL" | "OTHER";
 
-type CreateOrganizationPayload = {
+type CreateOrganizacion = {
   name: string;
-  org_type: OrganizationType;
+  org_type: TipoOrganzacion;
   contact_email?: string;
   contact_phone?: string;
   address?: string;
@@ -20,7 +20,7 @@ type CreateOrganizationPayload = {
 
 const CREATE_ORGANIZATION_ENDPOINT = "/organizations/";
 
-const organizationTypeOptions: Array<{ value: OrganizationType; label: string }> = [
+const organizacionTipos: Array<{ value: TipoOrganzacion; label: string }> = [
   { value: "FIRE_DEPT", label: "Cuerpo de bomberos" },
   { value: "POLICE", label: "Policia" },
   { value: "RESCUE", label: "Equipo de rescate" },
@@ -31,17 +31,17 @@ const organizationTypeOptions: Array<{ value: OrganizationType; label: string }>
 export default function NewOrganizationPage() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
-  const [orgType, setOrgType] = useState<OrganizationType>("OTHER");
-  const [contactEmail, setContactEmail] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [nombre, setNombre] = useState("");
+  const [tipoOrganizacion, setTipoOrganizacion] = useState<TipoOrganzacion>("OTHER");
+  const [emailContacto, setEmailContacto] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [direccion, setDireccion] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [enviado, setEnviado] = useState("");
 
   function normalizarTelefono(valor: string) {
     const valorSinLetras = valor.replace(/[^\d+]/g, "");
@@ -65,30 +65,30 @@ export default function NewOrganizationPage() {
         return;
       }
 
-      setLoading(false);
+      setCargando(false);
     })();
   }, [navigate]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    setSuccess("");
+    setEnviado("");
 
-    if (!name.trim()) {
+    if (!nombre.trim()) {
       setError("El nombre de la organizacion es obligatorio.");
       return;
     }
 
-    const payload: CreateOrganizationPayload = {
-      name: name.trim(),
-      org_type: orgType,
-      contact_email: contactEmail.trim() || undefined,
+    const payload: CreateOrganizacion = {
+      name: nombre.trim(),
+      org_type: tipoOrganizacion,
+      contact_email: emailContacto.trim() || undefined,
       contact_phone: contactPhone.trim() || undefined,
-      address: address.trim() || undefined,
+      address: direccion.trim() || undefined,
       is_active: isActive,
     };
 
-    setSubmitting(true);
+    setEnviando(true);
     try {
       const res = await apiFetch(CREATE_ORGANIZATION_ENDPOINT, {
         method: "POST",
@@ -118,19 +118,19 @@ export default function NewOrganizationPage() {
         return;
       }
 
-      setSuccess("Organizacion creada correctamente.");
-      setName("");
-      setOrgType("OTHER");
-      setContactEmail("");
+      setEnviado("Organizacion creada correctamente.");
+      setNombre("");
+      setTipoOrganizacion("OTHER");
+      setEmailContacto("");
       setContactPhone("");
-      setAddress("");
+      setDireccion("");
       setIsActive(true);
     } finally {
-      setSubmitting(false);
+      setEnviando(false);
     }
   }
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
         <div className="flex items-center gap-3">
@@ -170,9 +170,9 @@ export default function NewOrganizationPage() {
               {error}
             </div>
           ) : null}
-          {success ? (
+          {enviado ? (
             <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {success}
+              {enviado}
             </div>
           ) : null}
 
@@ -181,8 +181,8 @@ export default function NewOrganizationPage() {
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organizacion</label>
                 <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={nombre}
+                  onChange={(event) => setNombre(event.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Unidad Operativa Madrid Norte"
                   required
@@ -192,11 +192,11 @@ export default function NewOrganizationPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organizacion</label>
                 <select
-                  value={orgType}
-                  onChange={(event) => setOrgType(event.target.value as OrganizationType)}
+                  value={tipoOrganizacion}
+                  onChange={(event) => setTipoOrganizacion(event.target.value as TipoOrganzacion)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {organizationTypeOptions.map((option) => (
+                  {organizacionTipos.map((option) => (
                     <option key={option.value} value={option.value} className="bg-slate-900">
                       {option.label}
                     </option>
@@ -220,8 +220,8 @@ export default function NewOrganizationPage() {
                 <label className="mb-1 block text-sm font-medium text-slate-300">Correo de contacto</label>
                 <input
                   type="email"
-                  value={contactEmail}
-                  onChange={(event) => setContactEmail(event.target.value)}
+                  value={emailContacto}
+                  onChange={(event) => setEmailContacto(event.target.value)}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="contacto@organizacion.local"
@@ -243,8 +243,8 @@ export default function NewOrganizationPage() {
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Direccion</label>
                 <textarea
-                  value={address}
-                  onChange={(event) => setAddress(event.target.value)}
+                  value={direccion}
+                  onChange={(event) => setDireccion(event.target.value)}
                   rows={4}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Calle, numero, ciudad y observaciones de sede"
@@ -255,14 +255,14 @@ export default function NewOrganizationPage() {
             <button
                 type="button"
                 onClick={() => {
-                setName("");
-                setOrgType("OTHER");
-                setContactEmail("");
+                setNombre("");
+                setTipoOrganizacion("OTHER");
+                setEmailContacto("");
                 setContactPhone("");
-                setAddress("");
+                setDireccion("");
                 setIsActive(true);
                 setError("");
-                setSuccess("");
+                setEnviado("");
                 }}
                 className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
             >
@@ -278,10 +278,10 @@ export default function NewOrganizationPage() {
                 </button>
                 <button
                 type="submit"
-                disabled={submitting}
+                disabled={enviando}
                 className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-60 transition"
                 >
-                {submitting ? "Creando..." : "Crear organizacion"}
+                {enviando ? "Creando..." : "Crear organizacion"}
                 </button>
             </div>
             </div>
