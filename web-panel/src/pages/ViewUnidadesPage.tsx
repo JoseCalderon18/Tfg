@@ -138,6 +138,9 @@ export function ViewUnidadesPage() {
   const [total, setTotal] = useState(0);
   const [filtroRol, setFiltroRol] = useState<"TODAS" | "SUPERVISOR" | "OPERATIVE" | "ADMIN">("TODAS");
   const [filtroEstado, setFiltroEstado] = useState<"TODAS" | "ACTIVAS" | "INACTIVAS">("TODAS");
+  const [filtroConSupervisor, setFiltroConSupervisor] = useState(false);
+  const [filtroSinOrganizacion, setFiltroSinOrganizacion] = useState(false);
+  const [filtroConEspecialidad, setFiltroConEspecialidad] = useState(false);
   const [campoOrden, setCampoOrden] = useState<CampoOrden>("username");
   const [direccionOrden, setDireccionOrden] = useState<DireccionOrden>("asc");
 
@@ -197,10 +200,12 @@ export function ViewUnidadesPage() {
         filtroEstado === "TODAS" ||
         (filtroEstado === "ACTIVAS" && unidad.is_active) ||
         (filtroEstado === "INACTIVAS" && !unidad.is_active);
-
-      return coincideTexto && coincideEspecialidad && coincideRol && coincideEstado;
+      const coincideConSupervisor = !filtroConSupervisor || (unidad.role === "SUPERVISOR");
+      const coincideSinOrganizacion = !filtroSinOrganizacion || !unidad.organization_name;
+      const coincideConEspecialidad = !filtroConEspecialidad || (unidad.especialidades && unidad.especialidades.length > 0);
+      return coincideTexto && coincideEspecialidad && coincideRol && coincideEstado && coincideConSupervisor && coincideSinOrganizacion && coincideConEspecialidad;
     });
-  }, [search, searchEspecialidad, unidades, filtroRol, filtroEstado]);
+  }, [search, searchEspecialidad, unidades, filtroRol, filtroEstado, filtroConSupervisor, filtroSinOrganizacion, filtroConEspecialidad]);
     const unidadesOrdenadas = useMemo(() => {
     const lista = [...unidadesFiltradas];
 
@@ -361,40 +366,68 @@ export function ViewUnidadesPage() {
         </div>
 
         <div className="mt-5 grid gap-4 2xl:grid-cols-[1.65fr_0.95fr]">
-          <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por usuario, email, dni, rol u organización"
-                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
-              />
-              <input
-                value={searchEspecialidad}
-                onChange={(e) => setSearchEspecialidad(e.target.value)}
-                placeholder="Buscar por especialidad"
-                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
-              />
-
-              <select
-                value={filtroRol}
-                onChange={(e) => setFiltroRol(e.target.value as typeof filtroRol)}
-                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
-              >
-                <option value="TODAS">Todos los roles</option>
-                <option value="SUPERVISOR">Supervisores</option>
-                <option value="OPERATIVE">Operativos</option>
-              </select>
-
-              <select
-                value={filtroEstado}
-                onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
-                className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
-              >
-                <option value="TODAS">Todos los estados</option>
-                <option value="ACTIVAS">Solo activas</option>
-                <option value="INACTIVAS">Solo inactivas</option>
-              </select>
+          <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por usuario, email, dni, rol u organizacion"
+                  className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                />
+                <input
+                  value={searchEspecialidad}
+                  onChange={(e) => setSearchEspecialidad(e.target.value)}
+                  placeholder="Buscar por especialidad"
+                  className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                />
+                <select
+                  value={filtroRol}
+                  onChange={(e) => setFiltroRol(e.target.value as typeof filtroRol)}
+                  className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                >
+                  <option value="TODAS">Todos los roles</option>
+                  <option value="SUPERVISOR">Supervisores</option>
+                  <option value="OPERATIVE">Operativos</option>
+                </select>
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
+                  className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
+                >
+                  <option value="TODAS">Todos los estados</option>
+                  <option value="ACTIVAS">Solo activas</option>
+                  <option value="INACTIVAS">Solo inactivas</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
+                  <input
+                    type="checkbox"
+                    checked={filtroConSupervisor}
+                    onChange={(e) => setFiltroConSupervisor(e.target.checked)}
+                    className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
+                  />
+                  Con supervisor asignado
+                </label>
+                <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
+                  <input
+                    type="checkbox"
+                    checked={filtroSinOrganizacion}
+                    onChange={(e) => setFiltroSinOrganizacion(e.target.checked)}
+                    className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
+                  />
+                  Sin organizacion
+                </label>
+                <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
+                  <input
+                    type="checkbox"
+                    checked={filtroConEspecialidad}
+                    onChange={(e) => setFiltroConEspecialidad(e.target.checked)}
+                    className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
+                  />
+                  Con especialidad
+                </label>
+              </div>
             </div>
 
             {error ? <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">{error}</div> : null}
