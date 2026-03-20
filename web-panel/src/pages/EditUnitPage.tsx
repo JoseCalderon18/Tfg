@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 
+
 const OPCIONES_ROL = [
   { value: "SUPERVISOR", label: "Supervisor" },
   { value: "OPERATIVE", label: "Operativo" },
@@ -34,6 +35,7 @@ type RespuestaDetalleUnidad = {
   assigned_supervisor_id?: string;
   location_lat?: number | null;
   location_lng?: number | null;
+  location_address?: string;
 };
 
 type OpcionOrganizacion = {
@@ -80,6 +82,7 @@ export default function EditUnitPage() {
   const [ultimaUbicacion, setUltimaUbicacion] = useState("");
   const [latitudUbicacionActual, setLatitudUbicacionActual] = useState<number | null>(null);
   const [longitudUbicacionActual, setLongitudUbicacionActual] = useState<number | null>(null);
+  const [direccionLegible, setDireccionLegible] = useState("");
   const [especialidadPrincipal, setEspecialidadPrincipal] = useState("");
   const [horarioOperativo, setHorarioOperativo] = useState("");
   const [contactoEmergencia, setContactoEmergencia] = useState("");
@@ -152,6 +155,7 @@ export default function EditUnitPage() {
         setHorarioOperativo(unidad.operative_schedule ?? "");
         setLatitudUbicacionActual(unidad.location_lat ?? null);
         setLongitudUbicacionActual(unidad.location_lng ?? null);
+        setDireccionLegible(unidad.location_address ?? "");
         setContactoEmergencia(unidad.emergency_contact ?? "");
         setTelefonoEmergencia(unidad.emergency_phone ?? "");
         setNotasOperativas((unidad.medical_notes ?? []).join("\n"));
@@ -256,6 +260,7 @@ export default function EditUnitPage() {
       setNotasOperativas((unidadActualizada.medical_notes ?? []).join("\n"));
       setLatitudUbicacionActual(unidadActualizada.location_lat ?? null);
       setLongitudUbicacionActual(unidadActualizada.location_lng ?? null);
+      setDireccionLegible(unidadActualizada.location_address ?? "");
       setOrganizacionId(unidadActualizada.organization_id ?? "");
       setSupervisorAsignadoId(unidadActualizada.assigned_supervisor_id ?? "");
       setDispositivoAsignadoId(unidadActualizada.device_id ?? "");
@@ -513,7 +518,7 @@ export default function EditUnitPage() {
                 </div>  
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Última ubicación conocida</label>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Direccion registrada</label>
                   <input
                     value={ultimaUbicacion}
                     disabled ={!edicionDesbloqueada}
@@ -605,7 +610,7 @@ export default function EditUnitPage() {
                 <MapaMiniUnidad
                   latitud={latitudUbicacionActual}
                   longitud={longitudUbicacionActual}
-                  etiqueta={nombreUsuario ? `Ubicacion actual de ${nombreUsuario}` : "Ubicacion actual de la unidad"}
+                  etiqueta={nombreUsuario ? `Ubicacion actual de ${nombreReal} (${nombreUsuario})` : "Ubicacion actual de la unidad"}
                 />
               </div>
 
@@ -616,6 +621,10 @@ export default function EditUnitPage() {
                     ? `${latitudUbicacionActual.toFixed(5)}, ${longitudUbicacionActual.toFixed(5)}`
                     : "Sin coordenadas registradas"}
                 </p>
+              </div>
+              <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Direccion legible</p>
+                <p className="mt-1 font-medium">{direccionLegible || "No hay direccion disponible"}</p>
               </div>
             </section>
 

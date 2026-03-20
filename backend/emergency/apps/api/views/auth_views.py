@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from emergency.apps.core.forms import SupervisorLoginForm
+from emergency.apps.core.location_utils import obtener_direccion_legible
 from emergency.apps.core.models import CodigoResetPassword, Dispositivo, Organizacion, Profile, User
 
 from ..serializers import ProfileSerializer, UserCreateSerializer, UserSerializer
@@ -454,6 +455,17 @@ class PanelUserDetailView(APIView):
     @staticmethod
     def _serialize_user(user, request):
         profile = getattr(user, "profile", None)
+        direccion_legible = ""
+
+        if profile and getattr(profile, "location", None):
+            try:
+                direccion_legible = obtener_direccion_legible(
+                    profile.location.y,
+                    profile.location.x,
+                )
+            except Exception:
+                direccion_legible = ""
+
         return {
             "id": str(user.id),
             "username": user.username,
@@ -468,6 +480,7 @@ class PanelUserDetailView(APIView):
             "emergency_phone": getattr(profile, "emergency_phone", ""),
             "location_lat": getattr(profile.location, "y", None) if getattr(profile, "location", None) else None,
             "location_lng": getattr(profile.location, "x", None) if getattr(profile, "location", None) else None,
+            "location_address": direccion_legible,
             "medical_notes": getattr(profile, "medical_notes", []) or [],
             "organization_id": str(getattr(profile, "organization_id", "") or ""),
             "dni": getattr(profile, "dni", ""),
