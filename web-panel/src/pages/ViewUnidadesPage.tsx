@@ -23,7 +23,17 @@ type PagedResponse<T> = {
   next?: string | null;
   previous?: string | null;
   results?: T[];
-};
+}
+type CampoOrden =
+  "username" |
+  "email" |
+  "role" |
+  "dni" |
+  "organization_name" |
+  "is_active" | 
+  "created_at";
+
+type DireccionOrden = "asc" | "desc";
 
 function normalizeUnits(payload: unknown): UnidadOperativa[] {
   if (Array.isArray(payload)) {
@@ -62,7 +72,6 @@ function obtenerResultadosPaginados(payload: unknown): UnidadOperativaApi[] | nu
 
   return null;
 }
-
 async function cargarTodasLasUnidades(): Promise<{ unidades: UnidadOperativa[]; total: number }> {
   const unidadesAcumuladas: UnidadOperativaApi[] = [];
   let urlSiguiente: string | null = "/users/";
@@ -82,6 +91,7 @@ async function cargarTodasLasUnidades(): Promise<{ unidades: UnidadOperativa[]; 
 
     const datos = (await respuesta.json()) as unknown;
     const resultadosPaginados = obtenerResultadosPaginados(datos);
+
 
     if (resultadosPaginados) {
       unidadesAcumuladas.push(...resultadosPaginados);
@@ -128,6 +138,23 @@ export function ViewUnidadesPage() {
   const [total, setTotal] = useState(0);
   const [filtroRol, setFiltroRol] = useState<"TODAS" | "SUPERVISOR" | "OPERATIVE" | "ADMIN">("TODAS");
   const [filtroEstado, setFiltroEstado] = useState<"TODAS" | "ACTIVAS" | "INACTIVAS">("TODAS");
+  const [campoOrden, setCampoOrden] = useState<CampoOrden>("username");
+  const [direccionOrden, setDireccionOrden] = useState<DireccionOrden>("asc");
+
+  function manejarOrden(campo: CampoOrden) {
+    if (campoOrden === campo) {
+      setDireccionOrden((valorActual) => (valorActual === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setCampoOrden(campo);
+    setDireccionOrden("asc");
+  }
+
+  function obtenerIndicadorOrden(campo: CampoOrden) {
+    if (campoOrden !== campo) return "↕";
+    return direccionOrden === "asc" ? "↑" : "↓";
+  }
 
   useEffect(() => {
     (async () => {
@@ -174,6 +201,66 @@ export function ViewUnidadesPage() {
       return coincideTexto && coincideEspecialidad && coincideRol && coincideEstado;
     });
   }, [search, searchEspecialidad, unidades, filtroRol, filtroEstado]);
+    const unidadesOrdenadas = useMemo(() => {
+    const lista = [...unidadesFiltradas];
+
+    lista.sort((a, b) => {
+      if (campoOrden === "username") {
+        return direccionOrden === "asc"
+          ? a.username.localeCompare(b.username)
+          : b.username.localeCompare(a.username);
+      }
+
+      if (campoOrden === "email") {
+        return direccionOrden === "asc"
+          ? a.email.localeCompare(b.email)
+          : b.email.localeCompare(a.email);
+      }
+
+      if (campoOrden === "dni") {
+        const dniA = a.dni ?? "";
+        const dniB = b.dni ?? "";
+        return direccionOrden === "asc"
+          ? dniA.localeCompare(dniB)
+          : dniB.localeCompare(dniA);
+      }
+
+      if (campoOrden === "role") {
+        const rolA = a.role ?? "";
+        const rolB = b.role ?? "";
+        return direccionOrden === "asc"
+          ? rolA.localeCompare(rolB)
+          : rolB.localeCompare(rolA);
+      }
+
+      if (campoOrden === "organization_name") {
+        const organizacionA = a.organization_name ?? "";
+        const organizacionB = b.organization_name ?? "";
+        return direccionOrden === "asc"
+          ? organizacionA.localeCompare(organizacionB)
+          : organizacionB.localeCompare(organizacionA);
+      }
+
+      if (campoOrden === "is_active") {
+        const estadoA = a.is_active ? 1 : 0;
+        const estadoB = b.is_active ? 1 : 0;
+        return direccionOrden === "asc" ? estadoA - estadoB : estadoB - estadoA;
+      }
+
+      if (campoOrden === "created_at") {
+        const fechaA = new Date(a.created_at).getTime();
+        const fechaB = new Date(b.created_at).getTime();
+        return direccionOrden === "asc" ? fechaA - fechaB : fechaB - fechaA;
+      }
+
+      return 0;
+    });
+
+    return lista;
+  }, [unidadesFiltradas, campoOrden, direccionOrden]);
+
+
+  
 
   const metricas = useMemo(() => {
     const unidadesOperativas = unidades.filter((unidad) => unidad.role !== "ADMIN");
@@ -316,26 +403,89 @@ export function ViewUnidadesPage() {
               <table className="min-w-[1180px] w-full text-sm">
                 <thead className="bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Unidad</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Correo</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">DNI</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Rol operativo</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Organización</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Disponibilidad</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Especialidades</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Alta</th>
-                    <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acción</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("username")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Unidad
+                      <span className="text-[10px]">{obtenerIndicadorOrden("username")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("email")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Correo
+                      <span className="text-[10px]">{obtenerIndicadorOrden("email")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("dni")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      DNI
+                      <span className="text-[10px]">{obtenerIndicadorOrden("dni")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("role")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Rol operativo
+                      <span className="text-[10px]">{obtenerIndicadorOrden("role")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("organization_name")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Organizacion
+                      <span className="text-[10px]">{obtenerIndicadorOrden("organization_name")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("is_active")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Disponibilidad
+                      <span className="text-[10px]">{obtenerIndicadorOrden("is_active")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Especialidades</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
+                    <button
+                      type="button"
+                      onClick={() => manejarOrden("created_at")}
+                      className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
+                    >
+                      Alta
+                      <span className="text-[10px]">{obtenerIndicadorOrden("created_at")}</span>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Accion</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {unidadesFiltradas.length === 0 ? (
+                  {unidadesOrdenadas.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
+                      <td colSpan={9} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                         No hay unidades para mostrar.
                       </td>
                     </tr>
                   ) : (
-                    unidadesFiltradas.map((unidad) => (
+                    unidadesOrdenadas.map((unidad) => (
                       <tr key={unidad.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                         <td className="px-4 py-3.5">
                           <div>
@@ -435,3 +585,6 @@ export function ViewUnidadesPage() {
     </div>
   );
 }
+
+
+
