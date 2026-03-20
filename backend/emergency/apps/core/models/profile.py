@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.gis.db import models as gis_models
 import uuid
 
 from .device import Dispositivo
@@ -53,6 +54,13 @@ class Perfil(models.Model):
         null=True,
         help_text="Telefono del contacto de emergencia",
     )
+    location = gis_models.PointField(
+        srid=4326,
+        blank=True,
+        null=True,
+        help_text="Ubicacion geografica del usuario (latitud, longitud)",
+    )
+
     medical_notes = models.JSONField(
         default=list,
         blank=True,

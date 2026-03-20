@@ -94,13 +94,22 @@ export default function ViewUsersPage() {
             <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administracion</p>
             <h1 className="text-2xl font-bold">Usuarios del sistema</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/newuser")}
+              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              Crear Usuario
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">

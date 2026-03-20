@@ -3,6 +3,7 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.gis.geos import Point
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.password_validation import validate_password
@@ -465,6 +466,8 @@ class PanelUserDetailView(APIView):
             "role": getattr(profile, "role", None),
             "emergency_contact": getattr(profile, "emergency_contact", ""),
             "emergency_phone": getattr(profile, "emergency_phone", ""),
+            "location_lat": getattr(profile.location, "y", None) if getattr(profile, "location", None) else None,
+            "location_lng": getattr(profile.location, "x", None) if getattr(profile, "location", None) else None,
             "medical_notes": getattr(profile, "medical_notes", []) or [],
             "organization_id": str(getattr(profile, "organization_id", "") or ""),
             "dni": getattr(profile, "dni", ""),
@@ -556,6 +559,32 @@ class PanelUserDetailView(APIView):
         if "emergency_phone" in payload:
             profile.emergency_phone = str(payload.get("emergency_phone", "")).strip()
             profile_updated_fields.append("emergency_phone")
+        if "location_lat" in payload or "location_lng" in payload:
+            raw_lat = payload.get("location_lat")
+            raw_lng = payload.get("location_lng")
+
+            if raw_lat in ("", None) or raw_lng in ("", None):
+                profile.location = None
+            else:
+                try:
+                    lat = float(raw_lat)
+                    lng = float(raw_lng)
+                except (TypeError, ValueError):
+                    return Response(
+                        {"location": ["Coordenadas no validas."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                    return Response(
+                        {"location": ["Latitud o longitud fuera de rango."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                profile.location = Point(lng, lat, srid=4326)
+
+            profile_updated_fields.append("location")
+
 
         if "medical_notes" in payload:
             profile.medical_notes = _normalizar_lista(payload.get("medical_notes"))

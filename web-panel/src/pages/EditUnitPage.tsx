@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import MapaMiniUnidad from "../components/MapaMiniUnidad";
 
 const OPCIONES_ROL = [
   { value: "SUPERVISOR", label: "Supervisor" },
@@ -31,6 +32,8 @@ type RespuestaDetalleUnidad = {
   operative_schedule?: string;
   device_id?: string;
   assigned_supervisor_id?: string;
+  location_lat?: number | null;
+  location_lng?: number | null;
 };
 
 type OpcionOrganizacion = {
@@ -75,6 +78,8 @@ export default function EditUnitPage() {
   const [estadoOperativo, setEstadoOperativo] = useState("DISPONIBLE");
   const [incidenteActual, setIncidenteActual] = useState("");
   const [ultimaUbicacion, setUltimaUbicacion] = useState("");
+  const [latitudUbicacionActual, setLatitudUbicacionActual] = useState<number | null>(null);
+  const [longitudUbicacionActual, setLongitudUbicacionActual] = useState<number | null>(null);
   const [especialidadPrincipal, setEspecialidadPrincipal] = useState("");
   const [horarioOperativo, setHorarioOperativo] = useState("");
   const [contactoEmergencia, setContactoEmergencia] = useState("");
@@ -145,6 +150,8 @@ export default function EditUnitPage() {
         );
         setEspecialidadPrincipal((unidad.specialties ?? [])[0] ?? "");
         setHorarioOperativo(unidad.operative_schedule ?? "");
+        setLatitudUbicacionActual(unidad.location_lat ?? null);
+        setLongitudUbicacionActual(unidad.location_lng ?? null);
         setContactoEmergencia(unidad.emergency_contact ?? "");
         setTelefonoEmergencia(unidad.emergency_phone ?? "");
         setNotasOperativas((unidad.medical_notes ?? []).join("\n"));
@@ -178,6 +185,8 @@ export default function EditUnitPage() {
       datosFormulario.append("is_active", String(unidadActiva));
       datosFormulario.append("emergency_contact", contactoEmergencia.trim());
       datosFormulario.append("emergency_phone", telefonoEmergencia.trim());
+      datosFormulario.append("location_lat", latitudUbicacionActual?.toString() ?? "");
+      datosFormulario.append("location_lng", longitudUbicacionActual?.toString() ?? "");
       datosFormulario.append(
         "medical_notes",
         JSON.stringify(
@@ -245,6 +254,8 @@ export default function EditUnitPage() {
       setHorarioOperativo(unidadActualizada.operative_schedule ?? "");
       setEspecialidadPrincipal((unidadActualizada.specialties ?? [])[0] ?? "");
       setNotasOperativas((unidadActualizada.medical_notes ?? []).join("\n"));
+      setLatitudUbicacionActual(unidadActualizada.location_lat ?? null);
+      setLongitudUbicacionActual(unidadActualizada.location_lng ?? null);
       setOrganizacionId(unidadActualizada.organization_id ?? "");
       setSupervisorAsignadoId(unidadActualizada.assigned_supervisor_id ?? "");
       setDispositivoAsignadoId(unidadActualizada.device_id ?? "");
@@ -581,8 +592,30 @@ export default function EditUnitPage() {
 
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organización</p>
-                  <p className="mt-1 font-medium">{organizacion || "Sin organización"}</p>
+                  <p className="mt-1 font-medium">{organizacion || "Sin organizacion"}</p>
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion</p>
+              <h2 className="mt-2 text-lg font-bold">Posicion actual</h2>
+
+              <div className="mt-4">
+                <MapaMiniUnidad
+                  latitud={latitudUbicacionActual}
+                  longitud={longitudUbicacionActual}
+                  etiqueta={nombreUsuario ? `Ubicacion actual de ${nombreUsuario}` : "Ubicacion actual de la unidad"}
+                />
+              </div>
+
+              <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Coordenadas</p>
+                <p className="mt-1 font-medium">
+                  {latitudUbicacionActual != null && longitudUbicacionActual != null
+                    ? `${latitudUbicacionActual.toFixed(5)}, ${longitudUbicacionActual.toFixed(5)}`
+                    : "Sin coordenadas registradas"}
+                </p>
               </div>
             </section>
 
@@ -601,6 +634,7 @@ export default function EditUnitPage() {
                 Unidad activa en el sistema
               </label>
             </section>
+
           </aside>
         </div>
         <div className="mt-6 flex items-center justify-between gap-3">

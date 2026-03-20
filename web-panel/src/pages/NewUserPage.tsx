@@ -174,9 +174,6 @@ export default function NewUserPage() {
                   autoComplete="username"
                   required
                 />
-                <p className="mt-1 text-xs text-slate-500">
-                  Identificador para login (tu backend autentica por <b>username</b>).
-                </p>
               </div>
 
               <div>
@@ -237,10 +234,6 @@ export default function NewUserPage() {
             </div>
           </form>
         </div>
-
-        <p className="mt-6 text-xs text-slate-500">
-          Consejo: el servidor debe asignar el rol operativo en backend (no confiar en el frontend).
-        </p>
       </div>
     </div>
   );
