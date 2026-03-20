@@ -22,6 +22,7 @@ import LightningMapPage from './pages/LightningMapPage';
 import EditOrganizationPage from './pages/EditOrganizationPage';
 import EditUnitPage from './pages/EditUnitPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import NewOrganizationPage from './pages/NewOrganizationPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -56,6 +57,7 @@ function App() {
         <Route path="editIncident/:id" element={<EditIncidentPage />} />
         <Route path="editorganization/:id" element={<EditOrganizationPage />} />
         <Route path="editunit/:id" element={<EditUnitPage />} />
+        <Route path="createorganization" element={<NewOrganizationPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

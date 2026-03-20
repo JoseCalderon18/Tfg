@@ -119,13 +119,22 @@ export default function ViewOrganizationsPage() {
             <p className="text-sm text-slate-400">Administracion</p>
             <h1 className="text-2xl font-bold">Organizaciones</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/createorganization")}
+              className="rounded-xl bg-blue-500/60 px-4 py-2 text-sm font-semibold ring-1 ring-blue-500 hover:bg-blue-500/80 transition"
+            >
+              Crear organizacion
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl bg-slate-900/60 p-4 ring-1 ring-slate-800">
@@ -242,3 +251,4 @@ export default function ViewOrganizationsPage() {
     </div>
   );
 }
+
