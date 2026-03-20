@@ -413,22 +413,36 @@ export default function EditUnitPage() {
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Supervisor asignado</label>
-                  <select
-                    value={supervisorAsignadoId}
-                    disabled={!edicionDesbloqueada}
-                    onChange={(e) => {
-                      const nuevoSupervisorId = e.target.value;
-                      setSupervisorAsignadoId(nuevoSupervisorId);
-                    }}
-                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
-                  >
-                    <option value="">Sin supervisor</option>
-                    {(opcionesFormulario.supervisors ?? []).map((supervisor) => (
-                      <option key={supervisor.id} value={supervisor.id}>
-                        {supervisor.display_name || supervisor.username}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-stretch gap-2">
+                    <select
+                      value={supervisorAsignadoId}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(e) => {
+                        const nuevoSupervisorId = e.target.value;
+                        setSupervisorAsignadoId(nuevoSupervisorId);
+                      }}
+                      className="min-w-0 flex-1 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                    >
+                      <option value="">Sin supervisor</option>
+                      {(opcionesFormulario.supervisors ?? []).map((supervisor) => (
+                        <option key={supervisor.id} value={supervisor.id}>
+                          {supervisor.display_name || supervisor.username}
+                        </option>
+                      ))}
+                    </select>
+                    {supervisorAsignadoId ? (
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-lg bg-[color:var(--cm-info)] px-4 py-2 text-sm font-medium text-white hover:bg-[color:var(--cm-info-hover)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          onClick={() => {
+                            navigate(`/editunit/${supervisorAsignadoId}`);
+                          }}
+                        >
+                          Ver supervisor
+                        </button>
+                      ) : null}
+
+                  </div>
                 </div>
 
                 <div>
