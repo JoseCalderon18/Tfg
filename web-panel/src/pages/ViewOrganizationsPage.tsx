@@ -19,6 +19,8 @@ type Organization = {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+  member_count?: number;
+  incident_count?: number;
 };
 
 function normalizeOrganizations(raw: unknown): Organization[] {
@@ -39,6 +41,8 @@ function normalizeOrganizations(raw: unknown): Organization[] {
       contact_phone: row.contact_phone ?? null,
       address: row.address ?? null,
       is_active: Boolean(row.is_active),
+      member_count: typeof row.member_count === "number" ? row.member_count : 0,
+      incident_count: typeof row.incident_count === "number" ? row.incident_count : 0,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -51,6 +55,18 @@ export default function ViewOrganizationsPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+
+  const organizationKpis = useMemo(() => {
+  const totalMembers = organizations.reduce((acc, org) => acc + (org.member_count ?? 0), 0);
+  const totalIncidents = organizations.reduce((acc, org) => acc + (org.incident_count ?? 0), 0);
+
+    return {
+      totalOrganizations: organizations.length,
+      totalMembers,
+      totalIncidents,
+    };
+  }, [organizations]);
+
 
   useEffect(() => {
     (async () => {
@@ -135,6 +151,22 @@ export default function ViewOrganizationsPage() {
               Crear organizacion
             </button>
           </div>
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
+            <p className="text-sm text-slate-400">Organizaciones</p>
+            <p className="mt-2 text-3xl font-bold text-slate-100">{organizationKpis.totalOrganizations}</p>
+          </article>
+
+          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
+            <p className="text-sm text-slate-400">Miembros</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-300">{organizationKpis.totalMembers}</p>
+          </article>
+
+          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
+            <p className="text-sm text-slate-400">Incidentes</p>
+            <p className="mt-2 text-3xl font-bold text-amber-300">{organizationKpis.totalIncidents}</p>
+          </article>
         </div>
 
         <div className="mt-6 rounded-2xl bg-slate-900/60 p-4 ring-1 ring-slate-800">
