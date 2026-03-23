@@ -303,6 +303,8 @@ export default function IncidentsPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [incidents, setIncidents] = useState<IncidentRow[]>([]);
+  const [soloIncidentesAbiertos, setSoloIncidentesAbiertos] = useState(false);
+  const [incidentesEvaluacion, setIncidentesEvaluacion] = useState(false);
   const [alertasPorIncidente, setAlertasPorIncidente] = useState<Record<string, AlertaFila[]>>({});
   const [cargandoAlertas, setCargandoAlertas] = useState(true);
   const [errorAlertas, setErrorAlertas] = useState("");
@@ -356,14 +358,27 @@ export default function IncidentsPage() {
 
   const filteredIncidents = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return incidents;
+    return incidents.filter((incident) => {
+      const coincideBusqueda =
+        !q ||
+        `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
+          .toLowerCase()
+          .includes(q);
 
-    return incidents.filter((incident) =>
-      `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [query, incidents]);
+      const coincideAbiertos = !soloIncidentesAbiertos || incident.status === "OPEN";
+      const coincideEvaluacion = !incidentesEvaluacion || incident.status === "TRIAGE";
+
+      return coincideBusqueda && coincideAbiertos && coincideEvaluacion;
+    });
+  }, [query, incidents, soloIncidentesAbiertos, incidentesEvaluacion]);
+
+  const resumenKpis = useMemo(() => {
+    const incidentesAbiertos = incidents.filter((incident) => incident.status === "OPEN").length;
+    const incidentesEnEvaluacion = incidents.filter((incident) => incident.status === "TRIAGE").length;
+    const incidentesCerrados = incidents.filter((incident) => incident.status === "CLOSED").length;
+
+    return { incidentesAbiertos, incidentesEnEvaluacion, incidentesCerrados };
+  }, [incidents]);
 
   const totalPaginas = Math.max(1, Math.ceil(filteredIncidents.length / INCIDENTES_POR_PAGINA));
 
@@ -498,19 +513,90 @@ export default function IncidentsPage() {
             Nuevo incidente
           </button>
         </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
+              Incidentes abiertos
+            </p>
+            <p className="mt-3 text-3xl font-bold text-[color:var(--cm-danger)]">
+              {resumenKpis.incidentesAbiertos}
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Operativos activos ahora mismo.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
+              En evaluacion
+            </p>
+            <p className="mt-3 text-3xl font-bold text-[color:var(--cm-warning)]">
+              {resumenKpis.incidentesEnEvaluacion}
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Incidentes pendientes de clasificacion.
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
+              Cerrados
+            </p>
+            <p className="mt-3 text-3xl font-bold text-[color:var(--cm-success)]">
+              {resumenKpis.incidentesCerrados}
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Incidentes finalizados y archivados.
+            </p>
+          </article>
+        </div>
 
         <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPaginaActual(1);
-            }}
-            placeholder="Buscar por nombre, tipo, estado o ubicacion..."
-            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
-          />
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
+            <div>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPaginaActual(1);
+                }}
+                placeholder="Buscar por nombre, tipo, estado o ubicacion..."
+                className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
+                <input
+                  type="checkbox"
+                  checked={soloIncidentesAbiertos}
+                  onChange={(e) => {
+                    setSoloIncidentesAbiertos(e.target.checked);
+                    setPaginaActual(1);
+                  }}
+                  className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
+                />
+                Solo abiertos
+              </label>
+
+              <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
+                <input
+                  type="checkbox"
+                  checked={incidentesEvaluacion}
+                  onChange={(e) => {
+                    setIncidentesEvaluacion(e.target.checked);
+                    setPaginaActual(1);
+                  }}
+                  className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
+                />
+                Solo en evaluacion
+              </label>
+            </div>
+          </div>
         </div>
+
+        
 
         {error && (
           <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
