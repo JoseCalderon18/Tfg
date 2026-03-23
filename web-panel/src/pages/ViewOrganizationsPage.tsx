@@ -55,6 +55,12 @@ export default function ViewOrganizationsPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizacionSeleccionadaId, setOrganizacionSeleccionadaId] = useState("");
+
+  const organizacionSeleccionada = useMemo(
+    () => organizations.find((org) => org.id === organizacionSeleccionadaId) ?? null,
+    [organizations, organizacionSeleccionadaId]
+  );
 
   const organizationKpis = useMemo(() => {
   const totalMembers = organizations.reduce((acc, org) => acc + (org.member_count ?? 0), 0);
@@ -62,10 +68,10 @@ export default function ViewOrganizationsPage() {
 
     return {
       totalOrganizations: organizations.length,
-      totalMembers,
-      totalIncidents,
+      totalMembers: organizacionSeleccionada?.member_count ?? totalMembers,
+      totalIncidents: organizacionSeleccionada?.incident_count ?? totalIncidents,
     };
-  }, [organizations]);
+  }, [organizations, organizacionSeleccionada]);
 
 
   useEffect(() => {
@@ -119,6 +125,17 @@ export default function ViewOrganizationsPage() {
     }
   }, [paginaActual, totalPaginas]);
 
+  useEffect(() => {
+    if (!organizacionSeleccionadaId) {
+      return;
+    }
+
+    const organizacionExiste = organizations.some((org) => org.id === organizacionSeleccionadaId);
+    if (!organizacionExiste) {
+      setOrganizacionSeleccionadaId("");
+    }
+  }, [organizations, organizacionSeleccionadaId]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
@@ -159,12 +176,16 @@ export default function ViewOrganizationsPage() {
           </article>
 
           <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
-            <p className="text-sm text-slate-400">Miembros</p>
+            <p className="text-sm text-slate-400">
+              {organizacionSeleccionada ? `Miembros · ${organizacionSeleccionada.name}` : "Miembros"}
+            </p>
             <p className="mt-2 text-3xl font-bold text-emerald-300">{organizationKpis.totalMembers}</p>
           </article>
 
           <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
-            <p className="text-sm text-slate-400">Incidentes</p>
+            <p className="text-sm text-slate-400">
+              {organizacionSeleccionada ? `Incidentes · ${organizacionSeleccionada.name}` : "Incidentes"}
+            </p>
             <p className="mt-2 text-3xl font-bold text-amber-300">{organizationKpis.totalIncidents}</p>
           </article>
         </div>
@@ -211,7 +232,13 @@ export default function ViewOrganizationsPage() {
                 </tr>
               ) : (
                 organizacionesPaginadas.map((org) => (
-                  <tr key={org.id} className="border-t border-slate-800/80">
+                  <tr
+                    key={org.id}
+                    onClick={() => setOrganizacionSeleccionadaId(org.id)}
+                    className={`border-t border-slate-800/80 transition cursor-pointer hover:bg-slate-800/40 ${
+                      organizacionSeleccionadaId === org.id ? "bg-slate-800/50" : ""
+                    }`}
+                  >
                     <td className="px-4 py-3 font-medium text-slate-100">{org.name}</td>
                     <td className="px-4 py-3 text-slate-300">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
                     org.org_type === "MEDICAL" ? "Servicio Médico" :
@@ -241,7 +268,10 @@ export default function ViewOrganizationsPage() {
                     <td className="px-4 py-3">
                     <button
                         type="button"
-                        onClick={() => navigate(`/editorganization/${org.id}`)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/editorganization/${org.id}`);
+                        }}
                         className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
                       >Editar</button>
                       </td>

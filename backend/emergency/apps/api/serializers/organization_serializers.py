@@ -4,8 +4,8 @@ from emergency.apps.core.models import Organization
 
 class OrganizationSerializer(serializers.ModelSerializer):
     """Serializer para leer organizaciones"""
-    member_count = serializers.IntegerField(source='members.count', read_only=True)
-    incident_count = serializers.IntegerField(source='incidents.count', read_only=True)
+    member_count = serializers.IntegerField(read_only=True)
+    incident_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Organization
