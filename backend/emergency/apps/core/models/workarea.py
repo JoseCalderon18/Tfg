@@ -2,7 +2,6 @@ from django.contrib.gis.db import models as gis_models
 from django.db import models
 from .incident import Incidente as Incident
 
-
 class AreaTrabajo(models.Model):
 
     """
@@ -70,6 +69,8 @@ class AreaTrabajo(models.Model):
 
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = "core_workarea"
 
     def __str__(self):
         return f"{self.name} - {self.incident}"

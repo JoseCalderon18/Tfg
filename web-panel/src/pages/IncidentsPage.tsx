@@ -437,39 +437,6 @@ export default function IncidentsPage() {
     setPendingDeleteIncidentId(incidentId);
     return;
 
-    if (deletingIncidentId) return;
-
-    const confirmed = window.confirm("¿Seguro que quieres borrar este incidente? Esta acción no se puede deshacer.");
-    if (!confirmed) return;
-
-    setError("");
-    setDeletingIncidentId(incidentId);
-    try {
-      const res = await apiFetch(`/incidents/${incidentId}/`, { method: "DELETE" });
-      if (!res.ok) {
-        let detail: string = "No se pudo borrar el incidente.";
-        try {
-          const data = (await res.json()) as Record<string, unknown>;
-          const detailMessage = data["detail"];
-          if (typeof detailMessage === "string") detail = String(detailMessage);
-        } catch {
-          // keep fallback
-        }
-        setError(detail);
-        return;
-      }
-
-      setIncidents((prev) => {
-        const next = prev.filter((incident) => incident.id !== incidentId);
-        setSelectedIncidentId((currentSelectedId) => {
-          if (currentSelectedId !== incidentId) return currentSelectedId;
-          return next[0]?.id ?? "";
-        });
-        return next;
-      });
-    } finally {
-      setDeletingIncidentId("");
-    }
   }
 
   async function confirmDeleteIncident(incidentId: string) {
@@ -604,7 +571,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : incident.status === "CLOSED"
                         ? "Cerrado"
-                        : "En evaluacion"}
+                        : "Evaluacion"}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
@@ -711,7 +678,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : selectedIncident.status === "CLOSED"
                         ? "Cerrado"
-                        : "En evaluacion"}
+                        : "Evaluacion"}
                     </p>
                   </div>
 
@@ -914,6 +881,7 @@ export default function IncidentsPage() {
                     : pendingDeleteIncident.incident_type === "WILDFIRE" ? "Incendio forestal"
                     : pendingDeleteIncident.incident_type === "RESCUE" ? "Rescate de persona desaparecida"
                     : pendingDeleteIncident.incident_type === "NATURAL_DISASTER" ? "Desastre natural" 
+                    : pendingDeleteIncident.incident_type === "OTHER" ? "Otro"
                     : "Tipo de incidente no válido"}
                   </div>
                   <div className="sm:text-right">
@@ -922,7 +890,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : pendingDeleteIncident.status === "CLOSED"
                         ? "Cerrado"
-                        : "En evaluacion"}
+                        : "Evaluacion"}
                   </div>
                 </div>
               </div>
