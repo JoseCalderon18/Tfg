@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type MeResponse = {
   authenticated: boolean;
@@ -57,6 +59,11 @@ type AlertaFila = {
   actualizadaEn: string | null;
 };
 
+const TAMANO_TILE = 256;
+const ZOOM_MAPA_PDF = 13;
+const ANCHO_MAPA_PDF = 900;
+const ALTO_MAPA_PDF = 450;
+
 function parsePointLocation(location: unknown): LatLngTuple | null {
   if (!location) return null;
 
@@ -96,6 +103,93 @@ function parsePointLocation(location: unknown): LatLngTuple | null {
   }
 
   return null;
+}
+
+function convertirLatLngAPixelGlobal(latitud: number, longitud: number, zoom: number) {
+  const escala = TAMANO_TILE * 2 ** zoom;
+  const senoLatitud = Math.sin((latitud * Math.PI) / 180);
+
+  return {
+    x: ((longitud + 180) / 360) * escala,
+    y:
+      (0.5 - Math.log((1 + senoLatitud) / (1 - senoLatitud)) / (4 * Math.PI)) * escala,
+  };
+}
+
+async function cargarTileComoBitmap(url: string) {
+  const respuesta = await fetch(url, { mode: "cors" });
+  if (!respuesta.ok) {
+    throw new Error("No se pudo cargar el tile del mapa.");
+  }
+
+  const imagenBlob = await respuesta.blob();
+  return createImageBitmap(imagenBlob);
+}
+
+async function generarImagenMapaIncidente(incidente: IncidentRow): Promise<string | null> {
+  if (!incidente.parsedLocation) return null;
+
+  const [latitud, longitud] = incidente.parsedLocation;
+  const canvas = document.createElement("canvas");
+  canvas.width = ANCHO_MAPA_PDF;
+  canvas.height = ALTO_MAPA_PDF;
+
+  const contexto = canvas.getContext("2d");
+  if (!contexto) return null;
+
+  contexto.fillStyle = "#0f172a";
+  contexto.fillRect(0, 0, canvas.width, canvas.height);
+
+  const totalTiles = 2 ** ZOOM_MAPA_PDF;
+  const centro = convertirLatLngAPixelGlobal(latitud, longitud, ZOOM_MAPA_PDF);
+  const origenX = centro.x - canvas.width / 2;
+  const origenY = centro.y - canvas.height / 2;
+  const tileInicialX = Math.floor(origenX / TAMANO_TILE);
+  const tileFinalX = Math.floor((origenX + canvas.width - 1) / TAMANO_TILE);
+  const tileInicialY = Math.floor(origenY / TAMANO_TILE);
+  const tileFinalY = Math.floor((origenY + canvas.height - 1) / TAMANO_TILE);
+
+  let algunTileDibujado = false;
+
+  for (let tileY = tileInicialY; tileY <= tileFinalY; tileY += 1) {
+    if (tileY < 0 || tileY >= totalTiles) continue;
+
+    for (let tileX = tileInicialX; tileX <= tileFinalX; tileX += 1) {
+      const tileXNormalizado = ((tileX % totalTiles) + totalTiles) % totalTiles;
+      const urlTile = `https://tile.openstreetmap.org/${ZOOM_MAPA_PDF}/${tileXNormalizado}/${tileY}.png`;
+
+      try {
+        const imagenTile = await cargarTileComoBitmap(urlTile);
+        const destinoX = tileX * TAMANO_TILE - origenX;
+        const destinoY = tileY * TAMANO_TILE - origenY;
+        contexto.drawImage(imagenTile, destinoX, destinoY, TAMANO_TILE, TAMANO_TILE);
+        algunTileDibujado = true;
+      } catch {
+        // Si falla un tile concreto seguimos con los demas para no romper el PDF completo.
+      }
+    }
+  }
+
+  if (!algunTileDibujado) return null;
+
+  const posicionMarcadorX = centro.x - origenX;
+  const posicionMarcadorY = centro.y - origenY;
+
+  contexto.fillStyle = "#ef4444";
+  contexto.strokeStyle = "#ffffff";
+  contexto.lineWidth = 4;
+  contexto.beginPath();
+  contexto.arc(posicionMarcadorX, posicionMarcadorY, 14, 0, Math.PI * 2);
+  contexto.fill();
+  contexto.stroke();
+
+  contexto.fillStyle = "rgba(15, 23, 42, 0.78)";
+  contexto.fillRect(18, 18, 180, 32);
+  contexto.fillStyle = "#ffffff";
+  contexto.font = "bold 20px sans-serif";
+  contexto.fillText("Mapa del incidente", 28, 40);
+
+  return canvas.toDataURL("image/png");
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
@@ -244,7 +338,6 @@ function obtenerClasesEstadoAlerta(estado: string) {
       return "bg-slate-500/15 text-slate-200 ring-slate-500/30";
   }
 }
-
 function obtenerTextoSeveridadAlerta(severidad: number) {
   if (severidad <= 1) return "Critica";
   if (severidad === 2) return "Muy alta";
@@ -259,17 +352,23 @@ function formatDate(value?: string | null) {
   return Number.isNaN(dt.getTime()) ? value : dt.toLocaleString();
 }
 
-function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
+function IncidentMiniMap({
+  incident,
+  heightClassName = "h-56",
+}: {
+  incident: IncidentRow;
+  heightClassName?: string;
+}) {
   if (!incident.parsedLocation) {
     return (
-      <div className="grid h-56 place-items-center rounded-xl border border-slate-800 bg-slate-950/50 text-sm text-slate-400">
+      <div className={`grid place-items-center rounded-xl border border-slate-800 bg-slate-950/50 text-sm text-slate-400 ${heightClassName}`}>
         Este incidente no tiene coordenadas en el campo location.
       </div>
     );
   }
 
   return (
-    <div className="h-56 overflow-hidden rounded-xl ring-1 ring-slate-800">
+    <div className={`overflow-hidden rounded-xl ring-1 ring-slate-800 ${heightClassName}`}>
       <MapContainer
         center={incident.parsedLocation}
         zoom={13}
@@ -279,6 +378,7 @@ function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          crossOrigin="anonymous"
         />
         <CircleMarker
           center={incident.parsedLocation}
@@ -292,6 +392,34 @@ function IncidentMiniMap({ incident }: { incident: IncidentRow }) {
   );
 }
 
+function obtenerEtiquetaTipoIncidente(tipo: string) {
+  switch (tipo) {
+    case "SEARCH":
+      return "Búsqueda de personas";
+    case "MEDICAL":
+      return "Emergencia médica";
+    case "WILDFIRE":
+      return "Incendio forestal";
+    case "RESCUE":
+      return "Rescate de persona desaparecida";
+    case "NATURAL_DISASTER":
+      return "Desastre natural";
+    default:
+      return "Otro";
+  }
+}
+function obtenerEtiquetaEstado(tipo: string){
+  switch (tipo) {
+    case "OPEN":
+      return "Abierto";
+    case "CLOSED":
+      return "Cerrado";
+    case "TRIAGE":
+      return "Evaluacion";
+    default:
+      return "Desconocido";
+  }
+}
 export default function IncidentsPage() {
   const navigate = useNavigate();
   const INCIDENTES_POR_PAGINA = 10;
@@ -312,6 +440,7 @@ export default function IncidentsPage() {
   const [deletingIncidentId, setDeletingIncidentId] = useState<string>("");
   const [pendingDeleteIncidentId, setPendingDeleteIncidentId] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
+
 
   useEffect(() => {
     (async () => {
@@ -371,6 +500,161 @@ export default function IncidentsPage() {
       return coincideBusqueda && coincideAbiertos && coincideEvaluacion;
     });
   }, [query, incidents, soloIncidentesAbiertos, incidentesEvaluacion]);
+
+  async function exportarIncidentesPdf() {
+    if (filteredIncidents.length === 0) {
+      setError("No hay incidentes para exportar.");
+      return;
+    }
+
+    setError("");
+
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+
+    let posicionY = 14;
+
+    for (let indice = 0; indice < filteredIncidents.length; indice += 1) {
+      const incidente = filteredIncidents[indice];
+      const coordenadasTexto = incidente.parsedLocation
+        ? `${incidente.parsedLocation[0]}, ${incidente.parsedLocation[1]}`
+        : "-";
+      const imagenMapa = await generarImagenMapaIncidente(incidente);
+
+      const descripcionTexto = incidente.description || "Sin descripcion.";
+      const direccionTexto = incidente.location_address || "-";
+
+      if (posicionY > 20) {
+        posicionY += 6;
+      }
+
+      autoTable(pdf, {
+        startY: posicionY,
+        theme: "grid",
+        head: [[
+          "Nombre",
+          "Tipo",
+          "Estado",
+          "Organizacion",
+          "Direccion",
+          "Coordenadas",
+          "Descripcion",
+        ]],
+        body: [[
+          incidente.name,
+          obtenerEtiquetaTipoIncidente(incidente.incident_type),
+          obtenerEtiquetaEstado(incidente.status),
+          incidente.owner_organization || "-",
+          direccionTexto,
+          coordenadasTexto,
+          descripcionTexto,
+        ]],
+        styles: {
+          fontSize: 8,
+          cellPadding: 2.2,
+          overflow: "linebreak",
+          valign: "middle",
+        },
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+        },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 32 },
+          2: { cellWidth: 22 },
+          3: { cellWidth: 34 },
+          4: { cellWidth: 62 },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 70 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      const ultimaTabla = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
+      const finalTablaY = ultimaTabla?.finalY ?? posicionY + 20;
+      const alturaMapa = imagenMapa ? 65 : 14;
+      const espacioNecesario = finalTablaY + 8 + alturaMapa + 10;
+
+      if (espacioNecesario > 200) {
+        pdf.addPage();
+        posicionY = 14;
+
+        autoTable(pdf, {
+          startY: posicionY,
+          theme: "grid",
+          head: [[
+            "Nombre",
+            "Tipo",
+            "Estado",
+            "Organizacion",
+            "Direccion",
+            "Coordenadas",
+            "Descripcion",
+          ]],
+          body: [[
+            incidente.name,
+            obtenerEtiquetaTipoIncidente(incidente.incident_type),
+            obtenerEtiquetaEstado(incidente.status),
+            incidente.owner_organization || "-",
+            direccionTexto,
+            coordenadasTexto,
+            descripcionTexto,
+          ]],
+          styles: {
+            fontSize: 8,
+            cellPadding: 2.2,
+            overflow: "linebreak",
+            valign: "middle",
+          },
+          headStyles: {
+            fillColor: [30, 41, 59],
+            textColor: [255, 255, 255],
+            fontStyle: "bold",
+          },
+          columnStyles: {
+            0: { cellWidth: 35 },
+            1: { cellWidth: 32 },
+            2: { cellWidth: 22 },
+            3: { cellWidth: 34 },
+            4: { cellWidth: 62 },
+            5: { cellWidth: 35 },
+            6: { cellWidth: 70 },
+          },
+          margin: { left: 14, right: 14 },
+        });
+      }
+
+      const tablaActual = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
+      const posicionMapa = (tablaActual?.finalY ?? posicionY + 20) + 8;
+
+      pdf.setFontSize(10);
+      pdf.text(`Mapa del incidente ${indice + 1}`, 14, posicionMapa);
+
+      if (imagenMapa) {
+        pdf.addImage(imagenMapa, "PNG", 14, posicionMapa + 4, 120, 65);
+        posicionY = posicionMapa + 75;
+      } else if (!incidente.parsedLocation) {
+        pdf.text("Este incidente no tiene coordenadas disponibles.", 14, posicionMapa + 8);
+        posicionY = posicionMapa + 18;
+      } else {
+        pdf.text("No se pudo generar el mapa de este incidente.", 14, posicionMapa + 8);
+        posicionY = posicionMapa + 18;
+      }
+
+      if (posicionY > 185 && indice < filteredIncidents.length - 1) {
+        pdf.addPage();
+        posicionY = 14;
+      }
+    }
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    pdf.save(`incidentes-${fecha}.pdf`);
+  }
 
   const resumenKpis = useMemo(() => {
     const incidentesAbiertos = incidents.filter((incident) => incident.status === "OPEN").length;
@@ -505,13 +789,27 @@ export default function IncidentsPage() {
             <h1 className="text-2xl font-bold">Incidentes</h1>
           </div>
 
+                  <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={exportarIncidentesPdf}
+            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]"
+            style={{ cursor: "pointer" }}
+          >
+            Exportar PDF
+          </button>
+
+
           <button
             type="button"
             onClick={() => navigate("/createincident")}
             className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            style={{ cursor: "pointer" }}
           >
             Nuevo incidente
           </button>
+        </div>
+
         </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
           <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
@@ -565,6 +863,7 @@ export default function IncidentsPage() {
                 className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
               />
             </div>
+            
 
             <div className="flex flex-col gap-3">
               <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
