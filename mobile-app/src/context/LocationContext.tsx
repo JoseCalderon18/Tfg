@@ -36,23 +36,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
   const { token } = useAuth();
 
-  // Solicitar permisos al montar el componente
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-    })();
-
-    // Cleanup: Detener seguimiento al desmontar
     return () => {
       if (locationSubscription) {
         locationSubscription.remove();
       }
     };
-  }, []);
+  }, [locationSubscription]);
 
   /**
    * Inicia el seguimiento continuo de la ubicación
@@ -62,6 +52,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
    */
   const startTracking = async () => {
     try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        setIsTracking(false);
+        return;
+      }
+
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,  // Alta precisión
@@ -96,8 +93,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       );
       setLocationSubscription(subscription);
       setIsTracking(true);
+      setErrorMsg(null);
     } catch (error) {
-      setErrorMsg('Error starting tracking');
+      setErrorMsg(error instanceof Error ? error.message : 'Error starting tracking');
+      setIsTracking(false);
     }
   };
 

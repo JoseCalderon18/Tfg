@@ -143,6 +143,9 @@ export function ViewUnidadesPage() {
   const [filtroConEspecialidad, setFiltroConEspecialidad] = useState(false);
   const [campoOrden, setCampoOrden] = useState<CampoOrden>("username");
   const [direccionOrden, setDireccionOrden] = useState<DireccionOrden>("asc");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const TAMANO_PAGINA = 10;
+
 
   function manejarOrden(campo: CampoOrden) {
     if (campoOrden === campo) {
@@ -173,6 +176,17 @@ export function ViewUnidadesPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [
+    search,
+    searchEspecialidad,
+    filtroRol,
+    filtroEstado,
+    filtroConSupervisor,
+    filtroSinOrganizacion,
+    filtroConEspecialidad,
+  ]);
   const unidadesFiltradas = useMemo(() => {
     const query = search.trim().toLowerCase();
     const queryEspecialidad = searchEspecialidad.trim().toLowerCase();
@@ -263,6 +277,21 @@ export function ViewUnidadesPage() {
 
     return lista;
   }, [unidadesFiltradas, campoOrden, direccionOrden]);
+
+  const totalPaginas = Math.max(1, Math.ceil(unidadesOrdenadas.length / TAMANO_PAGINA));
+
+  const unidadesPaginadas = useMemo(() => {
+    const inicio = (paginaActual - 1) * TAMANO_PAGINA;
+    const fin = inicio + TAMANO_PAGINA;
+    return unidadesOrdenadas.slice(inicio, fin);
+  }, [unidadesOrdenadas, paginaActual]);
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
+
 
 
   
@@ -511,14 +540,14 @@ export function ViewUnidadesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {unidadesOrdenadas.length === 0 ? (
+                  {unidadesPaginadas.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                         No hay unidades para mostrar.
                       </td>
                     </tr>
                   ) : (
-                    unidadesOrdenadas.map((unidad) => (
+                    unidadesPaginadas.map((unidad) => (
                       <tr key={unidad.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                         <td className="px-4 py-3.5">
                           <div>
@@ -563,6 +592,40 @@ export function ViewUnidadesPage() {
                 </tbody>
               </table>
             </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-[color:var(--cm-text-muted)]">
+                Mostrando {unidadesOrdenadas.length === 0 ? 0 : (paginaActual - 1) * TAMANO_PAGINA + 1}
+                {" - "}
+                {Math.min(paginaActual * TAMANO_PAGINA, unidadesOrdenadas.length)}
+                {" de "}
+                {unidadesOrdenadas.length} unidades
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                  disabled={paginaActual === 1}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+
+                <span className="text-sm text-[color:var(--cm-text-muted)]">
+                  Página {paginaActual} de {totalPaginas}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+                  disabled={paginaActual === totalPaginas}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+
           </section>
 
           <aside className="space-y-4">
@@ -618,6 +681,3 @@ export function ViewUnidadesPage() {
     </div>
   );
 }
-
-
-

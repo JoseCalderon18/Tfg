@@ -81,13 +81,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Introduce usuario y contraseña.');
     }
 
-    const response = await apiFetch('/auth/login/', {
-      method: 'POST',
-      body: JSON.stringify({
-        username: normalizedUsername,
-        password,
-      }),
-    });
+    let response: Response;
+
+    try {
+      response = await apiFetch('/auth/login/', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: normalizedUsername,
+          password,
+        }),
+      });
+    } catch (error) {
+      const detalle =
+        error instanceof Error && error.name === 'AbortError'
+          ? 'El servidor tardó demasiado en responder.'
+          : 'No se pudo conectar con el servidor.';
+
+      throw new Error(
+        `${detalle} Si usas Android por USB, ejecuta adb reverse tcp:8000 tcp:8000 y asegúrate de que el backend está levantado en el puerto 8000.`
+      );
+    }
 
     const payload = await parseJsonResponse<{
       access?: string;

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen() {
   // Estado del formulario y feedback visual.
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -15,7 +15,6 @@ export default function LoginScreen({ navigation }: any) {
       setSubmitting(true);
       setError('');
       await login(username, password);
-      navigation.replace('Operative');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'No se pudo iniciar sesión.');
     } finally {
