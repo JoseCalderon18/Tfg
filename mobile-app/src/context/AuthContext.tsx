@@ -31,6 +31,12 @@ interface AuthContextType {
 // Creacion del contexto de autenticacion
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function clearStoredAuth() {
+  await SecureStore.deleteItemAsync('token');
+  await SecureStore.deleteItemAsync('refreshToken');
+  await SecureStore.deleteItemAsync('user');
+}
+
 /**
  * Provider que envuelve la aplicacion y proporciona el contexto de autenticacion
  * Maneja el estado de sesion del usuario y persistencia en almacenamiento seguro
@@ -45,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cargar autenticacion almacenada al iniciar
   useEffect(() => {
-    loadStoredAuth();
+    void loadStoredAuth();
   }, []);
 
   /**
@@ -57,12 +63,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedToken = await SecureStore.getItemAsync('token');
       const storedUser = await SecureStore.getItemAsync('user');
 
-      if (storedToken && storedUser) {
+      if (!storedToken || !storedUser) {
+        setToken(null);
+        setUser(null);
+        return;
+      }
+
+      try {
+        const response = await apiFetch('/auth/me/', { token: storedToken, timeoutMs: 8000 });
+
+        if (!response.ok) {
+          await clearStoredAuth();
+          setToken(null);
+          setUser(null);
+          return;
+        }
+
+        const currentUser = await parseJsonResponse<User>(response);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser(currentUser);
+      } catch {
+        await clearStoredAuth();
+        setToken(null);
+        setUser(null);
       }
     } catch (error) {
       console.error('Error loading auth:', error);
+      await clearStoredAuth();
+      setToken(null);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -133,9 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Elimina los datos del almacenamiento seguro y limpia el estado
    */
   const logout = async () => {
-    await SecureStore.deleteItemAsync('token');
-    await SecureStore.deleteItemAsync('refreshToken');
-    await SecureStore.deleteItemAsync('user');
+    await clearStoredAuth();
     setToken(null);
     setUser(null);
   };

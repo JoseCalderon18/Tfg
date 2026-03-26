@@ -13,64 +13,50 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 
 const { height } = Dimensions.get('window');
-const BOTTOM_MENU_HEIGHT = height * 0.15;
+const ALTURA_MENU_INFERIOR = height * 0.15;
 
 export default function OperativeScreen({ navigation }: any) {
-  // Estado visual del panel principal del operativo.
   const [menuVisible, setMenuVisible] = useState(false);
   const { user, logout } = useAuth();
   const { isTracking, startTracking, stopTracking, errorMsg, location } = useLocation();
 
   const handleAlertPress = () => {
-    // Confirmación previa antes de abrir el flujo real de alerta.
-    Alert.alert(
-      'Confirmación de Alerta',
-      '¿Está seguro de que desea enviar una alerta SOS?',
-      [
-        {
-          text: 'Cancelar',
-          onPress: () => console.log('Alerta cancelada'),
-          style: 'cancel',
-        },
-        {
-            text: 'Enviar SOS',
-            onPress: () => {
-              navigation.navigate('Alert');
-            },
-            style: 'destructive',
-          },
-      ]
-    );
+    Alert.alert('Confirmacion de alerta', '¿Esta seguro de que desea enviar una alerta SOS?', [
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+      {
+        text: 'Enviar SOS',
+        onPress: () => navigation.navigate('Alert'),
+        style: 'destructive',
+      },
+    ]);
   };
 
   const handleMenuOption = (option: string) => {
-    // Router simple del menú lateral para acciones de campo.
     setMenuVisible(false);
+
     switch (option) {
       case 'companions':
-        console.log('Ir a Compañeros');
-        // navigation.navigate('Companions');
-        Alert.alert('Compañeros', 'Pantalla de compañeros (próximamente)');
+        Alert.alert('Compañeros', 'Pantalla de compañeros (proximamente)');
         break;
       case 'weather':
-        console.log('Ir a Meteorología');
-        Alert.alert('Meteorología', 'Información meteorológica (próximamente)');
+        Alert.alert('Meteorologia', 'Informacion meteorologica (proximamente)');
         break;
       case 'stopShift':
-        console.log('Parar jornada');
-        Alert.alert('Parar Jornada', '¿Desea finalizar su jornada?', [
+        Alert.alert('Parar jornada', '¿Desea finalizar su jornada?', [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Finalizar', onPress: () => console.log('Jornada finalizada') },
         ]);
         break;
       case 'startBreak':
-        console.log('Iniciar descanso');
-        Alert.alert('Iniciar Descanso', 'Se iniciará su descanso');
+        Alert.alert('Iniciar descanso', 'Se iniciara su descanso');
         break;
       case 'logout':
-        Alert.alert('Cerrar Sesión', '¿Desea cerrar sesión?', [
+        Alert.alert('Cerrar sesion', '¿Desea cerrar sesion?', [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Cerrar Sesión', onPress: logout, style: 'destructive' },
+          { text: 'Cerrar sesion', onPress: logout, style: 'destructive' },
         ]);
         break;
     }
@@ -78,21 +64,19 @@ export default function OperativeScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Encabezado */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.hamburgerButton}
-          onPress={() => setMenuVisible(true)}
-        >
+        <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
           <Text style={styles.hamburgerText}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Emergency App</Text>
-        <Text style={styles.userName}>{user?.username || 'Usuario'}</Text>
+        <Text style={styles.title}>Emergencias</Text>
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{user?.username || 'Usuario'}</Text>
+          <Text style={styles.userRole}>{user?.role || 'Rol'}</Text>
+        </View>
       </View>
 
-      {/* Área del Mapa */}
       <View style={styles.mapContainer}>
-        <Text style={styles.mapPlaceholder}>Centro operativo</Text>
+        <Text style={styles.mapTitle}>Centro operativo</Text>
         <Text style={styles.statusText}>Seguimiento: {isTracking ? 'Activo' : 'Detenido'}</Text>
         <Text style={styles.statusSubtext}>
           {location
@@ -100,6 +84,7 @@ export default function OperativeScreen({ navigation }: any) {
             : 'Sin posicion registrada'}
         </Text>
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={[styles.quickActionButton, isTracking ? styles.stopQuickAction : styles.startQuickAction]}
@@ -107,16 +92,38 @@ export default function OperativeScreen({ navigation }: any) {
           >
             <Text style={styles.quickActionText}>{isTracking ? 'Detener GPS' : 'Iniciar GPS'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickActionButton, styles.mapQuickAction]}
-            onPress={() => navigation.navigate('Map')}
-          >
+          <TouchableOpacity style={[styles.quickActionButton, styles.mapQuickAction]} onPress={() => navigation.navigate('Map')}>
             <Text style={styles.quickActionText}>Abrir mapa</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.tarjetaResumen}>
+          <Text style={styles.resumenTitulo}>Mapa operativo</Text>
+          <Text style={styles.resumenTexto}>
+            El mapa satelital interactivo con incidentes, alertas y tu posicion se ha dejado en pantalla completa
+            para evitar los bloqueos del mini mapa en Android.
+          </Text>
+          <View style={styles.resumenLeyenda}>
+            <View style={styles.itemLeyenda}>
+              <View style={[styles.puntoLeyenda, styles.puntoIncidente]} />
+              <Text style={styles.textoLeyenda}>Incidentes</Text>
+            </View>
+            <View style={styles.itemLeyenda}>
+              <View style={[styles.puntoLeyenda, styles.puntoAlerta]} />
+              <Text style={styles.textoLeyenda}>Alertas</Text>
+            </View>
+            <View style={styles.itemLeyenda}>
+              <View style={[styles.puntoLeyenda, styles.puntoUsuario]} />
+              <Text style={styles.textoLeyenda}>Tu posicion</Text>
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity style={[styles.quickActionButton, styles.mapQuickAction, styles.botonAmpliar]} onPress={() => navigation.navigate('Map')}>
+          <Text style={styles.quickActionText}>Ampliar</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Menú Inferior */}
       <View style={styles.bottomMenu}>
         <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
           <Text style={styles.sideButtonText}>📍{'\n'}MARCAR{'\n'}PUNTO</Text>
@@ -126,63 +133,50 @@ export default function OperativeScreen({ navigation }: any) {
           <Text style={styles.centerButtonText}>🚨{'\n'}ALERTA</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.sideButton} onPress={() => Alert.alert('Llamada', 'Función de llamada (próximamente)')}>
+        <TouchableOpacity
+          style={styles.sideButton}
+          onPress={() => Alert.alert('Llamada', 'Funcion de llamada (proximamente)')}
+        >
           <Text style={styles.sideButtonText}>☎️{'\n'}LLAMAR</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Modal del Menú Hamburguesa */}
       <Modal
         visible={menuVisible}
-        transparent={true}
+        transparent
         animationType="slide"
         onRequestClose={() => setMenuVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.drawerMenu}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setMenuVisible(false)}
-            >
+            <TouchableOpacity style={styles.closeButton} onPress={() => setMenuVisible(false)}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
 
-            <Text style={styles.drawerTitle}>Menú</Text>
+            <Text style={styles.drawerTitle}>Menu</Text>
 
             <ScrollView style={styles.menuOptions}>
-              <TouchableOpacity
-                style={styles.menuOption}
-                onPress={() => handleMenuOption('companions')}
-              >
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('companions')}>
                 <Text style={styles.menuOptionText}>👥 Compañeros</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.menuOption}
-                onPress={() => handleMenuOption('weather')}
-              >
-                <Text style={styles.menuOptionText}>🌤️ Meteorología</Text>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
+                <Text style={styles.menuOptionText}>🌤️ Meteorologia</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.menuOption}
-                onPress={() => handleMenuOption('startBreak')}
-              >
-                <Text style={styles.menuOptionText}>⏸️ Iniciar Descanso</Text>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('startBreak')}>
+                <Text style={styles.menuOptionText}>⏸️ Iniciar descanso</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.menuOption}
-                onPress={() => handleMenuOption('stopShift')}
-              >
-                <Text style={styles.menuOptionText}>🛑 Parar Jornada</Text>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('stopShift')}>
+                <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.menuOption, styles.logoutOption]}
                 onPress={() => handleMenuOption('logout')}
               >
-                <Text style={styles.menuOptionText}>🚪 Cerrar Sesión</Text>
+                <Text style={styles.menuOptionText}>🚪 Cerrar sesion</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -195,7 +189,7 @@ export default function OperativeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#111827',
   },
   header: {
     backgroundColor: '#0F172A',
@@ -216,33 +210,97 @@ const styles = StyleSheet.create({
   },
   hamburgerText: {
     fontSize: 28,
-    color: 'white',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFFFFF',
     flex: 1,
     textAlign: 'center',
   },
+  userInfo: {
+    minWidth: 96,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   userName: {
     fontSize: 12,
-    color: 'white',
+    color: '#FFFFFF',
     opacity: 0.9,
+    textAlign: 'right',
+    lineHeight: 16,
+  },
+  userRole: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    fontWeight: '600',
+    textAlign: 'right',
+    lineHeight: 16,
   },
   mapContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     backgroundColor: '#111827',
-    marginBottom: BOTTOM_MENU_HEIGHT,
+    marginBottom: ALTURA_MENU_INFERIOR,
     paddingHorizontal: 20,
+    paddingTop: 28,
   },
-  mapPlaceholder: {
-    fontSize: 34,
+  mapTitle: {
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#F8FAFC',
+  },
+  tarjetaResumen: {
+    width: '100%',
+    minHeight: 220,
+    marginTop: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: '#0F172A',
+    padding: 20,
+  },
+  resumenTitulo: {
+    color: '#F8FAFC',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  resumenTexto: {
+    marginTop: 12,
+    color: '#CBD5E1',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  resumenLeyenda: {
+    marginTop: 18,
+    gap: 10,
+  },
+  itemLeyenda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  puntoLeyenda: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  puntoIncidente: {
+    backgroundColor: '#2563EB',
+  },
+  puntoAlerta: {
+    backgroundColor: '#DC2626',
+  },
+  puntoUsuario: {
+    backgroundColor: '#06B6D4',
+  },
+  textoLeyenda: {
+    color: '#E2E8F0',
+    fontSize: 13,
+    fontWeight: '600',
   },
   statusText: {
     marginTop: 18,
@@ -278,12 +336,15 @@ const styles = StyleSheet.create({
   mapQuickAction: {
     backgroundColor: '#2563EB',
   },
+  botonAmpliar: {
+    marginTop: 14,
+  },
   quickActionText: {
     color: '#F8FAFC',
     fontWeight: '700',
   },
   bottomMenu: {
-    height: BOTTOM_MENU_HEIGHT,
+    height: ALTURA_MENU_INFERIOR,
     backgroundColor: '#2C3E50',
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -309,7 +370,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   sideButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -330,7 +391,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   centerButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -343,7 +404,7 @@ const styles = StyleSheet.create({
   drawerMenu: {
     width: '75%',
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     paddingTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 0 },
