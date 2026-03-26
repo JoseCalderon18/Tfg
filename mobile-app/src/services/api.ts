@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // En Android fisico por USB + `adb reverse`, 127.0.0.1 apunta al backend del PC.
@@ -9,6 +10,26 @@ const DEFAULT_API_HOST =
     ? process.env.EXPO_PUBLIC_ANDROID_API_HOST ?? DEFAULT_LOCAL_API_HOST
     : process.env.EXPO_PUBLIC_IOS_API_HOST ?? 'http://localhost:8000';
 
+function getExpoHostApiUrl() {
+  const hostUri =
+    Constants.expoConfig?.hostUri ??
+    Constants.expoGoConfig?.debuggerHost ??
+    Constants.manifest2?.extra?.expoClient?.hostUri ??
+    null;
+
+  if (!hostUri) {
+    return null;
+  }
+
+  const host = hostUri.split(':')[0];
+
+  if (!host) {
+    return null;
+  }
+
+  return `http://${host}:8000/api`;
+}
+
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? `${DEFAULT_API_HOST}/api`;
 
 type ApiOptions = RequestInit & {
@@ -16,7 +37,55 @@ type ApiOptions = RequestInit & {
   timeoutMs?: number;
 };
 
-// Cliente base para llamadas autenticadas y públicas hacia Django.
+export class ApiConnectionError extends Error {
+  attemptedUrls: string[];
+
+  constructor(message: string, attemptedUrls: string[]) {
+    super(message);
+    this.name = 'ApiConnectionError';
+    this.attemptedUrls = attemptedUrls;
+  }
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: options.signal ?? controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function getFallbackApiUrls() {
+  const urls: string[] = [];
+
+  if (
+    Platform.OS === 'android' &&
+    !process.env.EXPO_PUBLIC_API_BASE_URL &&
+    !process.env.EXPO_PUBLIC_ANDROID_API_HOST &&
+    DEFAULT_API_HOST === DEFAULT_LOCAL_API_HOST
+  ) {
+    urls.push('http://10.0.2.2:8000/api');
+  }
+
+  const expoHostApiUrl = getExpoHostApiUrl();
+  if (expoHostApiUrl && expoHostApiUrl !== API_BASE_URL && !urls.includes(expoHostApiUrl)) {
+    urls.push(expoHostApiUrl);
+  }
+
+  return urls;
+}
+
+export function getApiDebugUrls() {
+  return [API_BASE_URL, ...getFallbackApiUrls()];
+}
+
+// Cliente base para llamadas autenticadas y publicas hacia Django.
 export async function apiFetch(path: string, options: ApiOptions = {}) {
   const { timeoutMs = 10000, ...requestOptions } = options;
   const headers = new Headers(options.headers || {});
@@ -30,39 +99,23 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
     headers.set('Authorization', `Bearer ${options.token}`);
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   const fetchOptions: RequestInit = {
     ...requestOptions,
     headers,
-    signal: requestOptions.signal ?? controller.signal,
   };
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, fetchOptions);
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    if (
-      Platform.OS === 'android' &&
-      !process.env.EXPO_PUBLIC_API_BASE_URL &&
-      !process.env.EXPO_PUBLIC_ANDROID_API_HOST &&
-      DEFAULT_API_HOST === DEFAULT_LOCAL_API_HOST
-    ) {
-      try {
-        const fallbackResponse = await fetch(`http://10.0.2.2:8000/api${path}`, fetchOptions);
-        clearTimeout(timeoutId);
-        return fallbackResponse;
-      } catch (fallbackError) {
-        clearTimeout(timeoutId);
-        throw fallbackError;
-      }
-    }
+  const urls = getApiDebugUrls();
+  let lastError: unknown;
 
-    clearTimeout(timeoutId);
-    throw error;
+  for (const baseUrl of urls) {
+    try {
+      return await fetchWithTimeout(`${baseUrl}${path}`, fetchOptions, timeoutMs);
+    } catch (error) {
+      lastError = error;
+    }
   }
+
+  throw new ApiConnectionError('No se pudo conectar con la API.', urls.map((url) => `${url}${path}`));
 }
 
 // Utilidad para parsear respuestas JSON con manejo uniforme de errores.

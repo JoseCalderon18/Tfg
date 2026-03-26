@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { apiFetch, parseJsonResponse } from '../services/api';
+import { ApiConnectionError, apiFetch, parseJsonResponse } from '../services/api';
 
 /**
  * Interface que define la estructura de un Usuario
@@ -13,12 +13,12 @@ interface User {
 }
 
 /**
- * Interface que define el contexto de autenticación
+ * Interface que define el contexto de autenticacion
  * @property user - Datos del usuario autenticado
- * @property token - Token JWT de autenticación
- * @property login - Función asíncrona para iniciar sesión
- * @property logout - Función asíncrona para cerrar sesión
- * @property isLoading - Indica si está cargando el estado inicial
+ * @property token - Token JWT de autenticacion
+ * @property login - Funcion asincrona para iniciar sesion
+ * @property logout - Funcion asincrona para cerrar sesion
+ * @property isLoading - Indica si esta cargando el estado inicial
  */
 interface AuthContextType {
   user: User | null;
@@ -28,29 +28,29 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-// Creación del contexto de autenticación
+// Creacion del contexto de autenticacion
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * Provider que envuelve la aplicación y proporciona el contexto de autenticación
- * Maneja el estado de sesión del usuario y persistencia en almacenamiento seguro
- * 
- * @param children - Componentes hijos que tendrán acceso al contexto
+ * Provider que envuelve la aplicacion y proporciona el contexto de autenticacion
+ * Maneja el estado de sesion del usuario y persistencia en almacenamiento seguro
+ *
+ * @param children - Componentes hijos que tendran acceso al contexto
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Estado global de autenticación para la app móvil
+  // Estado global de autenticacion para la app movil
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar autenticación almacenada al iniciar
+  // Cargar autenticacion almacenada al iniciar
   useEffect(() => {
     loadStoredAuth();
   }, []);
 
   /**
    * Carga el token y usuario almacenados en SecureStore
-   * Se ejecuta automáticamente al montar el provider
+   * Se ejecuta automaticamente al montar el provider
    */
   const loadStoredAuth = async () => {
     try {
@@ -69,16 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Inicia sesión con credenciales
-   * 
+   * Inicia sesion con credenciales
+   *
    * @param username - Nombre de usuario
-   * @param password - Contraseña
+   * @param password - Contrasena
    */
   const login = async (username: string, password: string) => {
     const normalizedUsername = username.trim();
 
     if (!normalizedUsername || !password.trim()) {
-      throw new Error('Introduce usuario y contraseña.');
+      throw new Error('Introduce usuario y contrasena.');
     }
 
     let response: Response;
@@ -94,11 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const detalle =
         error instanceof Error && error.name === 'AbortError'
-          ? 'El servidor tardó demasiado en responder.'
+          ? 'El servidor tardo demasiado en responder.'
           : 'No se pudo conectar con el servidor.';
+      const urlsProbadas =
+        error instanceof ApiConnectionError && error.attemptedUrls.length > 0
+          ? ` URLs probadas: ${error.attemptedUrls.join(', ')}.`
+          : '';
 
       throw new Error(
-        `${detalle} Si usas Android por USB, ejecuta adb reverse tcp:8000 tcp:8000 y asegúrate de que el backend está levantado en el puerto 8000.`
+        `${detalle} Comprueba que el backend esta levantado en el puerto 8000 y ejecutandose en 0.0.0.0:8000 si accedes desde red local.${urlsProbadas} Si usas un movil Android por USB, ejecuta "adb reverse tcp:8000 tcp:8000". Si usas el emulador de Android, configura EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000.`
       );
     }
 
@@ -110,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }>(response);
 
     if (!response.ok || !payload.access || !payload.user) {
-      throw new Error(payload.error ?? 'No se pudo iniciar sesión.');
+      throw new Error(payload.error ?? 'No se pudo iniciar sesion.');
     }
 
     await SecureStore.setItemAsync('token', payload.access);
@@ -125,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Cierra la sesión del usuario
+   * Cierra la sesion del usuario
    * Elimina los datos del almacenamiento seguro y limpia el estado
    */
   const logout = async () => {
@@ -144,11 +148,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Hook personalizado para acceder al contexto de autenticación
- * 
- * @returns El contexto de autenticación
+ * Hook personalizado para acceder al contexto de autenticacion
+ *
+ * @returns El contexto de autenticacion
  * @throws Error si se usa fuera de AuthProvider
- * 
+ *
  * @example
  * const { user, login, logout } = useAuth();
  */
