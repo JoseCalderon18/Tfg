@@ -59,11 +59,20 @@ type Incident = {
   is_active: boolean;
 };
 
-type IncidentWeather = {
-  solar?: number; // W/m² (shortwave radiation)
-  soilMoisture?: number; // m³/m³ percent
-  fireIndex?: number; // Fire Weather Index
-  updatedAt: string;
+type AlertRow = {
+  id: string;
+  severity?: number | null;
+  status?: string | null;
+  title?: string | null;
+  location?: unknown;
+  incident?: string | null;
+  created_at?: string | null;
+};
+
+type UserRow = {
+  id: string;
+  role?: string | null;
+  is_active?: boolean;
 };
 
 type LayerType = "satellite" | "relief" | "vegetation";
@@ -83,12 +92,108 @@ const tileUrls: Record<LayerType, { url: string; attribution: string }> = {
   },
 };
 
+function parsePointLocation(location: unknown): [number, number] | null {
+  if (!location) return null;
+
+  if (Array.isArray(location) && location.length >= 2) {
+    const lon = Number(location[0]);
+    const lat = Number(location[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lon)) return [lat, lon];
+  }
+
+  if (typeof location === "object") {
+    const obj = location as { coordinates?: unknown; x?: unknown; y?: unknown };
+    if (Array.isArray(obj.coordinates) && obj.coordinates.length >= 2) {
+      const lon = Number(obj.coordinates[0]);
+      const lat = Number(obj.coordinates[1]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) return [lat, lon];
+    }
+
+    if (obj.x !== undefined && obj.y !== undefined) {
+      const lon = Number(obj.x);
+      const lat = Number(obj.y);
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) return [lat, lon];
+    }
+  }
+
+  if (typeof location === "string") {
+    const match = location.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
+    if (match) {
+      const lon = Number(match[1]);
+      const lat = Number(match[3]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) return [lat, lon];
+    }
+  }
+
+  return null;
+}
+
+function incidentStatusBadge(status: string) {
+  if (status === "OPEN") return "cm-badge-danger";
+  if (status === "TRIAGE") return "cm-badge-warning";
+  return "cm-badge-success";
+}
+
+function incidentStatusLabel(status: string) {
+  if (status === "OPEN") return "Abierto";
+  if (status === "TRIAGE") return "En revisión";
+  return "Cerrado";
+}
+
+function incidentTypeLabel(type: string) {
+  if (type === "SEARCH") return "Búsqueda";
+  if (type === "MEDICAL") return "Médico";
+  if (type === "WILDFIRE") return "Incendio";
+  if (type === "RESCUE") return "Rescate";
+  if (type === "NATURAL_DISASTER") return "Desastre natural";
+  return "Otro";
+}
+
+function incidentMarkerColor(status: string) {
+  if (status === "OPEN") return "#DC2626";
+  if (status === "TRIAGE") return "#EAB308";
+  return "#16A34A";
+}
+
+function markerIcon(color: string) {
+  return L.divIcon({
+    className: "cm-map-pin",
+    html: `
+      <div style="position: relative; width: 40px; height: 48px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.45));">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 256 256" fill="${color}">
+          <path d="M188,72a60,60,0,1,0-72,58.79V232a12,12,0,0,0,24,0V130.79A60.09,60.09,0,0,0,188,72Zm-60,36a36,36,0,1,1,36-36A36,36,0,0,1,128,108Z"></path>
+        </svg>
+      </div>
+    `,
+    iconSize: [40, 48],
+    iconAnchor: [20, 46],
+    popupAnchor: [0, -34],
+  });
+}
+
+function alertStatusBadge(status?: string | null) {
+  if (status === "OPEN") return "cm-badge-danger";
+  if (status === "ACK") return "cm-badge-alert";
+  return "cm-badge-success";
+}
+
+function alertStatusLabel(status?: string | null) {
+  if (status === "OPEN") return "Abierta";
+  if (status === "ACK") return "Reconocida";
+  if (status === "CLOSED") return "Cerrada";
+  return "En revisión";
+}
+
 export default function DashboardPage() {
+  // Estado principal del centro de control.
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [incidentWeather, setIncidentWeather] = useState<Record<string, IncidentWeather>>({});
+  const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [units, setUnits] = useState<UserRow[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>("satellite");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "OPEN" | "TRIAGE" | "CLOSED">("ALL");
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -101,7 +206,51 @@ export default function DashboardPage() {
     [incidents]
   );
 
-  const positions = useMemo(() => positionedIncidents.map((p) => p.latLng), [positionedIncidents]);
+  const incidentsFiltered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query && statusFilter === "ALL") return incidents;
+
+    return incidents.filter((incident) => {
+      const matchesQuery = `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
+        .toLowerCase()
+        .includes(query);
+      const matchesStatus = statusFilter === "ALL" || incident.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [incidents, search, statusFilter]);
+
+  const positionedFilteredIncidents = useMemo(
+    () =>
+      incidentsFiltered
+        .filter((incident) => incident.location && incident.location.coordinates)
+        .map((incident) => ({
+          incident,
+          latLng: [incident.location!.coordinates[1], incident.location!.coordinates[0]] as [number, number],
+        })),
+    [incidentsFiltered]
+  );
+
+  const filteredPositions = useMemo(
+    () => positionedFilteredIncidents.map((item) => item.latLng),
+    [positionedFilteredIncidents]
+  );
+
+  const kpis = useMemo(() => {
+    const abiertas = incidents.filter((incident) => incident.status === "OPEN").length;
+    const evaluacion = incidents.filter((incident) => incident.status === "TRIAGE").length;
+    const cerradas = incidents.filter((incident) => incident.status === "CLOSED").length;
+    const criticas = alerts.filter((alert) => (alert.status ?? "OPEN") !== "CLOSED" && (alert.severity ?? 5) <= 2).length;
+    const operativos = units.filter((unit) => unit.is_active && unit.role === "OPERATIVE").length;
+
+    return { abiertas, evaluacion, cerradas, criticas, operativos };
+  }, [incidents, alerts, units]);
+
+  const latestIncidents = useMemo(() => incidentsFiltered.slice(0, 5), [incidentsFiltered]);
+  const mappedAlerts = useMemo(
+    () => alerts.map((alert) => ({ ...alert, parsedLocation: parsePointLocation(alert.location) })).filter((alert) => alert.parsedLocation),
+    [alerts]
+  );
+  const latestAlerts = useMemo(() => alerts.slice(0, 6), [alerts]);
 
   useEffect(() => {
     (async () => {
@@ -120,58 +269,36 @@ export default function DashboardPage() {
 
       setMe(data);
 
-      const incidentsRes = await apiFetch("/incidents/");
+      const [incidentsRes, alertsRes, unitsRes] = await Promise.all([
+        apiFetch("/incidents/"),
+        apiFetch("/alerts/"),
+        apiFetch("/auth/panel/users/"),
+      ]);
+
       if (incidentsRes.ok) {
         const incidentsData = await incidentsRes.json();
         const incidentItems: Incident[] = Array.isArray(incidentsData)
           ? incidentsData
           : incidentsData.results || [];
         setIncidents(incidentItems);
-      } else {
-        console.error("Error cargando incidentes:", incidentsRes.status);
+      }
+
+      if (alertsRes.ok) {
+        const alertsData = await alertsRes.json();
+        const alertItems: AlertRow[] = Array.isArray(alertsData)
+          ? alertsData
+          : alertsData.results || [];
+        setAlerts(alertItems);
+      }
+
+      if (unitsRes.ok) {
+        const unitsData = await unitsRes.json();
+        setUnits(Array.isArray(unitsData) ? unitsData : []);
       }
 
       setLoading(false);
     })();
   }, [navigate]);
-
-  useEffect(() => {
-    if (!positionedIncidents.length) return;
-
-    const fetchWeatherForIncident = async (incidentId: string, lat: number, lng: number) => {
-      try {
-        const url = new URL("https://api.open-meteo.com/v1/forecast");
-        url.searchParams.set("latitude", String(lat));
-        url.searchParams.set("longitude", String(lng));
-        url.searchParams.set("hourly", "fire_weather_index,shortwave_radiation,soil_moisture_0_1cm");
-        url.searchParams.set("current_weather", "true");
-        url.searchParams.set("timezone", "auto");
-
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
-        const data = await res.json();
-
-        const timeIndex = data.hourly.time.findIndex((t: string) => t === data.current_weather.time);
-        const fireIndex = timeIndex >= 0 ? data.hourly.fire_weather_index[timeIndex] : undefined;
-        const solar = timeIndex >= 0 ? data.hourly.shortwave_radiation[timeIndex] : undefined;
-        const soil = timeIndex >= 0 ? data.hourly.soil_moisture_0_1cm[timeIndex] : undefined;
-
-        setIncidentWeather((prev) => ({
-          ...prev,
-          [incidentId]: {
-            fireIndex,
-            solar,
-            soilMoisture: soil,
-            updatedAt: data.current_weather.time,
-          },
-        }));
-      } catch (err) {}
-    };
-
-    positionedIncidents.slice(0, 25).forEach(({ incident, latLng }) => {
-      fetchWeatherForIncident(incident.id, latLng[0], latLng[1]);
-    });
-  }, [positionedIncidents]);
 
   async function handleLogout() {
     await apiFetch("/auth/panel/logout/", { method: "POST" });
@@ -204,7 +331,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Centro de mando</p>
-              <h1 className="text-2xl font-bold tracking-tight">Mapa de incidencias</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Centro de control de emergencias</h1>
             </div>
           </div>
 
@@ -266,7 +393,77 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
-          <div className="h-[calc(100vh-120px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
+          {/* KPIs superiores del panel */}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidentes abiertos</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-danger)]">{kpis.abiertas}</p>
+            </article>
+            <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">En evaluación</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-warning)]">{kpis.evaluacion}</p>
+            </article>
+            <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerrados</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-success)]">{kpis.cerradas}</p>
+            </article>
+            <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Alertas críticas</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-alert)]">{kpis.criticas}</p>
+            </article>
+            <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Operativos activos</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-info)]">{kpis.operativos}</p>
+            </article>
+          </div>
+
+          {/* Bloque principal: mapa + resumen */}
+          <div className="mt-4 grid h-[calc(100vh-255px)] gap-4 xl:grid-cols-[1.8fr_0.95fr]">
+            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Mapa operativo</p>
+                  <h2 className="mt-1 text-lg font-bold">Resumen geográfico de incidencias</h2>
+                </div>
+                <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row">
+                  <div className="relative w-full lg:w-[22rem]">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[color:var(--cm-text-muted)]">
+                      🔎
+                    </span>
+                    <input
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Buscar por nombre, estado o ubicación"
+                      className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] pl-10 pr-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setStatusFilter("ALL")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "ALL" ? "cm-badge-info" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                      Todas
+                    </button>
+                    <button type="button" onClick={() => setStatusFilter("OPEN")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "OPEN" ? "cm-badge-danger" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                      Abiertas
+                    </button>
+                    <button type="button" onClick={() => setStatusFilter("TRIAGE")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "TRIAGE" ? "cm-badge-warning" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                      Revisión
+                    </button>
+                    <button type="button" onClick={() => setStatusFilter("CLOSED")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "CLOSED" ? "cm-badge-success" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                      Cerradas
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-[calc(100%-74px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
+            <div className="absolute right-3 top-3 z-[500] rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)]/85 p-3 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Leyenda</p>
+              <div className="mt-2 flex flex-col gap-2 text-xs text-[color:var(--cm-text)]">
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-danger)]" /> Incidente crítico</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-warning)]" /> Incidente en revisión</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-success)]" /> Incidente resuelto</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
+              </div>
+            </div>
             {incidents.length === 0 && (
               <div className="absolute inset-0 bg-[color:var(--cm-surface)] flex items-center justify-center z-50">
                 <div className="text-center">
@@ -284,7 +481,7 @@ export default function DashboardPage() {
               </div>
             )}
             <MapContainer
-              center={positions.length ? positions[0] : [40.4168, -3.7038]}
+              center={filteredPositions.length ? filteredPositions[0] : [40.4168, -3.7038]}
               zoom={6}
               style={{ height: "100%", width: "100%" }}
               scrollWheelZoom={true}
@@ -293,43 +490,155 @@ export default function DashboardPage() {
                 attribution={tileUrls[activeLayer].attribution}
                 url={tileUrls[activeLayer].url}
               />
-              {positions.length > 0 && <FitBounds positions={positions} />}
-              {positionedIncidents.map(({ incident, latLng }) => {
-                const weather = incidentWeather[incident.id];
-
+              {filteredPositions.length > 0 && <FitBounds positions={filteredPositions} />}
+              {positionedFilteredIncidents.map(({ incident, latLng }) => {
                 return (
-                  <Marker key={incident.id} position={latLng}>
+                  <Marker
+                    key={incident.id}
+                    position={latLng}
+                    icon={markerIcon(incidentMarkerColor(incident.status))}
+                  >
                     <Popup>
-                      <div className="p-2">
-                        <h3 className="font-bold text-lg">{incident.name}</h3>
-                        <p className="text-sm text-gray-600">{incident.incident_type}</p>
-                        <p className="text-sm">Estado: {incident.status}</p>
+                      <div className="min-w-[230px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidente</p>
+                            <h3 className="mt-1 font-bold text-base">{incident.name}</h3>
+                          </div>
+                          <span className={`${incidentStatusBadge(incident.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                            {incidentStatusLabel(incident.status)}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                          <span className="cm-badge-info rounded-full px-2.5 py-1 font-semibold">
+                            {incidentTypeLabel(incident.incident_type)}
+                          </span>
+                          {incident.owner_organization ? (
+                            <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                              {incident.owner_organization}
+                            </span>
+                          ) : null}
+                        </div>
                         {incident.description && (
-                          <p className="text-sm mt-2">{incident.description}</p>
+                          <p className="mt-3 text-sm leading-6 text-[color:var(--cm-text-muted)]">{incident.description}</p>
                         )}
                         {incident.location_address && (
-                          <p className="text-sm mt-1">{incident.location_address}</p>
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">📍 {incident.location_address}</p>
                         )}
-                        {weather && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            Última actualización: {new Date(weather.updatedAt).toLocaleString()}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="mt-3 text-xs text-[color:var(--cm-text-muted)]">
                           Creado: {new Date(incident.created_at).toLocaleString()}
                         </p>
                         <Link
                           to={`/incidents`}
-                          className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"
+                          className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                         >
-                          Ver detalles →
+                          Ver detalles
                         </Link>
                       </div>
                     </Popup>
                   </Marker>
                 );
               })}
+
+              {mappedAlerts.map((alert) => (
+                <Marker
+                  key={`alert-${alert.id}`}
+                  position={alert.parsedLocation as [number, number]}
+                  icon={markerIcon("#F97316")}
+                >
+                  <Popup>
+                    <div className="min-w-[210px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Alerta</p>
+                      <p className="mt-1 font-semibold">{alert.title || "Alerta operativa"}</p>
+                      <span className={`${alertStatusBadge(alert.status)} mt-3 inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                        {alertStatusLabel(alert.status)}
+                      </span>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
             </MapContainer>
+              </div>
+            </section>
+
+            <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Actividad reciente</p>
+                    <h2 className="mt-1 text-lg font-bold">Incidentes destacados</h2>
+                    <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Los incidentes destacados son el resumen de los eventos visibles y prioritarios del mapa.</p>
+                  </div>
+                <Link to="/incidents" className="rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                  Ver todo
+                </Link>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {latestIncidents.length === 0 ? (
+                  <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                    No hay incidentes disponibles para mostrar en el resumen.
+                  </div>
+                ) : (
+                  latestIncidents.map((incident) => {
+                    const statusClass = incident.status === "OPEN"
+                      ? "cm-badge-danger"
+                      : incident.status === "TRIAGE"
+                      ? "cm-badge-warning"
+                      : "cm-badge-success";
+
+                    return (
+                      <article key={incident.id} className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 transition hover:border-[color:var(--cm-info)]/50">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-[color:var(--cm-text)]">{incident.name}</h3>
+                            <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{incident.location_address || "Sin dirección registrada"}</p>
+                          </div>
+                        <span className={`${statusClass} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>{incidentStatusLabel(incident.status)}</span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-xs text-[color:var(--cm-text-muted)]">
+                          <span>{incident.incident_type}</span>
+                          <span>{new Date(incident.created_at).toLocaleString()}</span>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Pulso operativo</p>
+                    <h3 className="mt-1 text-base font-bold">Alertas recientes</h3>
+                    <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Flujo inmediato de avisos y estado de respuesta del despliegue.</p>
+                  </div>
+                  <Link to="/alerts" className="rounded-lg bg-[color:var(--cm-alert)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                    Ver alertas
+                  </Link>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {latestAlerts.length === 0 ? (
+                    <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                      No hay alertas recientes para mostrar.
+                    </div>
+                  ) : (
+                    latestAlerts.map((alert) => (
+                      <article key={alert.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-alert)]/50">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">{alert.title || `Alerta ${alert.id}`}</p>
+                            <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{alert.created_at ? new Date(alert.created_at).toLocaleString() : "Fecha desconocida"}</p>
+                          </div>
+                          <span className={`${alertStatusBadge(alert.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                            {alertStatusLabel(alert.status)}
+                          </span>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </div>

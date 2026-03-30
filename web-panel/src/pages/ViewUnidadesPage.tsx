@@ -463,7 +463,7 @@ export function ViewUnidadesPage() {
 
             <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]">
               <table className="min-w-[1180px] w-full text-sm">
-                <thead className="bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
+                <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
                   <tr>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">
                     <button

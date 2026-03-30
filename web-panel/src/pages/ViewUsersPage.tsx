@@ -133,7 +133,7 @@ export default function ViewUsersPage() {
 
         <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <table className="min-w-[1050px] w-full text-sm">
-            <thead className="bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
+            <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Username</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Email</th>
@@ -174,7 +174,7 @@ export default function ViewUsersPage() {
                       <button
                         type="button"
                         onClick={() => navigate(`/edituser/${u.id}`)}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
                       >
                         Editar usuario
                       </button>

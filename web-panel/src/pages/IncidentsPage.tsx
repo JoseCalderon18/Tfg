@@ -906,7 +906,7 @@ export default function IncidentsPage() {
         <div className="mt-4 grid gap-4 2xl:grid-cols-[1.55fr_1fr]">
           <section className="overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <table className="min-w-[1120px] w-full text-sm">
-              <thead className="bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
+              <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
@@ -973,7 +973,7 @@ export default function IncidentsPage() {
                               e.stopPropagation();
                               navigate(`/editIncident/${incident.id}`);
                             }}
-                            className="rounded-xl bg-[color:var(--cm-info)] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110"
+                            className="rounded-lg bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                           >
                             Editar
                           </button>
@@ -984,7 +984,7 @@ export default function IncidentsPage() {
                               void handleDeleteIncident(incident.id);
                             }}
                             disabled={Boolean(deletingIncidentId)}
-                            className="rounded-xl bg-[color:var(--cm-danger)] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                            className="rounded-lg bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                           >
                             {deletingIncidentId === incident.id ? "Borrando..." : "Borrar"}
                           </button>

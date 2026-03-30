@@ -124,12 +124,19 @@ INSERT INTO incidents (
 )
 SELECT
     ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid,
-    (ARRAY['Incendio forestal','Busqueda de senderista','Rescate en edificio','Emergencia medica','Inundacion urbana','Accidente multiple'])[1 + ((g - 1) % 6)] || ' #' || lpad(g::text, 2, '0'),
+    (ARRAY['Incendio forestal','Busqueda de senderista','Rescate en edificio','Emergencia medica','Inundacion urbana','Accidente multiple'])[1 + ((g - 1) % 6)] || ' · ' ||
+    (ARRAY['Bilbao','Madrid','Sevilla','Valencia','Malaga'])[1 + floor((g - 1) / 10.0)::int] || ' #' || lpad(g::text, 2, '0'),
     (ARRAY['WILDFIRE','SEARCH','RESCUE','MEDICAL','NATURAL_DISASTER','OTHER'])[1 + ((g - 1) % 6)],
     (ARRAY['OPEN','TRIAGE','CLOSED'])[1 + ((g - 1) % 3)],
     'Incidente de entrenamiento operativo',
-    ST_SetSRID(ST_MakePoint(-8.8 + (g * 0.11), 36.4 + (g * 0.12)), 4326),
-    (ARRAY['Madrid','Barcelona','Valencia','Sevilla','Bilbao','Malaga','Valladolid','A Coruna','Murcia','Granada'])[1 + ((g - 1) % 10)] || ', Espana',
+    ST_SetSRID(
+      ST_MakePoint(
+        (ARRAY[-2.93499,-3.7038,-5.9845,-0.3763,-4.4214])[1 + floor((g - 1) / 10.0)::int] + ((((g - 1) % 10) - 4.5) * 0.004),
+        (ARRAY[43.2630,40.4168,37.3891,39.4699,36.7213])[1 + floor((g - 1) / 10.0)::int] + ((((g - 1) % 10) - 4.5) * 0.003)
+      ),
+      4326
+    ),
+    (ARRAY['Bilbao','Madrid','Sevilla','Valencia','Malaga'])[1 + floor((g - 1) / 10.0)::int] || ', Espana',
     now() - ((g % 40) || ' days')::interval,
     NULL,
     now() - ((g % 40) || ' days')::interval,
@@ -156,7 +163,7 @@ usuarios_seed AS (
       )
 ),
 incidentes_seed AS (
-    SELECT g, i.id AS incident_id
+    SELECT g, i.id AS incident_id, i.location AS incident_location
     FROM nums
     JOIN incidents i ON i.id = ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid
 )
@@ -221,7 +228,7 @@ usuarios_seed AS (
       )
 ),
 incidentes_seed AS (
-    SELECT g, i.id AS incident_id
+    SELECT g, i.id AS incident_id, i.location AS incident_location
     FROM nums
     JOIN incidents i ON i.id = ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid
 )
@@ -232,7 +239,13 @@ SELECT
     ('70000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid,
     usuarios_seed.user_id,
     incidentes_seed.incident_id,
-    ST_SetSRID(ST_MakePoint(-7.0 + (g * 0.06), 37.5 + (g * 0.06)), 4326),
+    ST_SetSRID(
+      ST_MakePoint(
+        ST_X(incidentes_seed.incident_location) + (((g % 3) - 1) * 0.004),
+        ST_Y(incidentes_seed.incident_location) + (((g % 4) - 1.5) * 0.004)
+      ),
+      4326
+    ),
     3 + (g % 8),
     50 + (g % 500),
     round((g % 12)::numeric, 2),
@@ -258,7 +271,7 @@ usuarios_seed AS (
       )
 ),
 incidentes_seed AS (
-    SELECT g, i.id AS incident_id
+    SELECT g, i.id AS incident_id, i.location AS incident_location
     FROM nums
     JOIN incidents i ON i.id = ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid
 )
@@ -278,7 +291,13 @@ SELECT
     (ARRAY['OPEN','ACK','CLOSED'])[1 + ((g - 1) % 3)],
     'Alerta Operativa ' || lpad(g::text, 3, '0'),
     'Alerta emitida durante simulacion de campo',
-    ST_SetSRID(ST_MakePoint(-6.8 + (g * 0.05), 38.0 + (g * 0.05)), 4326),
+    ST_SetSRID(
+      ST_MakePoint(
+        ST_X(incidentes_seed.incident_location) + (((g % 3) - 1) * 0.01),
+        ST_Y(incidentes_seed.incident_location) + (((g % 4) - 1.5) * 0.008)
+      ),
+      4326
+    ),
     CASE WHEN g % 3 IN (1,2) THEN now() - interval '3 hours' ELSE NULL END,
     CASE WHEN g % 3 IN (1,2) THEN 'Validada por central' ELSE NULL END,
     CASE WHEN g % 3 = 2 THEN now() - interval '1 hour' ELSE NULL END,
@@ -305,7 +324,7 @@ usuarios_seed AS (
       )
 ),
 incidentes_seed AS (
-    SELECT g, i.id AS incident_id
+    SELECT g, i.id AS incident_id, i.location AS incident_location
     FROM nums
     JOIN incidents i ON i.id = ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid
 )
@@ -317,7 +336,13 @@ SELECT
     ('90000000-0000-0000-0000-' || lpad(nums.g::text, 12, '0'))::uuid,
     incidentes_seed.incident_id,
     usuarios_seed.user_id,
-    ST_SetSRID(ST_MakePoint(-6.5 + (nums.g * 0.05), 38.2 + (nums.g * 0.04)), 4326),
+    ST_SetSRID(
+      ST_MakePoint(
+        ST_X(incidentes_seed.incident_location) + 0.006,
+        ST_Y(incidentes_seed.incident_location) + 0.004
+      ),
+      4326
+    ),
     'Reporte registrado durante simulacion en zona operativa',
     (ARRAY['LOW','MEDIUM','HIGH'])[1 + ((nums.g - 1) % 3)],
     (nums.g % 6 <> 0),
@@ -333,7 +358,7 @@ WITH nums AS (
     SELECT generate_series(1, 50) AS g
 ),
 incidentes_seed AS (
-    SELECT g, i.id AS incident_id
+    SELECT g, i.id AS incident_id, i.location AS incident_location
     FROM nums
     JOIN incidents i ON i.id = ('40000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid
 )
@@ -344,9 +369,9 @@ SELECT
     incidentes_seed.incident_id,
     'Zona Operativa ' || lpad(g::text, 3, '0'),
     CASE WHEN g % 2 = 0 THEN 'CIRCLE' ELSE 'POLYGON' END,
-    CASE WHEN g % 2 = 0 THEN ST_SetSRID(ST_MakePoint(-6.9 + (g * 0.05), 38.1 + (g * 0.04)), 4326) ELSE NULL END,
+    CASE WHEN g % 2 = 0 THEN incidentes_seed.incident_location ELSE NULL END,
     CASE WHEN g % 2 = 0 THEN 300 + (g * 8) ELSE NULL END,
-    CASE WHEN g % 2 = 1 THEN ST_Buffer(ST_SetSRID(ST_MakePoint(-6.9 + (g * 0.05), 38.1 + (g * 0.04)), 4326)::geography, 200 + (g * 5))::geometry ELSE NULL END,
+    CASE WHEN g % 2 = 1 THEN ST_Buffer(incidentes_seed.incident_location::geography, 200 + (g * 5))::geometry ELSE NULL END,
     TRUE,
     now() - ((g % 20) || ' days')::interval
 FROM nums

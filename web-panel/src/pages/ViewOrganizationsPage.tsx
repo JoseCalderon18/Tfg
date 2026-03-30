@@ -138,59 +138,59 @@ export default function ViewOrganizationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-        <p className="text-slate-300">Cargando organizaciones...</p>
+      <div className="cm-shell min-h-screen grid place-items-center">
+        <p className="text-[color:var(--cm-text-muted)]">Cargando organizaciones...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="cm-shell min-h-screen">
+      <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm text-slate-400">Administracion</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administracion</p>
             <h1 className="text-2xl font-bold">Organizaciones</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
+              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
             >
               Volver
             </button>
             <button
               type="button"
               onClick={() => navigate("/createorganization")}
-              className="rounded-xl bg-blue-500/60 px-4 py-2 text-sm font-semibold ring-1 ring-blue-500 hover:bg-blue-500/80 transition"
+              className="rounded-xl bg-[color:var(--cm-info)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
             >
               Crear organizacion
             </button>
           </div>
         </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
-            <p className="text-sm text-slate-400">Organizaciones</p>
-            <p className="mt-2 text-3xl font-bold text-slate-100">{organizationKpis.totalOrganizations}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organizaciones</p>
+            <p className="mt-2 text-3xl font-bold text-[color:var(--cm-info)]">{organizationKpis.totalOrganizations}</p>
           </article>
 
-          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
-            <p className="text-sm text-slate-400">
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
               {organizacionSeleccionada ? `Miembros · ${organizacionSeleccionada.name}` : "Miembros"}
             </p>
-            <p className="mt-2 text-3xl font-bold text-emerald-300">{organizationKpis.totalMembers}</p>
+            <p className="mt-2 text-3xl font-bold text-[color:var(--cm-success)]">{organizationKpis.totalMembers}</p>
           </article>
 
-          <article className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800">
-            <p className="text-sm text-slate-400">
+          <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
               {organizacionSeleccionada ? `Incidentes · ${organizacionSeleccionada.name}` : "Incidentes"}
             </p>
-            <p className="mt-2 text-3xl font-bold text-amber-300">{organizationKpis.totalIncidents}</p>
+            <p className="mt-2 text-3xl font-bold text-[color:var(--cm-warning)]">{organizationKpis.totalIncidents}</p>
           </article>
         </div>
 
-        <div className="mt-6 rounded-2xl bg-slate-900/60 p-4 ring-1 ring-slate-800">
+        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
           <input
             type="text"
             value={query}
@@ -199,34 +199,34 @@ export default function ViewOrganizationsPage() {
               setPaginaActual(1);
             }}
             placeholder="Buscar por nombre, tipo o contacto..."
-            className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+          <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
             {error}
           </div>
         )}
 
-        <div className="mt-6 overflow-x-auto rounded-2xl bg-slate-900/60 ring-1 ring-slate-800">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-900/90 text-slate-300">
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <table className="min-w-[1220px] w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
               <tr>
-                <th className="px-4 py-3 text-left">Nombre</th>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Email</th>
-                <th className="px-4 py-3 text-left">Telefono</th>
-                <th className="px-4 py-3 text-left">Direccion</th>
-                <th className="px-4 py-3 text-left">Estado</th>
-                <th className="px-4 py-3 text-left">Creada</th>
-                <th className="px-4 py-3 text-left">Acciones</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Email</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Telefono</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Direccion</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Creada</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrganizations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                     No hay organizaciones para mostrar.
                   </td>
                 </tr>
@@ -235,44 +235,42 @@ export default function ViewOrganizationsPage() {
                   <tr
                     key={org.id}
                     onClick={() => setOrganizacionSeleccionadaId(org.id)}
-                    className={`border-t border-slate-800/80 transition cursor-pointer hover:bg-slate-800/40 ${
-                      organizacionSeleccionadaId === org.id ? "bg-slate-800/50" : ""
+                    className={`border-t border-[color:var(--cm-border)] transition cursor-pointer hover:bg-[color:var(--cm-surface-2)]/60 ${
+                      organizacionSeleccionadaId === org.id ? "bg-[color:var(--cm-surface-2)]/70" : ""
                     }`}
                   >
-                    <td className="px-4 py-3 font-medium text-slate-100">{org.name}</td>
-                    <td className="px-4 py-3 text-slate-300">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
+                    <td className="px-4 py-3.5 font-medium whitespace-nowrap">{org.name}</td>
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
                     org.org_type === "MEDICAL" ? "Servicio Médico" :
                     org.org_type === "POLICE" ? "Departamento de Policía" :
                     org.org_type === "RESCUE" ? "Servicio de Rescate" :
                     org.org_type === "OTHER" ? "Otro" : org.org_type
                     }</td>
-                    <a href={`mailto:${org.contact_email}`} target="_blank" rel="noopener noreferrer">
-                      <td className="px-4 py-3 text-slate-300">{org.contact_email || "-"}</td>
-                    </a>
-                    <td className="px-4 py-3 text-slate-300">{org.contact_phone || "-"}</td>
-                    <td className="px-4 py-3 text-slate-300">{org.address || "-"}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.contact_email || "-"}</td>
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.contact_phone || "-"}</td>
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">{org.address || "-"}</td>
+                    <td className="px-4 py-3.5">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
                           org.is_active
-                            ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
-                            : "bg-slate-500/15 text-slate-300 ring-slate-500/30"
+                            ? "cm-badge-success"
+                            : "cm-badge-warning"
                         }`}
                       >
                         {org.is_active ? "Activa" : "Inactiva"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400">
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
                       {org.created_at ? new Date(org.created_at).toLocaleString() : "Fecha desconocida"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                     <button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
                           navigate(`/editorganization/${org.id}`);
                         }}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
                       >Editar</button>
                       </td>
                   </tr>
