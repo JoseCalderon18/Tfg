@@ -35,7 +35,7 @@ SELECT
     ('20000000-0000-0000-0000-' || lpad(n.g::text, 12, '0'))::uuid,
     lower(substr(n.first_name, 1, 1) || n.last_name || lpad(n.g::text, 2, '0')),
     lower(n.first_name || '.' || n.last_name || lpad(n.g::text, 2, '0') || '@equipo.local'),
-    'pbkdf2_sha256$720000$mpFEPHUptfD0PdqHUOm5PM$CkcWkcaKNLxwraMDMwooe7kMNMHj/+VXxFPjysGsbkg=',
+    'pbkdf2_sha256$720000$CsR1PXlHSjd7kZusiR0Bei$82WVPsIE/5SHbKP8oL2x83RYMqCQ2v4DjrkGoFLyQRs=',
     TRUE,
     (n.g % 8 = 0),
     FALSE,
@@ -76,16 +76,20 @@ organizaciones_seed AS (
 )
 INSERT INTO profiles (
     id, user_id, organization_id, role, emergency_contact, emergency_phone,
-    medical_notes, name, lastname, created_at, updated_at
+    medical_notes, specialties, name, lastname, created_at, updated_at
 )
 SELECT
     ('30000000-0000-0000-0000-' || lpad(g::text, 12, '0'))::uuid,
     usuarios_seed.user_id,
     organizaciones_seed.organization_id,
-    (ARRAY['ADMIN','SUPERVISOR','OPERATIVE'])[1 + ((g - 1) % 3)],
+    CASE
+        WHEN g <= 10 THEN 'SUPERVISOR'
+        ELSE (ARRAY['ADMIN','SUPERVISOR','OPERATIVE'])[1 + ((g - 1) % 3)]
+    END,
     'Contacto familiar ' || g,
     '+34 6' || lpad((20000000 + g)::text, 8, '0'),
-    'Sin antecedentes relevantes',
+    '["Sin antecedentes relevantes"]'::jsonb,
+    '["Primeros auxilios", "Comunicacion"]'::jsonb,
     (ARRAY['Javier','Maria','Carlos','Lucia','Sergio','Elena','Pablo','Ana','Miguel','Carmen','Adrian','Laura','Diego','Irene','Raul','Patricia','David','Sara','Alberto','Noelia','Hector','Natalia','Ivan','Marta','Victor','Claudia','Ruben','Silvia','Oscar','Beatriz','Jesus','Paula','Manuel','Andrea','Joaquin','Eva','Fernando','Alicia','Gonzalo','Rocio','Jaime','Nerea','Samuel','Pilar','Daniel','Sonia','Guillermo','Ines','Marco','Julia'])[g],
     (ARRAY['Garcia','Martinez','Lopez','Sanchez','Perez','Gomez','Martin','Jimenez','Ruiz','Hernandez','Diaz','Moreno','Alvarez','Romero','Alonso','Gutierrez','Navarro','Torres','Dominguez','Vazquez','Ramos','Gil','Serrano','Molina','Blanco','Castro','Ortega','Delgado','Suarez','Reyes','Mendez','Cruz','Prieto','Flores','Pena','Iglesias','Medina','Cortes','Calvo','Vega','Fuentes','Campos','Carrasco','Herrera','Santos','Leon','Marin','Rubio','Cano','Aguilar'])[g],
     now() - ((g % 30) || ' days')::interval,
