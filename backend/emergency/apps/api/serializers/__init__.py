@@ -20,7 +20,7 @@ from .alert_serializers import (
 from .organization_serializers import OrganizationSerializer, OrganizationCreateSerializer
 from .lightning_serializers import LightningStrikeSerializer, LightningStrikeListSerializer
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
-from .workarea_serializers import WorkAreaSerializer
+from .workarea_serializers import WorkAreaSerializer, WorkAreaCreateSerializer
 
 # Alias en espanol para compatibilidad con vistas existentes
 PuntoRastreoSerializer = TrackPointSerializer
@@ -32,6 +32,7 @@ AlertaCreateSerializer = AlertCreateSerializer
 AlertaAckSerializer = AlertAckSerializer
 AlertaCloseSerializer = AlertCloseSerializer
 AreaTrabajoSerializer = WorkAreaSerializer
+AreaTrabajoCreateSerializer = WorkAreaCreateSerializer
 
 __all__ = [
     "UserSerializer",
@@ -56,7 +57,9 @@ __all__ = [
     "AlertaAckSerializer",
     "AlertaCloseSerializer",
     "WorkAreaSerializer",
+    "WorkAreaCreateSerializer",
     "AreaTrabajoSerializer",
+    "AreaTrabajoCreateSerializer",
     "OrganizationSerializer",
     "OrganizationCreateSerializer",
     "RiskReportSerializer",
