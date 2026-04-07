@@ -1,5 +1,8 @@
+import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import type { LatLngTuple } from "leaflet";
+import { Circle, MapContainer, Polygon, TileLayer, useMap } from "react-leaflet";
+import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 type WorkAreaApiRow = {
@@ -171,41 +174,90 @@ function formatDate(value?: string | null) {
 function getAreaFocus(area: WorkAreaRow | null): LatLngTuple | null {
   if (!area) return null;
   if (area.center) return area.center;
+
   if (area.polygon && area.polygon.length > 0) {
-    const total = area.polygon.reduce(
-      (acc, point) => {
-        acc.lat += point[0];
-        acc.lng += point[1];
-        return acc;
-      },
+    const totals = area.polygon.reduce(
+      (acc, point) => ({
+        lat: acc.lat + point[0],
+        lng: acc.lng + point[1],
+      }),
       { lat: 0, lng: 0 }
     );
 
-    return [total.lat / area.polygon.length, total.lng / area.polygon.length];
+    return [totals.lat / area.polygon.length, totals.lng / area.polygon.length];
   }
+
   return null;
 }
 
-function buildMapUrl(area: WorkAreaRow | null) {
-  const focus = getAreaFocus(area);
-  if (!focus) return null;
+function openGoogleMapsInNewTab(point: LatLngTuple | null) {
+  if (!point) return;
+  const [lat, lng] = point;
+  const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
-  const [lat, lng] = focus;
-  const delta = 0.08;
-  const left = lng - delta;
-  const right = lng + delta;
-  const top = lat + delta;
-  const bottom = lat - delta;
+function MapViewport({ area }: { area: WorkAreaRow | null }) {
+  const map = useMap();
 
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lng}`;
+  useEffect(() => {
+    if (!area) return;
+
+    if (area.areaType === "CIRCLE" && area.center) {
+      map.setView(area.center, 14, { animate: true });
+      return;
+    }
+
+    if (area.areaType === "POLYGON" && area.polygon && area.polygon.length >= 3) {
+      map.fitBounds(area.polygon as LatLngBoundsExpression, { padding: [28, 28], animate: true });
+    }
+  }, [area, map]);
+
+  return null;
+}
+
+function WorkAreaMap({ area }: { area: WorkAreaRow | null }) {
+  const defaultCenter: LatLngTuple = [40.4168, -3.7038];
+  const initialCenter = area?.center ?? area?.polygon?.[0] ?? defaultCenter;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[color:var(--cm-border)]">
+      <MapContainer center={initialCenter} zoom={13} scrollWheelZoom style={{ height: "420px", width: "100%" }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <MapViewport area={area} />
+
+        {area?.areaType === "CIRCLE" && area.center && area.radiusM ? (
+          <Circle
+            center={area.center}
+            radius={area.radiusM}
+            pathOptions={{ color: "#ef4444", fillColor: "#f97316", fillOpacity: 0.22, weight: 3 }}
+          />
+        ) : null}
+
+        {area?.areaType === "POLYGON" && area.polygon && area.polygon.length >= 3 ? (
+          <Polygon
+            positions={area.polygon}
+            pathOptions={{ color: "#06b6d4", fillColor: "#22d3ee", fillOpacity: 0.2, weight: 3 }}
+          />
+        ) : null}
+      </MapContainer>
+    </div>
+  );
 }
 
 export default function WorkAreasPage() {
+  const navigate = useNavigate();
+  const pageSize = 5;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [workAreas, setWorkAreas] = useState<WorkAreaRow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -217,7 +269,8 @@ export default function WorkAreasPage() {
         }
 
         const data = await response.json();
-        setWorkAreas(normalizeWorkAreas(data));
+        const rows = normalizeWorkAreas(data);
+        setWorkAreas(rows);
       } catch {
         setError("Error de red al cargar las áreas de trabajo.");
       } finally {
@@ -235,13 +288,28 @@ export default function WorkAreasPage() {
     );
   }, [query, workAreas]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredWorkAreas.length / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedWorkAreas = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredWorkAreas.slice(start, start + pageSize);
+  }, [currentPage, filteredWorkAreas]);
+
   const selectedArea =
     filteredWorkAreas.find((area) => area.id === selectedId) ??
     workAreas.find((area) => area.id === selectedId) ??
     null;
-
-  const mapUrl = useMemo(() => buildMapUrl(selectedArea), [selectedArea]);
-  const focus = useMemo(() => getAreaFocus(selectedArea), [selectedArea]);
+  const mapFocus = useMemo(() => getAreaFocus(selectedArea), [selectedArea]);
 
   return (
     <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
@@ -277,7 +345,7 @@ export default function WorkAreasPage() {
                 No hay áreas de trabajo para mostrar.
               </div>
             ) : (
-              filteredWorkAreas.map((area) => {
+              paginatedWorkAreas.map((area) => {
                 const selected = selectedArea?.id === area.id;
                 return (
                   <button
@@ -311,6 +379,36 @@ export default function WorkAreasPage() {
               })
             )}
           </div>
+
+          {!loading && filteredWorkAreas.length > 0 ? (
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4">
+              <p className="text-xs text-[color:var(--cm-text-muted)]">
+                Mostrando {(currentPage - 1) * pageSize + 1}-
+                {Math.min(currentPage * pageSize, filteredWorkAreas.length)} de {filteredWorkAreas.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 text-sm text-[color:var(--cm-text)] transition hover:border-[color:var(--cm-info)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm text-[color:var(--cm-text-muted)]">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 text-sm text-[color:var(--cm-text)] transition hover:border-[color:var(--cm-info)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
@@ -328,40 +426,46 @@ export default function WorkAreasPage() {
                 <span className="rounded-full bg-[color:var(--cm-surface-2)] px-3 py-1 text-[color:var(--cm-text-muted)]">
                   {selectedArea.incidentName || "Sin incidente"}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => openGoogleMapsInNewTab(mapFocus)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  disabled={!mapFocus}
+                >
+                  Abrir en Google Maps
+                  {mapFocus && (
+                    <span className="ml-2 underline text-blue-200">
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedArea.incidentId) return;
+                    navigate(`/editIncident/${selectedArea.incidentId}`);
+                  }}
+                  disabled={!selectedArea.incidentId}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:bg-slate-600 disabled:text-slate-300 disabled:cursor-not-allowed"
+                >
+                  Abrir incidente relacionado
+                  {selectedArea.incidentId ? (
+                    <span className="ml-2 underline text-red-200">{selectedArea.incidentName || selectedArea.incidentId}</span>
+                    
+                  ) : (
+                    <span className="ml-2 text-gray-400">(No hay incidente asociado)</span>
+                  )}
+                </button>
               </div>
             ) : null}
           </div>
 
-          {!selectedArea || !mapUrl ? (
+          {!selectedArea ? (
             <div className="grid h-[420px] place-items-center rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] text-sm text-[color:var(--cm-text-muted)]">
               Selecciona un área de trabajo para verla en el mapa.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-[color:var(--cm-border)]">
-              <iframe title="Mapa del area de trabajo" src={mapUrl} className="h-[420px] w-full" loading="lazy" />
-            </div>
+            <WorkAreaMap area={selectedArea} />
           )}
-
-          {selectedArea ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Centro</p>
-                <p className="mt-1 font-medium">
-                  {focus ? `${focus[0].toFixed(5)}, ${focus[1].toFixed(5)}` : "No disponible"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Radio</p>
-                <p className="mt-1 font-medium">
-                  {selectedArea.radiusM ? `${Math.round(selectedArea.radiusM)} m` : "No aplica"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Creada</p>
-                <p className="mt-1 font-medium">{formatDate(selectedArea.createdAt)}</p>
-              </div>
-            </div>
-          ) : null}
         </section>
       </div>
     </div>
