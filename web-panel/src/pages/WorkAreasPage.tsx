@@ -466,6 +466,14 @@ export default function WorkAreasPage() {
           ) : (
             <WorkAreaMap area={selectedArea} />
           )}
+
+          <button
+            type="button"
+            onClick={() => navigate("/createWorkArea")}
+            className="mt-4 ml-auto block rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 transition"
+          >
+            Crear nueva área de trabajo
+          </button>
         </section>
       </div>
     </div>
