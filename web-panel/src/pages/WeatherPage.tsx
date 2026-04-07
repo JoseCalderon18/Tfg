@@ -52,6 +52,30 @@ function etiquetaVista(vista: VistaMeteo) {
       return "Viento";
   }
 }
+function obtenerEtiquetaTipoIncidente(tipo: string) {
+  switch (tipo) {
+    case "SOS":
+      return "SOS";
+    case "SEARCH":
+      return "Busqueda";
+    case "MEDICAL":
+      return "Emergencia medica";
+    case "WILDFIRE":
+      return "Incendio forestal";
+    case "NATURAL_DISASTER":
+      return "Desastre natural";
+    case "MAN_DOWN":
+      return "Operativo caido";
+    case "LOST":
+      return "Operativo desorientado";
+    case "GEOFENCE":
+      return "Fuera de zona";
+    case "ANOMALY":
+      return "Anomalia";
+    default:
+      return "Otra";
+  }
+}
 
 export default function WeatherPage() {
   const [cargando, setCargando] = useState(true);
@@ -199,12 +223,6 @@ export default function WeatherPage() {
                   <div className="flex flex-col gap-2 border-b border-[color:var(--cm-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-base font-semibold">Windy</h3>
-                      <p className="text-xs text-[color:var(--cm-text-muted)]">
-                        Mapa meteorologico limpio, sin tarjetas superpuestas sobre el visor.
-                      </p>
-                    </div>
-                    <div className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3 py-1 text-xs text-[color:var(--cm-text-muted)]">
-                      Fuente unica: Windy
                     </div>
                   </div>
 
@@ -220,18 +238,16 @@ export default function WeatherPage() {
                       Cambia entre viento, nubosidad y lluvia desde el selector superior. El visor se recentra automaticamente al cambiar de incidente.
                     </p>
                   </div>
-
-                  <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Consejo rapido</p>
-                    <p className="mt-2 text-sm leading-6 text-[color:var(--cm-text-muted)]">
-                      Si el operativo depende de desplazamientos, mira primero viento. Si buscas tormenta o frentes, cambia a lluvia o nubosidad.
-                    </p>
-                  </div>
-
                   <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Estado del incidente</p>
-                    <p className="mt-2 text-lg font-semibold">{incidenteSeleccionado.status}</p>
-                    <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Tipo: {incidenteSeleccionado.incident_type}</p>
+                    <p className="mt-2 text-lg font-semibold">
+                      {incidenteSeleccionado.status === "OPEN" ? "Abierto" :
+                      incidenteSeleccionado.status === "CLOSED" ? "Cerrado" : 
+                      incidenteSeleccionado.status === "TRIAGE" ? "En evaluación" : incidenteSeleccionado.status}
+                    </p>
+                    <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Tipo: 
+                      {obtenerEtiquetaTipoIncidente(incidenteSeleccionado.incident_type)}
+                      </p>
                   </div>
                 </div>
               </>

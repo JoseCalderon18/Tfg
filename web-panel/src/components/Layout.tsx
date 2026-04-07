@@ -40,9 +40,6 @@ export default function Layout() {
           <Link to="/alerts" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-alert)]/20">
             Alertas
           </Link>
-          <Link to="/workarea" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
-            Áreas de trabajo
-          </Link>
           <Link to="/viewunidades" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-warning)]/20">
             Unidades
           </Link>
