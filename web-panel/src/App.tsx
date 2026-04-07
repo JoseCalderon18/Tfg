@@ -24,6 +24,7 @@ import EditUnitPage from './pages/EditUnitPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import NewOrganizationPage from './pages/NewOrganizationPage';
 import EditAlertPage from './pages/EditAlertPage';
+import WorkAreasPage from './pages/WorkAreasPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -59,7 +60,8 @@ function App() {
         <Route path="editorganization/:id" element={<EditOrganizationPage />} />
         <Route path="editunit/:id" element={<EditUnitPage />} />
         <Route path="createorganization" element={<NewOrganizationPage />} />
-        <Route path='editAlert/:id' element={<EditAlertPage />} />
+        <Route path="editAlert/:id" element={<EditAlertPage />} />
+        <Route path="workarea" element={<WorkAreasPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
