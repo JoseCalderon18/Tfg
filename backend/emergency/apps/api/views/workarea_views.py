@@ -19,6 +19,6 @@ class WorkAreaViewSet(viewsets.ModelViewSet):
     filterset_fields = ["incident", "area_type", "active"]
 
     def get_serializer_class(self):
-        if self.action == "create":
+        if self.action in {"create", "update", "partial_update"}:
             return WorkAreaCreateSerializer
         return WorkAreaSerializer

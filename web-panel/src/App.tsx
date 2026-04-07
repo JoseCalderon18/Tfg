@@ -26,6 +26,7 @@ import NewOrganizationPage from './pages/NewOrganizationPage';
 import EditAlertPage from './pages/EditAlertPage';
 import WorkAreasPage from './pages/WorkAreasPage';
 import NewWorkAreaPage from './pages/NewWorkAreaPage';
+import EditWorkAreaPage from './pages/EditWorkAreaPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -64,6 +65,7 @@ function App() {
         <Route path="editAlert/:id" element={<EditAlertPage />} />
         <Route path="workarea" element={<WorkAreasPage />} />
         <Route path="createWorkArea" element={<NewWorkAreaPage />} />
+        <Route path="editWorkArea/:id" element={<EditWorkAreaPage />} />
         {/* Redirección para rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
