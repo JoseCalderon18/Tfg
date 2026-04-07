@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 type AlertRow = {
@@ -37,6 +38,7 @@ function getSeverityLabel(severity?: number | null) {
 }
 
 export default function AlertsPage() {
+  const navigate = useNavigate();
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -92,10 +94,9 @@ export default function AlertsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="cm-badge-danger rounded-full px-3 py-1">Critico</span>
-            <span className="cm-badge-alert rounded-full px-3 py-1">Alerta</span>
-            <span className="cm-badge-warning rounded-full px-3 py-1">Revision</span>
-            <span className="cm-badge-success rounded-full px-3 py-1">Resuelto</span>
+            <span className="cm-badge-danger rounded-full px-3 py-1">Abierta</span>
+            <span className="cm-badge-alert rounded-full px-3 py-1">Evaluación</span>
+            <span className="cm-badge-success rounded-full px-3 py-1">Cerrada</span>
           </div>
         </div>
 
@@ -128,7 +129,19 @@ export default function AlertsPage() {
                 <tr key={alert.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
                     <span className={`${getAlertBadge(alert.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alert.alert_type || "OTHER"}
+                      {alert.alert_type === "SOS"
+                        ? "SOS"
+                        : alert.alert_type === "MAN_DOWN"
+                        ? "Hombre caido"
+                        : alert.alert_type === "GEOFENCE"
+                        ? "Geofence"
+                        : alert.alert_type === "LOST"
+                        ? "Perdida"
+                        : alert.alert_type === "ANOMALY"
+                        ? "Anomalia"
+                        : alert.alert_type === "OTHER"
+                        ? "Otro"
+                        : "Desconocido"}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alert.title || "Alerta sin titulo"}</td>
@@ -137,7 +150,13 @@ export default function AlertsPage() {
                   </td>
                   <td className="px-4 py-3.5">
                     <span className={`${getStatusBadge(alert.status)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alert.status || "OPEN"}
+                      {alert.status === "OPEN"
+                        ? "Abierta"
+                        : alert.status === "ACK"
+                        ? "Evaluación"
+                        : alert.status === "CLOSED"
+                        ? "Cerrada"
+                        : "Desconocida"}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
@@ -151,7 +170,11 @@ export default function AlertsPage() {
                       <button className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-alert)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
                         ACK
                       </button>
-                      <button className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/editAlert/${alert.id}`)}
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                      >
                         Ver
                       </button>
                     </div>

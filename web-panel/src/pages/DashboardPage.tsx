@@ -529,8 +529,9 @@ export default function DashboardPage() {
                           Creado: {new Date(incident.created_at).toLocaleString()}
                         </p>
                         <Link
-                          to={`/incidents`}
-                          className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                          to="/incidents"
+                          style={{ color: "white", textDecoration: "none" }}
+                          className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold transition hover:brightness-110"
                         >
                           Ver detalles
                         </Link>
