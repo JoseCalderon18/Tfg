@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
-type AlertRow = {
+type FilaAlerta = {
   id: string;
   incident?: string | null;
   alert_type?: string | null;
@@ -14,7 +14,7 @@ type AlertRow = {
   created_at?: string | null;
 };
 
-function getAlertBadge(type?: string | null) {
+function obtenerBadgeAlerta(type?: string | null) {
   if (type === "SOS") return "cm-badge-danger";
   if (type === "MAN_DOWN") return "cm-badge-alert";
   if (type === "GEOFENCE") return "cm-badge-warning";
@@ -22,14 +22,14 @@ function getAlertBadge(type?: string | null) {
   return "cm-badge-info";
 }
 
-function getStatusBadge(status?: string | null) {
+function obtenerBadgeEstado(status?: string | null) {
   if (status === "OPEN") return "cm-badge-danger";
   if (status === "ACK") return "cm-badge-alert";
   if (status === "CLOSED") return "cm-badge-success";
   return "cm-badge-warning";
 }
 
-function getSeverityLabel(severity?: number | null) {
+function obtenerEtiquetaSeveridad(severity?: number | null) {
   if ((severity ?? 5) <= 1) return "Critica";
   if ((severity ?? 5) === 2) return "Alta";
   if ((severity ?? 5) === 3) return "Media";
@@ -38,43 +38,43 @@ function getSeverityLabel(severity?: number | null) {
 }
 
 export default function AlertsPage() {
-  const navigate = useNavigate();
-  const [alerts, setAlerts] = useState<AlertRow[]>([]);
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const navegar = useNavigate();
+  const [alertas, setAlertas] = useState<FilaAlerta[]>([]);
+  const [consulta, setConsulta] = useState("");
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     (async () => {
       const response = await apiFetch("/alerts/");
       if (!response.ok) {
-        setLoading(false);
+        setCargando(false);
         return;
       }
-      const payload = (await response.json()) as { results?: AlertRow[] } | AlertRow[];
-      setAlerts(Array.isArray(payload) ? payload : payload.results ?? []);
-      setLoading(false);
+      const payload = (await response.json()) as { results?: FilaAlerta[] } | FilaAlerta[];
+      setAlertas(Array.isArray(payload) ? payload : payload.results ?? []);
+      setCargando(false);
     })();
   }, []);
 
-  const filteredAlerts = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return alerts;
-    return alerts.filter((alert) =>
-      `${alert.alert_type ?? ""} ${alert.title ?? ""} ${alert.status ?? ""} ${alert.created_by ?? ""}`
+  const alertasFiltradas = useMemo(() => {
+    const normalized = consulta.trim().toLowerCase();
+    if (!normalized) return alertas;
+    return alertas.filter((alerta) =>
+      `${alerta.alert_type ?? ""} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
         .toLowerCase()
         .includes(normalized)
     );
-  }, [alerts, query]);
+  }, [alertas, consulta]);
 
-  const kpis = useMemo(() => {
-    const open = alerts.filter((alert) => alert.status === "OPEN").length;
-    const ack = alerts.filter((alert) => alert.status === "ACK").length;
-    const closed = alerts.filter((alert) => alert.status === "CLOSED").length;
-    const critical = alerts.filter((alert) => (alert.severity ?? 5) <= 2 && alert.status !== "CLOSED").length;
-    return { open, ack, closed, critical };
-  }, [alerts]);
+  const indicadores = useMemo(() => {
+    const abiertas = alertas.filter((alerta) => alerta.status === "OPEN").length;
+    const reconocidas = alertas.filter((alerta) => alerta.status === "ACK").length;
+    const cerradas = alertas.filter((alerta) => alerta.status === "CLOSED").length;
+    const criticas = alertas.filter((alerta) => (alerta.severity ?? 5) <= 2 && alerta.status !== "CLOSED").length;
+    return { abiertas, reconocidas, cerradas, criticas };
+  }, [alertas]);
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
         <p className="text-[color:var(--cm-text-muted)]">Cargando alertas...</p>
@@ -101,14 +101,14 @@ export default function AlertsPage() {
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{kpis.open}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-alert)]">{kpis.ack}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Criticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{kpis.critical}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{kpis.closed}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.abiertas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-alert)]">{indicadores.reconocidas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Criticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.criticas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.cerradas}</p></div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input type="text" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tipo, titulo, estado o creador..." className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]" />
+          <input type="text" value={consulta} onChange={(event) => setConsulta(event.target.value)} placeholder="Buscar por tipo, titulo, estado o creador..." className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]" />
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
@@ -125,45 +125,45 @@ export default function AlertsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredAlerts.map((alert) => (
-                <tr key={alert.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
+              {alertasFiltradas.map((alerta) => (
+                <tr key={alerta.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
-                    <span className={`${getAlertBadge(alert.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alert.alert_type === "SOS"
+                    <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
+                      {alerta.alert_type === "SOS"
                         ? "SOS"
-                        : alert.alert_type === "MAN_DOWN"
+                        : alerta.alert_type === "MAN_DOWN"
                         ? "Hombre caido"
-                        : alert.alert_type === "GEOFENCE"
+                        : alerta.alert_type === "GEOFENCE"
                         ? "Geofence"
-                        : alert.alert_type === "LOST"
+                        : alerta.alert_type === "LOST"
                         ? "Perdida"
-                        : alert.alert_type === "ANOMALY"
+                        : alerta.alert_type === "ANOMALY"
                         ? "Anomalia"
-                        : alert.alert_type === "OTHER"
+                        : alerta.alert_type === "OTHER"
                         ? "Otro"
                         : "Desconocido"}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 font-medium">{alert.title || "Alerta sin titulo"}</td>
+                  <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
-                    {getSeverityLabel(alert.severity)}
+                    {obtenerEtiquetaSeveridad(alerta.severity)}
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className={`${getStatusBadge(alert.status)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alert.status === "OPEN"
+                    <span className={`${obtenerBadgeEstado(alerta.status)} rounded-full px-2.5 py-1 text-xs`}>
+                      {alerta.status === "OPEN"
                         ? "Abierta"
-                        : alert.status === "ACK"
+                        : alerta.status === "ACK"
                         ? "Evaluación"
-                        : alert.status === "CLOSED"
+                        : alerta.status === "CLOSED"
                         ? "Cerrada"
                         : "Desconocida"}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
-                    {alert.created_by || "Sistema"}
+                    {alerta.created_by || "Sistema"}
                   </td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
-                    {alert.created_at ? new Date(alert.created_at).toLocaleString() : "-"}
+                    {alerta.created_at ? new Date(alerta.created_at).toLocaleString() : "-"}
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex gap-2">
@@ -172,7 +172,7 @@ export default function AlertsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => navigate(`/editAlert/${alert.id}`)}
+                        onClick={() => navegar(`/editAlert/${alerta.id}`)}
                         className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                       >
                         Ver
@@ -181,7 +181,7 @@ export default function AlertsPage() {
                   </td>
                 </tr>
               ))}
-              {filteredAlerts.length === 0 ? (
+              {alertasFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                     No hay alertas para mostrar con ese filtro.

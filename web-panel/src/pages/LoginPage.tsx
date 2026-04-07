@@ -3,35 +3,35 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [correoElectronico, setCorreoElectronico] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
-  const navigate = useNavigate();
+  const navegar = useNavigate();
   const { login, isAuthenticated, isCheckingAuth } = useAuthStore();
 
   useEffect(() => {
     if (!isCheckingAuth && isAuthenticated) {
-      navigate("/", { replace: true });
+      navegar("/", { replace: true });
     }
-  }, [isAuthenticated, isCheckingAuth, navigate]);
+  }, [isAuthenticated, isCheckingAuth, navegar]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function manejarEnvio(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setIsSubmitting(true);
+    setEnviando(true);
 
-    const ok = await login(email, password);
-    setIsSubmitting(false);
+    const ok = await login(correoElectronico, contrasena);
+    setEnviando(false);
 
     if (!ok) {
       setError("Credenciales invalidas o acceso no autorizado.");
       return;
     }
 
-    navigate("/", { replace: true });
+    navegar("/", { replace: true });
   }
 
   return (
@@ -42,7 +42,7 @@ export default function LoginPage() {
       </div>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={manejarEnvio}
         className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-2xl"
       >
         <div className="text-center">
@@ -57,8 +57,8 @@ export default function LoginPage() {
           <input
             id="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={correoElectronico}
+            onChange={(e) => setCorreoElectronico(e.target.value)}
             required
             autoComplete="email"
             className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
@@ -73,9 +73,9 @@ export default function LoginPage() {
           <div className="relative">
             <input
               id="password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type={mostrarContrasena ? "text" : "password"}
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
               required
               autoComplete="current-password"
               className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 pr-12 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
@@ -83,11 +83,11 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
-              onClick={() => setShowPassword((current) => !current)}
+              aria-label={mostrarContrasena ? "Ocultar contrasena" : "Mostrar contrasena"}
+              onClick={() => setMostrarContrasena((current) => !current)}
               className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-[color:var(--cm-text-muted)] transition hover:text-[color:var(--cm-text)]"
             >
-              {showPassword ? "🙈" : "👁"}
+              {mostrarContrasena ? "🙈" : "👁"}
             </button>
           </div>
         </div>
@@ -96,10 +96,10 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={enviando}
           className="cm-button-primary w-full rounded-lg py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Iniciando sesion..." : "Iniciar sesion"}
+          {enviando ? "Iniciando sesion..." : "Iniciar sesion"}
         </button>
 
         <div className="text-center text-sm text-[color:var(--cm-text-muted)]">

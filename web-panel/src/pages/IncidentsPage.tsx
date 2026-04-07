@@ -7,12 +7,12 @@ import { apiFetch } from "../utils/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-type MeResponse = {
+type RespuestaUsuario = {
   authenticated: boolean;
   has_panel_full_access?: boolean;
 };
 
-type IncidentApiRow = {
+type IncidenteApiFila = {
   id: string;
   name: string;
   incident_type: string;
@@ -29,7 +29,7 @@ type IncidentApiRow = {
   is_active?: boolean;
 };
 
-type IncidentRow = IncidentApiRow & {
+type IncidenteFila = IncidenteApiFila & {
   parsedLocation: LatLngTuple | null;
 };
 
@@ -64,7 +64,7 @@ const ZOOM_MAPA_PDF = 13;
 const ANCHO_MAPA_PDF = 900;
 const ALTO_MAPA_PDF = 450;
 
-function parsePointLocation(location: unknown): LatLngTuple | null {
+function extraerCoordenadas(location: unknown): LatLngTuple | null {
   if (!location) return null;
 
   if (Array.isArray(location) && location.length >= 2) {
@@ -192,7 +192,7 @@ async function generarImagenMapaIncidente(incidente: IncidentRow): Promise<strin
   return canvas.toDataURL("image/png");
 }
 
-async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+async function geocodificarInverso(lat: number, lon: number): Promise<string | null> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=es`
@@ -233,7 +233,7 @@ async function reverseGeocode(lat: number, lon: number): Promise<string | null> 
   }
 }
 
-function normalizeIncidents(raw: unknown): IncidentRow[] {
+function normalizarIncidentes(raw: unknown): IncidenteFila[] {
   const source = Array.isArray(raw)
     ? raw
     : (raw as { results?: unknown[] } | null)?.results ?? [];
@@ -248,7 +248,7 @@ function normalizeIncidents(raw: unknown): IncidentRow[] {
       status: typeof row.status === "string" ? row.status : "OPEN",
       description: row.description ?? null,
       location: row.location ?? null,
-      parsedLocation: parsePointLocation(row.location),
+      parsedLocation: extraerCoordenadas(row.location),
       location_address: row.location_address ?? null,
       created_by: row.created_by ?? null,
       owner_organization: row.owner_organization ?? null,
@@ -352,11 +352,11 @@ function formatDate(value?: string | null) {
   return Number.isNaN(dt.getTime()) ? value : dt.toLocaleString();
 }
 
-function IncidentMiniMap({
+function MiniMapaIncidente({
   incident,
   heightClassName = "h-56",
 }: {
-  incident: IncidentRow;
+  incident: IncidenteFila;
   heightClassName?: string;
 }) {
   if (!incident.parsedLocation) {
@@ -421,24 +421,24 @@ function obtenerEtiquetaEstado(tipo: string){
   }
 }
 export default function IncidentsPage() {
-  const navigate = useNavigate();
+  const navegar = useNavigate();
   const INCIDENTES_POR_PAGINA = 10;
 
-  const [resolvedLocation, setResolvedLocation] = useState<string>("");
-  const [resolvingLocation, setResolvingLocation] = useState(false);
+  const [ubicacionResuelta, setUbicacionResuelta] = useState<string>("");
+  const [resolviendoUbicacion, setResolviendoUbicacion] = useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [incidents, setIncidents] = useState<IncidentRow[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [errorMensaje, setErrorMensaje] = useState("");
+  const [consulta, setConsulta] = useState("");
+  const [incidentes, setIncidentes] = useState<IncidenteFila[]>([]);
   const [soloIncidentesAbiertos, setSoloIncidentesAbiertos] = useState(false);
   const [incidentesEvaluacion, setIncidentesEvaluacion] = useState(false);
   const [alertasPorIncidente, setAlertasPorIncidente] = useState<Record<string, AlertaFila[]>>({});
   const [cargandoAlertas, setCargandoAlertas] = useState(true);
   const [errorAlertas, setErrorAlertas] = useState("");
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string>("");
-  const [deletingIncidentId, setDeletingIncidentId] = useState<string>("");
-  const [pendingDeleteIncidentId, setPendingDeleteIncidentId] = useState<string>("");
+  const [incidenteSeleccionadoId, setIncidenteSeleccionadoId] = useState<string>("");
+  const [incidenteEliminandoId, setIncidenteEliminandoId] = useState<string>("");
+  const [incidentePendienteEliminarId, setIncidentePendienteEliminarId] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
 
 
@@ -446,33 +446,33 @@ export default function IncidentsPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 
-      const meData = (await meRes.json()) as MeResponse;
+      const meData = (await meRes.json()) as RespuestaUsuario;
       if (!meData.has_panel_full_access) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 
-      const incidentsRes = await apiFetch("/incidents/");
-      if (!incidentsRes.ok) {
-        setError("No se pudo cargar la lista de incidentes.");
-        setLoading(false);
+      const incidentesRes = await apiFetch("/incidents/");
+      if (!incidentesRes.ok) {
+        setErrorMensaje("No se pudo cargar la lista de incidentes.");
+        setCargando(false);
         return;
       }
 
-      const data = (await incidentsRes.json()) as unknown;
-      const list = normalizeIncidents(data);
-      setIncidents(list);
-      setSelectedIncidentId(list[0]?.id ?? "");
+      const data = (await incidentesRes.json()) as unknown;
+      const lista = normalizarIncidentes(data);
+      setIncidentes(lista);
+      setIncidenteSeleccionadoId(lista[0]?.id ?? "");
 
       const respuestaAlertas = await apiFetch("/alerts/");
       if (!respuestaAlertas.ok) {
         setErrorAlertas("No se pudieron cargar las alertas relacionadas.");
         setCargandoAlertas(false);
-        setLoading(false);
+        setCargando(false);
         return;
       }
 
@@ -481,33 +481,33 @@ export default function IncidentsPage() {
       setAlertasPorIncidente(agruparAlertasPorIncidente(alertasNormalizadas));
       setErrorAlertas("");
       setCargandoAlertas(false);
-      setLoading(false);
+      setCargando(false);
     })();
-  }, [navigate]);
+  }, [navegar]);
 
-  const filteredIncidents = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return incidents.filter((incident) => {
+  const incidentesFiltrados = useMemo(() => {
+    const q = consulta.trim().toLowerCase();
+    return incidentes.filter((incidente) => {
       const coincideBusqueda =
         !q ||
-        `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
+        `${incidente.name} ${incidente.incident_type} ${incidente.status} ${incidente.location_address ?? ""}`
           .toLowerCase()
           .includes(q);
 
-      const coincideAbiertos = !soloIncidentesAbiertos || incident.status === "OPEN";
-      const coincideEvaluacion = !incidentesEvaluacion || incident.status === "TRIAGE";
+      const coincideAbiertos = !soloIncidentesAbiertos || incidente.status === "OPEN";
+      const coincideEvaluacion = !incidentesEvaluacion || incidente.status === "TRIAGE";
 
       return coincideBusqueda && coincideAbiertos && coincideEvaluacion;
     });
-  }, [query, incidents, soloIncidentesAbiertos, incidentesEvaluacion]);
+  }, [consulta, incidentes, soloIncidentesAbiertos, incidentesEvaluacion]);
 
   async function exportarIncidentesPdf() {
-    if (filteredIncidents.length === 0) {
-      setError("No hay incidentes para exportar.");
+    if (incidentesFiltrados.length === 0) {
+      setErrorMensaje("No hay incidentes para exportar.");
       return;
     }
 
-    setError("");
+    setErrorMensaje("");
 
     const pdf = new jsPDF({
       orientation: "landscape",
@@ -517,8 +517,8 @@ export default function IncidentsPage() {
 
     let posicionY = 14;
 
-    for (let indice = 0; indice < filteredIncidents.length; indice += 1) {
-      const incidente = filteredIncidents[indice];
+    for (let indice = 0; indice < incidentesFiltrados.length; indice += 1) {
+      const incidente = incidentesFiltrados[indice];
       const coordenadasTexto = incidente.parsedLocation
         ? `${incidente.parsedLocation[0]}, ${incidente.parsedLocation[1]}`
         : "-";
@@ -646,7 +646,7 @@ export default function IncidentsPage() {
         posicionY = posicionMapa + 18;
       }
 
-      if (posicionY > 185 && indice < filteredIncidents.length - 1) {
+      if (posicionY > 185 && indice < incidentesFiltrados.length - 1) {
         pdf.addPage();
         posicionY = 14;
       }
@@ -657,27 +657,27 @@ export default function IncidentsPage() {
   }
 
   const resumenKpis = useMemo(() => {
-    const incidentesAbiertos = incidents.filter((incident) => incident.status === "OPEN").length;
-    const incidentesEnEvaluacion = incidents.filter((incident) => incident.status === "TRIAGE").length;
-    const incidentesCerrados = incidents.filter((incident) => incident.status === "CLOSED").length;
+    const incidentesAbiertos = incidentes.filter((incidente) => incidente.status === "OPEN").length;
+    const incidentesEnEvaluacion = incidentes.filter((incidente) => incidente.status === "TRIAGE").length;
+    const incidentesCerrados = incidentes.filter((incidente) => incidente.status === "CLOSED").length;
 
     return { incidentesAbiertos, incidentesEnEvaluacion, incidentesCerrados };
   }, [incidents]);
 
-  const totalPaginas = Math.max(1, Math.ceil(filteredIncidents.length / INCIDENTES_POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(incidentesFiltrados.length / INCIDENTES_POR_PAGINA));
 
   const incidentesPaginados = useMemo(() => {
     const inicio = (paginaActual - 1) * INCIDENTES_POR_PAGINA;
     const fin = inicio + INCIDENTES_POR_PAGINA;
-    return filteredIncidents.slice(inicio, fin);
-  }, [filteredIncidents, paginaActual, INCIDENTES_POR_PAGINA]);
+    return incidentesFiltrados.slice(inicio, fin);
+  }, [incidentesFiltrados, paginaActual, INCIDENTES_POR_PAGINA]);
 
-  const selectedIncident =
-    filteredIncidents.find((incident) => incident.id === selectedIncidentId) ??
-    filteredIncidents[0] ??
+  const incidenteSeleccionado =
+    incidentesFiltrados.find((incidente) => incidente.id === incidenteSeleccionadoId) ??
+    incidentesFiltrados[0] ??
     null;
-  const alertasDelIncidenteSeleccionado = selectedIncident
-    ? alertasPorIncidente[selectedIncident.id] ?? []
+  const alertasDelIncidenteSeleccionado = incidenteSeleccionado
+    ? alertasPorIncidente[incidenteSeleccionado.id] ?? []
     : [];
 
   useEffect(() => {
@@ -689,60 +689,59 @@ export default function IncidentsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadResolvedLocation() {
-      if (!selectedIncident?.parsedLocation) {
-        setResolvedLocation("");
-        setResolvingLocation(false);
+    async function loadUbicacionResuelta() {
+      if (!incidenteSeleccionado?.parsedLocation) {
+        setUbicacionResuelta("");
+        setResolviendoUbicacion(false);
         return;
       }
 
-      const [lat, lon] = selectedIncident.parsedLocation;
+      const [lat, lon] = incidenteSeleccionado.parsedLocation;
 
-      setResolvingLocation(true);
-      setResolvedLocation("");
+      setResolviendoUbicacion(true);
+      setUbicacionResuelta("");
 
-      const result = await reverseGeocode(lat, lon);
+      const result = await geocodificarInverso(lat, lon);
 
       if (!cancelled) {
-        setResolvedLocation(result || "");
-        setResolvingLocation(false);
+        setUbicacionResuelta(result || "");
+        setResolviendoUbicacion(false);
       }
     }
 
-    loadResolvedLocation();
+    loadUbicacionResuelta();
 
     return () => {
       cancelled = true;
     };
-  }, [selectedIncident]);
+  }, [incidenteSeleccionado]);
 
   useEffect(() => {
-    if (!pendingDeleteIncidentId) return;
+    if (!incidentePendienteEliminarId) return;
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape" && !deletingIncidentId) {
-        setPendingDeleteIncidentId("");
+      if (event.key === "Escape" && !incidenteEliminandoId) {
+        setIncidentePendienteEliminarId("");
       }
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [pendingDeleteIncidentId, deletingIncidentId]);
+  }, [incidentePendienteEliminarId, incidenteEliminandoId]);
 
-  const pendingDeleteIncident =
-    incidents.find((incident) => incident.id === pendingDeleteIncidentId) ?? null;
+  const incidentePendienteEliminar =
+    incidentes.find((incidente) => incidente.id === incidentePendienteEliminarId) ?? null;
 
-  async function handleDeleteIncident(incidentId: string) {
-    setPendingDeleteIncidentId(incidentId);
+  async function prepararEliminarIncidente(incidentId: string) {
+    setIncidentePendienteEliminarId(incidentId);
     return;
-
   }
 
-  async function confirmDeleteIncident(incidentId: string) {
-    if (deletingIncidentId) return;
+  async function confirmarEliminarIncidente(incidentId: string) {
+    if (incidenteEliminandoId) return;
 
-    setError("");
-    setDeletingIncidentId(incidentId);
+    setErrorMensaje("");
+    setIncidenteEliminandoId(incidentId);
     try {
       const res = await apiFetch(`/incidents/${incidentId}/`, { method: "DELETE" });
       if (!res.ok) {
@@ -754,21 +753,12 @@ export default function IncidentsPage() {
         } catch {
           // keep fallback
         }
-        setError(detail);
+        setErrorMensaje(detail);
         return;
       }
-
-      setIncidents((prev) => {
-        const next = prev.filter((incident) => incident.id !== incidentId);
-        setSelectedIncidentId((currentSelectedId) => {
-          if (currentSelectedId !== incidentId) return currentSelectedId;
-          return next[0]?.id ?? "";
-        });
-        return next;
-      });
-      setPendingDeleteIncidentId("");
+      setIncidentePendienteEliminarId("");
     } finally {
-      setDeletingIncidentId("");
+      setIncidenteEliminandoId("");
     }
   }
 
@@ -802,7 +792,7 @@ export default function IncidentsPage() {
 
           <button
             type="button"
-            onClick={() => navigate("/createincident")}
+            onClick={() => navegar("/createincident")}
             className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
             style={{ cursor: "pointer" }}
           >
@@ -918,7 +908,7 @@ export default function IncidentsPage() {
               </thead>
 
               <tbody>
-                {filteredIncidents.length === 0 ? (
+                {incidentesFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                       No hay incidentes para mostrar.
@@ -928,9 +918,9 @@ export default function IncidentsPage() {
                   incidentesPaginados.map((incident) => (
                     <tr
                       key={incident.id}
-                      onClick={() => setSelectedIncidentId(incident.id)}
+                      onClick={() => setIncidenteSeleccionadoId(incident.id)}
                       className={`cursor-pointer border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60 ${
-                        selectedIncident?.id === incident.id ? "bg-[color:var(--cm-surface-2)]/70" : ""
+                        incidenteSeleccionado?.id === incident.id ? "bg-[color:var(--cm-surface-2)]/70" : ""
                       }`}
                     >
                       <td className="px-4 py-3.5 font-medium">{incident.name}</td>
@@ -971,7 +961,7 @@ export default function IncidentsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/editIncident/${incident.id}`);
+                              navegar(`/editIncident/${incident.id}`);
                             }}
                             className="rounded-lg bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                           >
@@ -981,12 +971,12 @@ export default function IncidentsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              void handleDeleteIncident(incident.id);
+                              void prepararEliminarIncidente(incident.id);
                             }}
-                            disabled={Boolean(deletingIncidentId)}
+                            disabled={Boolean(incidenteEliminandoId)}
                             className="rounded-lg bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                           >
-                            {deletingIncidentId === incident.id ? "Borrando..." : "Borrar"}
+                            {incidenteEliminandoId === incident.id ? "Borrando..." : "Borrar"}
                           </button>
                         </div>
                       </td>
@@ -996,10 +986,10 @@ export default function IncidentsPage() {
               </tbody>
             </table>
 
-            {filteredIncidents.length > 0 && (
+            {incidentesFiltrados.length > 0 && (
               <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[color:var(--cm-text-muted)]">
-                  Pagina {paginaActual} de {totalPaginas} · Mostrando {incidentesPaginados.length} de {filteredIncidents.length} incidentes
+                  Pagina {paginaActual} de {totalPaginas} · Mostrando {incidentesPaginados.length} de {incidentesFiltrados.length} incidentes
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -1026,14 +1016,14 @@ export default function IncidentsPage() {
           </section>
 
           <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-        {selectedIncident ? (
+        {incidenteSeleccionado ? (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold text-slate-100">{selectedIncident.name}</h2>
+              <h2 className="text-xl font-bold text-slate-100">{incidenteSeleccionado.name}</h2>
             </div>
 
-            {!pendingDeleteIncidentId && (
-              <IncidentMiniMap incident={selectedIncident} />
+            {!incidentePendienteEliminarId && (
+              <MiniMapaIncidente incident={incidenteSeleccionado} />
             )}
 
             <div className="grid gap-6 xl:grid-cols-2">
@@ -1042,15 +1032,15 @@ export default function IncidentsPage() {
                   <div>
                     <p className="text-slate-400">Tipo</p>
                     <p className="text-slate-100">
-                      {selectedIncident.incident_type === "SEARCH"
+                      {incidenteSeleccionado.incident_type === "SEARCH"
                         ? "Búsqueda de personas"
-                        : selectedIncident.incident_type === "MEDICAL"
+                        : incidenteSeleccionado.incident_type === "MEDICAL"
                         ? "Emergencia médica"
-                        : selectedIncident.incident_type === "WILDFIRE"
+                        : incidenteSeleccionado.incident_type === "WILDFIRE"
                         ? "Incendio forestal"
-                        : selectedIncident.incident_type === "RESCUE"
+                        : incidenteSeleccionado.incident_type === "RESCUE"
                         ? "Rescate de persona desaparecida"
-                        : selectedIncident.incident_type === "NATURAL_DISASTER"
+                        : incidenteSeleccionado.incident_type === "NATURAL_DISASTER"
                         ? "Desastre natural"
                         : "Otro"}
                     </p>
@@ -1059,9 +1049,9 @@ export default function IncidentsPage() {
                   <div>
                     <p className="text-slate-400">Estado</p>
                     <p className="text-slate-100">
-                      {selectedIncident.status === "OPEN"
+                      {incidenteSeleccionado.status === "OPEN"
                         ? "Abierto"
-                        : selectedIncident.status === "CLOSED"
+                        : incidenteSeleccionado.status === "CLOSED"
                         ? "Cerrado"
                         : "Evaluacion"}
                     </p>
@@ -1070,14 +1060,14 @@ export default function IncidentsPage() {
                   <div>
                     <p className="text-slate-400">Activo</p>
                     <p className="text-slate-100">
-                      {selectedIncident.is_active ? "Si" : "No"}
+                      {incidenteSeleccionado.is_active ? "Si" : "No"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Organizacion</p>
                     <p className="text-slate-100">
-                      {selectedIncident.owner_organization || "-"}
+                      {incidenteSeleccionado.owner_organization || "-"}
                     </p>
                   </div>
                 </div>
@@ -1085,55 +1075,55 @@ export default function IncidentsPage() {
                 <div className="space-y-2 text-sm">
                   <div>
                     <p className="text-slate-400">Descripcion</p>
-                    <p className="text-slate-100">{selectedIncident.description || "-"}</p>
+                    <p className="text-slate-100">{incidenteSeleccionado.description || "-"}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Direccion</p>
-                    <p className="text-slate-100">{selectedIncident.location_address || "-"}</p>
+                    <p className="text-slate-100">{incidenteSeleccionado.location_address || "-"}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Ubicacion legible</p>
                     <p className="text-slate-100">
-                      {resolvingLocation
+                      {resolviendoUbicacion
                         ? "Buscando direccion..."
-                        : resolvedLocation || selectedIncident.location_address || "-"}
+                        : ubicacionResuelta || incidenteSeleccionado.location_address || "-"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Coordenadas</p>
                     <p className="text-slate-100">
-                      {selectedIncident.parsedLocation
-                        ? `${selectedIncident.parsedLocation[0]}, ${selectedIncident.parsedLocation[1]}`
+                      {incidenteSeleccionado.parsedLocation
+                        ? `${incidenteSeleccionado.parsedLocation[0]}, ${incidenteSeleccionado.parsedLocation[1]}`
                         : "-"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Creado por</p>
-                    <p className="text-slate-100">{selectedIncident.created_by || "-"}</p>
+                    <p className="text-slate-100">{incidenteSeleccionado.created_by || "-"}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Inicio</p>
-                    <p className="text-slate-100">{formatDate(selectedIncident.started_at)}</p>
+                    <p className="text-slate-100">{formatDate(incidenteSeleccionado.started_at)}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Fin</p>
-                    <p className="text-slate-100">{formatDate(selectedIncident.ended_at)}</p>
+                    <p className="text-slate-100">{formatDate(incidenteSeleccionado.ended_at)}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Creado</p>
-                    <p className="text-slate-100">{formatDate(selectedIncident.created_at)}</p>
+                    <p className="text-slate-100">{formatDate(incidenteSeleccionado.created_at)}</p>
                   </div>
 
                   <div>
                     <p className="text-slate-400">Actualizado</p>
-                    <p className="text-slate-100">{formatDate(selectedIncident.updated_at)}</p>
+                    <p className="text-slate-100">{formatDate(incidenteSeleccionado.updated_at)}</p>
                   </div>
                 </div>
               </div>
@@ -1215,13 +1205,13 @@ export default function IncidentsPage() {
         </div>
       </div>
 
-      {pendingDeleteIncident ? (
+      {incidentePendienteEliminar ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             type="button"
             aria-label="Cerrar confirmacion"
             onClick={() => {
-              if (!deletingIncidentId) setPendingDeleteIncidentId("");
+              if (!incidenteEliminandoId) setIncidentePendienteEliminarId("");
             }}
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
           />
@@ -1251,7 +1241,7 @@ export default function IncidentsPage() {
                     Eliminar incidente
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-300">
-                    Vas a eliminar <span className="font-semibold text-white">{pendingDeleteIncident.name}</span>.
+                    Vas a eliminar <span className="font-semibold text-white">{incidentePendienteEliminar.name}</span>.
                     Esta accion es permanente y el incidente dejara de estar disponible en el panel.
                   </p>
                 </div>
@@ -1261,19 +1251,19 @@ export default function IncidentsPage() {
                 <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-slate-400">Tipo</p>
-                    {pendingDeleteIncident.incident_type === "SEARCH" ? ("Búsqueda de personas")
-                    : pendingDeleteIncident.incident_type === "MEDICAL" ? "Emergencia médica" 
-                    : pendingDeleteIncident.incident_type === "WILDFIRE" ? "Incendio forestal"
-                    : pendingDeleteIncident.incident_type === "RESCUE" ? "Rescate de persona desaparecida"
-                    : pendingDeleteIncident.incident_type === "NATURAL_DISASTER" ? "Desastre natural" 
-                    : pendingDeleteIncident.incident_type === "OTHER" ? "Otro"
+                    {incidentePendienteEliminar.incident_type === "SEARCH" ? ("Búsqueda de personas")
+                    : incidentePendienteEliminar.incident_type === "MEDICAL" ? "Emergencia médica" 
+                    : incidentePendienteEliminar.incident_type === "WILDFIRE" ? "Incendio forestal"
+                    : incidentePendienteEliminar.incident_type === "RESCUE" ? "Rescate de persona desaparecida"
+                    : incidentePendienteEliminar.incident_type === "NATURAL_DISASTER" ? "Desastre natural" 
+                    : incidentePendienteEliminar.incident_type === "OTHER" ? "Otro"
                     : "Tipo de incidente no válido"}
                   </div>
                   <div className="sm:text-right">
                     <p className="text-slate-400">Estado</p>
-                    {pendingDeleteIncident.status === "OPEN"
+                    {incidentePendienteEliminar.status === "OPEN"
                         ? "Abierto"
-                        : pendingDeleteIncident.status === "CLOSED"
+                        : incidentePendienteEliminar.status === "CLOSED"
                         ? "Cerrado"
                         : "Evaluacion"}
                   </div>
@@ -1283,19 +1273,19 @@ export default function IncidentsPage() {
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setPendingDeleteIncidentId("")}
-                  disabled={Boolean(deletingIncidentId)}
+                  onClick={() => setIncidentePendienteEliminarId("")}
+                  disabled={Boolean(incidenteEliminandoId)}
                   className="rounded-2xl bg-slate-800/80 px-4 py-3 text-sm font-semibold text-slate-200 ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  onClick={() => void confirmDeleteIncident(pendingDeleteIncident.id)}
-                  disabled={Boolean(deletingIncidentId)}
+                  onClick={() => void confirmarEliminarIncidente(incidentePendienteEliminar.id)}
+                  disabled={Boolean(incidenteEliminandoId)}
                   className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {deletingIncidentId === pendingDeleteIncident.id ? "Eliminando..." : "Si, eliminar incidente"}
+                  {incidenteEliminandoId === incidentePendienteEliminar.id ? "Eliminando..." : "Si, eliminar incidente"}
                 </button>
               </div>
             </div>

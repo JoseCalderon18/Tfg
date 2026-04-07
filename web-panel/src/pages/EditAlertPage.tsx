@@ -12,17 +12,17 @@ type UsuarioResumen = {
   display_name?: string;
 };
 
-type PanelUserDetail = UsuarioResumen & {
+type DetalleUsuarioPanel = UsuarioResumen & {
   id: string;
 };
 
-type PanelUserListRow = {
+type FilaListaUsuarioPanel = {
   id: string;
   username?: string;
   email?: string;
 };
 
-type AlertDetail = {
+type DetalleAlerta = {
   id: string;
   incident?: string | null;
   location?: unknown;
@@ -73,7 +73,7 @@ const SEVERITY_OPTIONS = [
   { value: 5, label: "Informativa" },
 ];
 
-async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+async function geocodificarInverso(lat: number, lon: number): Promise<string | null> {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=es`
@@ -119,7 +119,7 @@ async function reverseGeocode(lat: number, lon: number): Promise<string | null> 
   }
 }
 
-function formatDate(value?: string | null) {
+function formatearFecha(value?: string | null) {
   if (!value) return "No disponible";
 
   const parsed = new Date(value);
@@ -133,7 +133,7 @@ function formatDate(value?: string | null) {
   });
 }
 
-function getUserLabel(user?: UsuarioResumen | null) {
+function obtenerEtiquetaUsuario(user?: UsuarioResumen | null) {
   if (!user) return "No disponible";
 
   if (user.email?.trim()) return user.email.trim();
@@ -147,12 +147,12 @@ function getUserLabel(user?: UsuarioResumen | null) {
   return "No disponible";
 }
 
-function looksLikeUuid(value?: string | null) {
+function pareceUuid(value?: string | null) {
   if (!value) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function toUserSummary(
+function aResumenUsuario(
   rawUser?: UsuarioResumen | string | null,
   rawId?: string | null,
   rawName?: string | null
@@ -167,22 +167,22 @@ function toUserSummary(
 
   if (rawId || rawName || typeof rawUser === "string") {
     return {
-      id: rawId ?? (typeof rawUser === "string" && looksLikeUuid(rawUser) ? rawUser : undefined),
-      display_name: rawName ?? (typeof rawUser === "string" && !looksLikeUuid(rawUser) ? rawUser : undefined),
+      id: rawId ?? (typeof rawUser === "string" && pareceUuid(rawUser) ? rawUser : undefined),
+      display_name: rawName ?? (typeof rawUser === "string" && !pareceUuid(rawUser) ? rawUser : undefined),
     };
   }
 
   return null;
 }
 
-function getStatusBadge(status?: string | null) {
+function obtenerBadgeEstado(status?: string | null) {
   if (status === "OPEN") return "cm-badge-danger";
   if (status === "ACK") return "cm-badge-alert";
   if (status === "CLOSED") return "cm-badge-success";
   return "cm-badge-warning";
 }
 
-function getAlertBadge(type?: string | null) {
+function obtenerBadgeAlerta(type?: string | null) {
   if (type === "SOS") return "cm-badge-danger";
   if (type === "MAN_DOWN") return "cm-badge-alert";
   if (type === "GEOFENCE") return "cm-badge-warning";
@@ -190,7 +190,7 @@ function getAlertBadge(type?: string | null) {
   return "cm-badge-info";
 }
 
-function parseLocation(location: unknown): { lat: number; lng: number } | null {
+function analizarUbicacion(location: unknown): { lat: number; lng: number } | null {
   if (!location) return null;
 
   if (typeof location === "string") {
@@ -250,7 +250,7 @@ function parseLocation(location: unknown): { lat: number; lng: number } | null {
   return null;
 }
 
-function getLocationText(location: unknown, lat: number | null, lng: number | null) {
+function obtenerTextoUbicacion(location: unknown, lat: number | null, lng: number | null) {
   if (typeof location === "string" && location.trim()) return location;
 
   if (location && typeof location === "object") {
@@ -271,53 +271,53 @@ function getLocationText(location: unknown, lat: number | null, lng: number | nu
 }
 
 export default function EditAlertPage() {
-  const navigate = useNavigate();
+  const navegar = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [editingUnlocked, setEditingUnlocked] = useState(false);
+  const [exito, setExito] = useState("");
+  const [edicionDesbloqueada, setEdicionDesbloqueada] = useState(false);
 
-  const [incidentId, setIncidentId] = useState("");
-  const [alertType, setAlertType] = useState("OTHER");
-  const [severity, setSeverity] = useState(3);
-  const [status, setStatus] = useState("OPEN");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  const [locationValue, setLocationValue] = useState("");
-  const [readableLocation, setReadableLocation] = useState("");
-  const [resolvingLocation, setResolvingLocation] = useState(false);
-  const [ackNotes, setAckNotes] = useState("");
-  const [closeNotes, setCloseNotes] = useState("");
-  const [createdAt, setCreatedAt] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-  const [ackedAt, setAckedAt] = useState<string | null>(null);
-  const [closedAt, setClosedAt] = useState<string | null>(null);
-  const [createdBy, setCreatedBy] = useState<UsuarioResumen | null>(null);
-  const [ackedBy, setAckedBy] = useState<UsuarioResumen | null>(null);
-  const [closedBy, setClosedBy] = useState<UsuarioResumen | null>(null);
+  const [idIncidente, setIdIncidente] = useState("");
+  const [tipoAlerta, setTipoAlerta] = useState("OTHER");
+  const [severidad, setSeveridad] = useState(3);
+  const [estado, setEstado] = useState("OPEN");
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [latitud, setLatitud] = useState<number | null>(null);
+  const [longitud, setLongitud] = useState<number | null>(null);
+  const [valorUbicacion, setValorUbicacion] = useState("");
+  const [ubicacionLegible, setUbicacionLegible] = useState("");
+  const [resolviendoUbicacion, setResolviendoUbicacion] = useState(false);
+  const [notasReconocimiento, setNotasReconocimiento] = useState("");
+  const [notasCierre, setNotasCierre] = useState("");
+  const [creadoEn, setCreadoEn] = useState<string | null>(null);
+  const [actualizadoEn, setActualizadoEn] = useState<string | null>(null);
+  const [reconocidoEn, setReconocidoEn] = useState<string | null>(null);
+  const [cerradoEn, setCerradoEn] = useState<string | null>(null);
+  const [creadoPor, setCreadoPor] = useState<UsuarioResumen | null>(null);
+  const [reconocidoPor, setReconocidoPor] = useState<UsuarioResumen | null>(null);
+  const [cerradoPor, setCerradoPor] = useState<UsuarioResumen | null>(null);
 
-  const parsedLocation = useMemo(() => parseLocation(locationValue), [locationValue]);
+  const ubicacionAnalizada = useMemo(() => analizarUbicacion(valorUbicacion), [valorUbicacion]);
 
-  const summary = useMemo(
+  const resumen = useMemo(
     () => ({
-      alertTypeLabel:
-        ALERT_TYPE_OPTIONS.find((option) => option.value === alertType)?.label ?? "Sin tipo",
-      severityLabel: SEVERITY_OPTIONS.find((option) => option.value === severity)?.label ?? "Sin severidad",
-      statusLabel: STATUS_OPTIONS.find((option) => option.value === status)?.label ?? "Sin estado",
+      etiquetaTipoAlerta:
+        ALERT_TYPE_OPTIONS.find((option) => option.value === tipoAlerta)?.label ?? "Sin tipo",
+      etiquetaSeveridad: SEVERITY_OPTIONS.find((option) => option.value === severidad)?.label ?? "Sin severidad",
+      etiquetaEstado: STATUS_OPTIONS.find((option) => option.value === estado)?.label ?? "Sin estado",
     }),
-    [alertType, severity, status]
+    [tipoAlerta, severidad, estado]
   );
 
   useEffect(() => {
     (async () => {
       if (!id) {
         setError("Alerta no valida.");
-        setLoading(false);
+        setCargando(false);
         return;
       }
 
@@ -325,33 +325,33 @@ export default function EditAlertPage() {
         const response = await apiFetch(`/alerts/${id}/`);
         if (!response.ok) {
           setError("No se pudo cargar la alerta.");
-          setLoading(false);
+          setCargando(false);
           return;
         }
 
-        const alert = (await response.json()) as AlertDetail;
-        setIncidentId(alert.incident ?? "");
-        setAlertType(alert.alert_type ?? "OTHER");
-        setSeverity(alert.severity ?? 3);
-        setStatus(alert.status ?? "OPEN");
-        setTitle(alert.title ?? "");
-        setDescription(alert.description ?? "");
-        setLat(alert.lat ?? null);
-        setLng(alert.lng ?? null);
-        setLocationValue(getLocationText(alert.location, alert.lat ?? null, alert.lng ?? null));
-        setAckNotes(alert.ack_notes ?? "");
-        setCloseNotes(alert.close_notes ?? "");
-        setCreatedAt(alert.created_at ?? null);
-        setUpdatedAt(alert.updated_at ?? null);
-        setAckedAt(alert.acked_at ?? null);
-        setClosedAt(alert.closed_at ?? null);
-        setCreatedBy(toUserSummary(alert.created_by, alert.created_by_id, alert.created_by_name));
-        setAckedBy(toUserSummary(alert.acked_by, alert.acked_by_id, alert.acked_by_name));
-        setClosedBy(toUserSummary(alert.closed_by, alert.closed_by_id, alert.closed_by_name));
+        const alerta = (await response.json()) as DetalleAlerta;
+        setIdIncidente(alerta.incident ?? "");
+        setTipoAlerta(alerta.alert_type ?? "OTHER");
+        setSeveridad(alerta.severity ?? 3);
+        setEstado(alerta.status ?? "OPEN");
+        setTitulo(alerta.title ?? "");
+        setDescripcion(alerta.description ?? "");
+        setLatitud(alerta.lat ?? null);
+        setLongitud(alerta.lng ?? null);
+        setValorUbicacion(obtenerTextoUbicacion(alerta.location, alerta.lat ?? null, alerta.lng ?? null));
+        setNotasReconocimiento(alerta.ack_notes ?? "");
+        setNotasCierre(alerta.close_notes ?? "");
+        setCreadoEn(alerta.created_at ?? null);
+        setActualizadoEn(alerta.updated_at ?? null);
+        setReconocidoEn(alerta.acked_at ?? null);
+        setCerradoEn(alerta.closed_at ?? null);
+        setCreadoPor(aResumenUsuario(alerta.created_by, alerta.created_by_id, alerta.created_by_name));
+        setReconocidoPor(aResumenUsuario(alerta.acked_by, alerta.acked_by_id, alerta.acked_by_name));
+        setCerradoPor(aResumenUsuario(alerta.closed_by, alerta.closed_by_id, alerta.closed_by_name));
       } catch {
         setError("Error de red al cargar la alerta.");
       } finally {
-        setLoading(false);
+        setCargando(false);
       }
     })();
   }, [id]);
@@ -386,7 +386,7 @@ export default function EditAlertPage() {
         .map((user) => user.id)
         .filter((value, index, array): value is string => {
           if (!value) return false;
-          return looksLikeUuid(value) && !usersById.has(value) && array.indexOf(value) === index;
+          return pareceUuid(value) && !usersById.has(value) && array.indexOf(value) === index;
         });
 
       const detailResponses = await Promise.all(
@@ -468,17 +468,17 @@ export default function EditAlertPage() {
       const resolvedLng = parsedLocation?.lng ?? lng;
 
       if (resolvedLat == null || resolvedLng == null) {
-        setReadableLocation("");
-        setResolvingLocation(false);
+        setUbicacionLegible("");
+        setResolviendoUbicacion(false);
         return;
       }
 
-      setResolvingLocation(true);
-      const resolved = await reverseGeocode(resolvedLat, resolvedLng);
+      setResolviendoUbicacion(true);
+      const resolved = await geocodificarInverso(resolvedLat, resolvedLng);
 
       if (!cancelled) {
-        setReadableLocation(resolved || "");
-        setResolvingLocation(false);
+        setUbicacionLegible(resolved || "");
+        setResolviendoUbicacion(false);
       }
     }
 
@@ -499,19 +499,19 @@ export default function EditAlertPage() {
 
     setError("");
     setSuccess("");
-    setSaving(true);
+    setGuardando(true);
 
     try {
       const response = await apiFetch(`/alerts/${id}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          incident: incidentId || null,
-          alert_type: alertType,
-          severity,
-          status,
-          title: title.trim(),
-          description: description.trim(),
+          incident: idIncidente || null,
+          alert_type: tipoAlerta,
+          severity: severidad,
+          status: estado,
+          title: titulo.trim(),
+          description: descripcion.trim(),
         }),
       });
 
@@ -535,33 +535,33 @@ export default function EditAlertPage() {
         return;
       }
 
-      const updatedAlert = (await response.json()) as AlertDetail;
-      setIncidentId(updatedAlert.incident ?? "");
-      setAlertType(updatedAlert.alert_type ?? "OTHER");
-      setSeverity(updatedAlert.severity ?? 3);
-      setStatus(updatedAlert.status ?? "OPEN");
-      setTitle(updatedAlert.title ?? "");
-      setDescription(updatedAlert.description ?? "");
-      setLat(updatedAlert.lat ?? null);
-      setLng(updatedAlert.lng ?? null);
-      setLocationValue(getLocationText(updatedAlert.location, updatedAlert.lat ?? null, updatedAlert.lng ?? null));
-      setAckNotes(updatedAlert.ack_notes ?? "");
-      setCloseNotes(updatedAlert.close_notes ?? "");
-      setCreatedAt(updatedAlert.created_at ?? null);
-      setUpdatedAt(updatedAlert.updated_at ?? null);
-      setAckedAt(updatedAlert.acked_at ?? null);
-      setClosedAt(updatedAlert.closed_at ?? null);
-      setCreatedBy(toUserSummary(updatedAlert.created_by, updatedAlert.created_by_id, updatedAlert.created_by_name));
-      setAckedBy(toUserSummary(updatedAlert.acked_by, updatedAlert.acked_by_id, updatedAlert.acked_by_name));
-      setClosedBy(toUserSummary(updatedAlert.closed_by, updatedAlert.closed_by_id, updatedAlert.closed_by_name));
-      setEditingUnlocked(false);
-      setSuccess("Alerta guardada correctamente.");
+      const alertaActualizada = (await response.json()) as DetalleAlerta;
+      setIdIncidente(alertaActualizada.incident ?? "");
+      setTipoAlerta(alertaActualizada.alert_type ?? "OTHER");
+      setSeveridad(alertaActualizada.severity ?? 3);
+      setEstado(alertaActualizada.status ?? "OPEN");
+      setTitulo(alertaActualizada.title ?? "");
+      setDescripcion(alertaActualizada.description ?? "");
+      setLatitud(alertaActualizada.lat ?? null);
+      setLongitud(alertaActualizada.lng ?? null);
+      setValorUbicacion(obtenerTextoUbicacion(alertaActualizada.location, alertaActualizada.lat ?? null, alertaActualizada.lng ?? null));
+      setNotasReconocimiento(alertaActualizada.ack_notes ?? "");
+      setNotasCierre(alertaActualizada.close_notes ?? "");
+      setCreadoEn(alertaActualizada.created_at ?? null);
+      setActualizadoEn(alertaActualizada.updated_at ?? null);
+      setReconocidoEn(alertaActualizada.acked_at ?? null);
+      setCerradoEn(alertaActualizada.closed_at ?? null);
+      setCreadoPor(aResumenUsuario(alertaActualizada.created_by, alertaActualizada.created_by_id, alertaActualizada.created_by_name));
+      setReconocidoPor(aResumenUsuario(alertaActualizada.acked_by, alertaActualizada.acked_by_id, alertaActualizada.acked_by_name));
+      setCerradoPor(aResumenUsuario(alertaActualizada.closed_by, alertaActualizada.closed_by_id, alertaActualizada.closed_by_name));
+      setEdicionDesbloqueada(false);
+      setExito("Alerta guardada correctamente.");
     } finally {
-      setSaving(false);
+      setGuardando(false);
     }
   }
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
         <p className="text-[color:var(--cm-text-muted)]">Cargando alerta...</p>
@@ -584,7 +584,7 @@ export default function EditAlertPage() {
 
             <button
               type="button"
-              onClick={() => navigate("/alerts")}
+              onClick={() => navegar("/alerts")}
               className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
             >
               Volver a alertas
@@ -606,18 +606,18 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Titulo</label>
                     <input
-                      value={title}
-                      disabled={!editingUnlocked}
-                      onChange={(event) => setTitle(event.target.value)}
+                      value={titulo}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(event) => setTitulo(event.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Tipo de alerta</label>
                     <select
-                      value={alertType}
-                      disabled={!editingUnlocked}
-                      onChange={(event) => setAlertType(event.target.value)}
+                      value={tipoAlerta}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(event) => setTipoAlerta(event.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
                       {ALERT_TYPE_OPTIONS.map((option) => (
@@ -631,9 +631,9 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Estado</label>
                     <select
-                      value={status}
-                      disabled={!editingUnlocked}
-                      onChange={(event) => setStatus(event.target.value)}
+                      value={estado}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(event) => setEstado(event.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
                       {STATUS_OPTIONS.map((option) => (
@@ -647,9 +647,9 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Severidad</label>
                     <select
-                      value={severity}
-                      disabled={!editingUnlocked}
-                      onChange={(event) => setSeverity(Number(event.target.value))}
+                      value={severidad}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(event) => setSeveridad(Number(event.target.value))}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
                       {SEVERITY_OPTIONS.map((option) => (
@@ -663,7 +663,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Creada por</label>
                     <input
-                      value={getUserLabel(createdBy)}
+                      value={obtenerEtiquetaUsuario(creadoPor)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -682,26 +682,26 @@ export default function EditAlertPage() {
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Abrir incidente</label>
                     <button
                       type="button"
-                      disabled={!incidentId}
+                      disabled={!idIncidente}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--cm-danger)]/40 bg-gradient-to-r from-[color:var(--cm-danger)] to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(249,115,22,0.24)] transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-danger)]/40 disabled:cursor-not-allowed disabled:border-[color:var(--cm-border)] disabled:bg-[color:var(--cm-surface-2)] disabled:text-[color:var(--cm-text-muted)] disabled:shadow-none"
                       onClick={() => {
                         setError("");
-                        if (!incidentId) {
+                        if (!idIncidente) {
                           setError("No hay un incidente relacionado para abrir.");
                           return;
                         }
-                        navigate(`/editIncident/${incidentId}`);
+                        navegar(`/editIncident/${idIncidente}`);
                       }}
                     >
                       <span className="text-base leading-none">↗</span>
-                      {incidentId ? "Abrir incidente relacionado" : "Sin incidente relacionado"}
+                      {idIncidente ? "Abrir incidente relacionado" : "Sin incidente relacionado"}
                     </button>
                   </div>
 
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Usuario creador</label>
                     <input
-                      value={getUserLabel(createdBy)}
+                      value={obtenerEtiquetaUsuario(creadoPor)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -711,9 +711,9 @@ export default function EditAlertPage() {
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Dirección</label>
                     <input
                       value={
-                        resolvingLocation
+                        resolviendoUbicacion
                           ? "Buscando direccion..."
-                          : readableLocation || locationValue || "No hay ubicacion registrada"
+                          : ubicacionLegible || valorUbicacion || "No hay ubicacion registrada"
                       }
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
@@ -723,7 +723,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Fecha de creación</label>
                     <input
-                      value={formatDate(createdAt)}
+                      value={formatearFecha(creadoEn)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -732,7 +732,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Fecha de actualización</label>
                     <input
-                      value={formatDate(updatedAt)}
+                      value={formatearFecha(actualizadoEn)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -741,7 +741,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Fecha de reconocimiento</label>
                     <input
-                      value={formatDate(ackedAt)}
+                      value={formatearFecha(reconocidoEn)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -750,7 +750,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Fecha de cierre</label>
                     <input
-                      value={formatDate(closedAt)}
+                      value={formatearFecha(cerradoEn)}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -768,9 +768,9 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Descripcion</label>
                     <textarea
-                      value={description}
-                      disabled={!editingUnlocked}
-                      onChange={(event) => setDescription(event.target.value)}
+                      value={descripcion}
+                      disabled={!edicionDesbloqueada}
+                      onChange={(event) => setDescripcion(event.target.value)}
                       rows={5}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     />
@@ -779,7 +779,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Notas de reconocimiento</label>
                     <textarea
-                      value={ackNotes}
+                      value={notasReconocimiento}
                       disabled
                       rows={4}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
@@ -789,7 +789,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Notas de cierre</label>
                     <textarea
-                      value={closeNotes}
+                      value={notasCierre}
                       disabled
                       rows={4}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
@@ -808,7 +808,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Latitud</label>
                     <input
-                      value={parsedLocation?.lat ?? lat ?? ""}
+                      value={ubicacionAnalizada?.lat ?? latitud ?? ""}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -817,7 +817,7 @@ export default function EditAlertPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Longitud</label>
                     <input
-                      value={parsedLocation?.lng ?? lng ?? ""}
+                      value={ubicacionAnalizada?.lng ?? longitud ?? ""}
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
                     />
@@ -826,20 +826,20 @@ export default function EditAlertPage() {
 
                 <div className="mt-4">
                   <MapaMiniUnidad
-                    latitud={parsedLocation?.lat ?? lat}
-                    longitud={parsedLocation?.lng ?? lng}
-                    etiqueta={title ? `Ubicacion de la alerta: ${title}` : "Ubicacion de la alerta"}
+                    latitud={ubicacionAnalizada?.lat ?? latitud}
+                    longitud={ubicacionAnalizada?.lng ?? longitud}
+                    etiqueta={titulo ? `Ubicacion de la alerta: ${titulo}` : "Ubicacion de la alerta"}
                   />
                 </div>
 
                 <div className="mt-4 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion legible</p>
                   <p className="mt-1 font-medium">
-                    {(parsedLocation?.lat ?? lat) == null || (parsedLocation?.lng ?? lng) == null
+                    {(ubicacionAnalizada?.lat ?? latitud) == null || (ubicacionAnalizada?.lng ?? longitud) == null
                       ? "No hay coordenadas registradas"
-                      : resolvingLocation
+                      : resolviendoUbicacion
                       ? "Buscando direccion..."
-                      : readableLocation || "No se pudo resolver una direccion legible"}
+                      : ubicacionLegible || "No se pudo resolver una direccion legible"}
                   </p>
                 </div>
               </section>
@@ -854,8 +854,8 @@ export default function EditAlertPage() {
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Tipo</p>
                     <p className="mt-1 font-medium">
-                      <span className={`${getAlertBadge(alertType)} rounded-full px-2.5 py-1 text-xs`}>
-                        {summary.alertTypeLabel}
+                      <span className={`${obtenerBadgeAlerta(tipoAlerta)} rounded-full px-2.5 py-1 text-xs`}>
+                        {resumen.etiquetaTipoAlerta}
                       </span>
                     </p>
                   </div>
@@ -863,15 +863,15 @@ export default function EditAlertPage() {
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Estado</p>
                     <p className="mt-1 font-medium">
-                      <span className={`${getStatusBadge(status)} rounded-full px-2.5 py-1 text-xs`}>
-                        {summary.statusLabel}
+                      <span className={`${obtenerBadgeEstado(estado)} rounded-full px-2.5 py-1 text-xs`}>
+                        {resumen.etiquetaEstado}
                       </span>
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Severidad</p>
-                    <p className="mt-1 font-medium">{summary.severityLabel}</p>
+                    <p className="mt-1 font-medium">{resumen.etiquetaSeveridad}</p>
                   </div>
                 </div>
               </section>
@@ -883,12 +883,12 @@ export default function EditAlertPage() {
                 <div className="mt-4 space-y-3 text-sm">
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Creada</p>
-                    <p className="mt-1 font-medium">{formatDate(createdAt)}</p>
+                    <p className="mt-1 font-medium">{formatearFecha(creadoEn)}</p>
                   </div>
 
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ultima actualizacion</p>
-                    <p className="mt-1 font-medium">{formatDate(updatedAt)}</p>
+                    <p className="mt-1 font-medium">{formatearFecha(actualizadoEn)}</p>
                   </div>
                 </div>
               </section>
@@ -899,17 +899,17 @@ export default function EditAlertPage() {
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--cm-info)]/40 bg-gradient-to-r from-[color:var(--cm-info)] to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(6,182,212,0.28)] transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-info)]/50"
-              onClick={() => setEditingUnlocked((value) => !value)}
+              onClick={() => setEdicionDesbloqueada((value) => !value)}
             >
-              {editingUnlocked ? "Bloquear edicion" : "Desbloquear edicion"}
+              {edicionDesbloqueada ? "Bloquear edicion" : "Desbloquear edicion"}
             </button>
 
             <button
               type="submit"
-              disabled={!editingUnlocked || saving}
+              disabled={!edicionDesbloqueada || guardando}
               className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--cm-danger)]/40 bg-gradient-to-r from-[color:var(--cm-danger)] to-rose-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(244,63,94,0.28)] transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-danger)]/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {saving ? "Guardando..." : "Guardar cambios"}
+              {guardando ? "Guardando..." : "Guardar cambios"}
             </button>
           </div>
         </div>
