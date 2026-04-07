@@ -393,7 +393,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
-          {/* KPIs superiores del panel */}
+          {/* Los números importantes arriba */}
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidentes abiertos</p>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
             </article>
           </div>
 
-          {/* Bloque principal: mapa + resumen */}
+          {/* El mapa y el resumen juntos */}
           <div className="mt-4 grid h-[calc(100vh-255px)] gap-4 xl:grid-cols-[1.8fr_0.95fr]">
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

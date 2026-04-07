@@ -4,15 +4,15 @@ const API = import.meta.env.VITE_API_BASE_URL ?? "/api";
 const IS_ABSOLUTE_API = /^https?:\/\//i.test(API);
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  // Leemos token CSRF para endpoints de sesion en Django
+  // Cogemos el token especial para evitar ataques, que usa Django
   const csrf = getCookie("csrftoken");
 
-  // Construimos headers comunes para todas las peticiones
+  // Ponemos las cabeceras que van en todas las llamadas
   const headers = new Headers(options.headers || {});
   headers.set("Accept", "application/json");
   if (csrf) headers.set("X-CSRFToken", csrf);
 
-  // Enviamos cookies de sesion para panel web
+  // Mandamos las cookies para mantener la sesión en el panel
   return fetch(`${API}${path}`, {
     ...options,
     headers,

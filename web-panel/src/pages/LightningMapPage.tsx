@@ -82,14 +82,14 @@ export default function LightningMapPage() {
 
   return (
     <div className="cm-shell min-h-screen">
-      {/* Fondo decorativo */}
+      {/* Un fondo bonito */}
       <div className="pointer-events-none fixed inset-0 opacity-20">
         <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-yellow-400 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-orange-400 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full h-full flex flex-col">
-        {/* Header */}
+        {/* La cabecera */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 lg:px-5 lg:py-5 2xl:px-6">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-yellow-400/15 ring-1 ring-yellow-400/35">
@@ -109,7 +109,7 @@ export default function LightningMapPage() {
           </div>
         </div>
 
-        {/* Mapa */}
+        {/* El mapa interactivo */}
         <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
           <div className="h-[calc(100vh-120px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
             {strikes.length === 0 && (

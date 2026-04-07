@@ -52,7 +52,7 @@ const opcionesEstado: Array<{ value: EstadoIncidente; label: string }> = [
 ];
 
 function extraerCoordenadas(location: unknown): LatLngTuple | null {
-  // Intentar leer la ubicación desde distintos formatos posibles.
+  // Tratamos de entender la ubicación de varias formas que puede venir
   if (!location) return null;
 
   if (Array.isArray(location) && location.length >= 2) {
@@ -288,7 +288,7 @@ export default function EditIncidentPage() {
             }
           }
         } catch {
-          // Seguir con el mensaje por defecto si no hay detalle legible.
+          // Si no hay detalles claros, usamos el mensaje normal
         }
         setErrorMensaje(detail);
         return;

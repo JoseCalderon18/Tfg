@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Importamos el store de autenticación
+// Traemos el sistema de login
 import { useAuthStore } from './store/authStore';
 
-// Importamos las páginas de la aplicación
+// Aquí están todas las páginas de la app
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
@@ -41,11 +41,11 @@ function App() {
 
   return (
     <Routes>
-      {/* Ruta pública de login */}
+      {/* Página de login, abierta a todos */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       
-      {/* Rutas protegidas con layout */}
+      {/* Páginas que necesitan login, con menú lateral */}
       <Route path="/" element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
@@ -66,7 +66,7 @@ function App() {
         <Route path="workarea" element={<WorkAreasPage />} />
         <Route path="createWorkArea" element={<NewWorkAreaPage />} />
         <Route path="editWorkArea/:id" element={<EditWorkAreaPage />} />
-        {/* Redirección para rutas no encontradas */}
+        {/* Si no encuentra la página, va al dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

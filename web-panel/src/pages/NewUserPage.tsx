@@ -121,14 +121,14 @@ export default function NewUserPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Fondo */}
+      {/* Fondo de la página */}
       <div className="pointer-events-none fixed inset-0 opacity-25">
         <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-red-600 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-600 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-10">
-        {/* Header */}
+        {/* La cabecera */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-slate-400">Administración · Supervisores</p>
@@ -147,7 +147,7 @@ export default function NewUserPage() {
           </button>
         </div>
 
-        {/* Card */}
+        {/* La tarjeta del formulario */}
         <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
           {error && (
             <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">

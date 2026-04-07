@@ -529,7 +529,7 @@ export default function EditAlertPage() {
             }
           }
         } catch {
-          // Mostramos el mensaje por defecto si la respuesta no trae JSON valido.
+          // Si la respuesta no es un JSON bueno, usamos el mensaje por defecto
         }
         setError(detail);
         return;

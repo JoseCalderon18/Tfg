@@ -27,20 +27,20 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  // Estado inicial de autenticación
+  // Aquí ponemos cómo empezamos, sin usuario y verificando si está logueado
   user: null,
   isAuthenticated: false,
   isCheckingAuth: true,
 
   login: async (email: string, password: string) => {
-    // Paso 1: solicitar cookie CSRF para login por sesión
+    // Primero, pedimos una cookie especial para poder hacer login seguro
     const csrfBootstrap = await apiFetch("/auth/panel/login/", { method: "GET" });
     if (!csrfBootstrap.ok) {
       set({ user: null, isAuthenticated: false });
       return false;
     }
 
-    // Paso 2: enviar credenciales del supervisor
+    // Después, mandamos el email y contraseña del supervisor
     const body = new URLSearchParams();
     body.append("email", email.trim().toLowerCase());
     body.append("password", password);
@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       return false;
     }
 
-    // Paso 3: validar sesión y permisos del panel
+    // Finalmente, comprobamos que la sesión es válida y que tiene permisos para el panel
     const meRes = await apiFetch("/auth/panel/me/");
     if (!meRes.ok) {
       set({ user: null, isAuthenticated: false });
@@ -83,13 +83,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    // Cierre de sesión en backend + limpieza local
+    // Cerramos la sesión en el servidor y limpiamos todo aquí
     await apiFetch("/auth/panel/logout/", { method: "POST" });
     set({ user: null, isAuthenticated: false });
   },
 
   checkAuth: async () => {
-    // Verificación de sesión activa al iniciar la SPA
+    // Al abrir la app, vemos si ya hay una sesión activa
     set({ isCheckingAuth: true });
     try {
       const res = await apiFetch("/auth/panel/me/");

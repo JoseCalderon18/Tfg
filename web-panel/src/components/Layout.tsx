@@ -2,22 +2,22 @@ import { Link, Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 export default function Layout() {
-  // Estado de autenticación global del panel
+  // Aquí tenemos el estado de login de todo el panel
   const { user, logout, isAuthenticated, isCheckingAuth } = useAuthStore();
 
-  // Pantalla de carga mientras se valida sesión
+  // Mientras comprobamos si el usuario está logueado, mostramos carga
   if (isCheckingAuth) {
     return <div className="cm-shell min-h-screen p-6">Cargando...</div>;
   }
 
-  // Redirección si no hay sesión válida
+  // Si no está logueado, lo mandamos a la página de login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   return (
     <div className="cm-shell flex h-screen">
-      {/* Navegación lateral principal */}
+      {/* El menú de la izquierda */}
       <aside className="relative w-60 border-r border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] text-[color:var(--cm-text)]">
         <div className="border-b border-white/6 px-4 py-4">
           <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--cm-text-muted)]">Emergency</p>
@@ -54,7 +54,7 @@ export default function Layout() {
           </Link>
         </nav>
         <div className="absolute bottom-0 w-full p-3">
-          {/* Acción para cerrar sesión actual */}
+          {/* Botón para salir */}
           <button
             onClick={() => void logout()}
             className="w-full rounded-xl bg-[color:var(--cm-danger)] py-2.5 text-white transition hover:brightness-110"
@@ -64,7 +64,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Contenido de cada página */}
+      {/* Aquí va lo que muestra cada página */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
