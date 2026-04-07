@@ -1,21 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
-type MeResponse = {
+type RespuestaUsuario = {
   authenticated: boolean;
   has_panel_full_access?: boolean;
 };
 
-type Organization = {
+type Organizacion = {
   id: string;
   name: string;
 };
 
-type CreateIncidentPayload = {
+type DatosIncidenteCrear = {
   name: string;
-  incident_type: IncidentType;
-  status: IncidentStatus;
+  incident_type: TipoIncidente;
+  status: EstadoIncidente;
   description?: string;
   location_address?: string;
   latitude?: number;
@@ -23,7 +23,7 @@ type CreateIncidentPayload = {
   owner_organization?: string;
 };
 
-type IncidentType =
+type TipoIncidente =
   | "WILDFIRE"
   | "SEARCH"
   | "RESCUE"
@@ -31,12 +31,12 @@ type IncidentType =
   | "NATURAL_DISASTER"
   | "OTHER";
 
-type IncidentStatus = "OPEN" | "TRIAGE" | "CLOSED";
+type EstadoIncidente = "OPEN" | "TRIAGE" | "CLOSED";
 
-const CREATE_INCIDENT_ENDPOINT = "/incidents/";
-const ORGANIZATIONS_ENDPOINT = "/organizations/";
+const PUNTO_FINAL_CREAR_INCIDENTE = "/incidents/";
+const PUNTO_FINAL_ORGANIZACIONES = "/organizations/";
 
-const incidentTypeOptions: Array<{ value: IncidentType; label: string }> = [
+const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
   { value: "WILDFIRE", label: "Incendio forestal" },
   { value: "SEARCH", label: "Busqueda de persona" },
   { value: "RESCUE", label: "Rescate" },
@@ -45,34 +45,34 @@ const incidentTypeOptions: Array<{ value: IncidentType; label: string }> = [
   { value: "OTHER", label: "Otro" },
 ];
 
-const statusOptions: Array<{ value: IncidentStatus; label: string }> = [
+const opcionesEstado: Array<{ value: EstadoIncidente; label: string }> = [
   { value: "OPEN", label: "Abierto" },
   { value: "TRIAGE", label: "En evaluacion" },
   { value: "CLOSED", label: "Cerrado" },
 ];
 
 export default function CreateIncidentPage() {
-  const navigate = useNavigate();
+  const navegar = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [organizationsLoading, setOrganizationsLoading] = useState(false);
-  const [organizationsError, setOrganizationsError] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([]);
+  const [cargandoOrganizaciones, setCargandoOrganizaciones] = useState(false);
+  const [errorOrganizaciones, setErrorOrganizaciones] = useState("");
 
-  const [name, setName] = useState("");
-  const [incidentType, setIncidentType] = useState<IncidentType>("WILDFIRE");
-  const [status, setStatus] = useState<IncidentStatus>("OPEN");
-  const [description, setDescription] = useState("");
-  const [locationAddress, setLocationAddress] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [ownerOrganization, setOwnerOrganization] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [tipoIncidente, setTipoIncidente] = useState<TipoIncidente>("WILDFIRE");
+  const [estado, setEstado] = useState<EstadoIncidente>("OPEN");
+  const [descripcion, setDescripcion] = useState("");
+  const [direccionUbicacion, setDireccionUbicacion] = useState("");
+  const [latitud, setLatitud] = useState("");
+  const [longitud, setLongitud] = useState("");
+  const [organizacionResponsable, setOrganizacionResponsable] = useState("");
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [errorMensaje, setErrorMensaje] = useState("");
+  const [mensajeExito, setMensajeExito] = useState("");
 
-  function normalizeOrganizations(raw: unknown): Organization[] {
+  function normalizarOrganizaciones(raw: unknown): Organizacion[] {
     const source = Array.isArray(raw)
       ? raw
       : (raw as { results?: unknown[] } | null)?.results ?? [];
@@ -91,24 +91,24 @@ export default function CreateIncidentPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 
-      const me = (await meRes.json()) as MeResponse;
+      const me = (await meRes.json()) as RespuestaUsuario;
       if (!me.has_panel_full_access) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 
       try {
-        setOrganizationsLoading(true);
-        setOrganizationsError("");
-        const orgRes = await apiFetch(ORGANIZATIONS_ENDPOINT);
+        setCargandoOrganizaciones(true);
+        setErrorOrganizaciones("");
+        const orgRes = await apiFetch(PUNTO_FINAL_ORGANIZACIONES);
         if (orgRes.ok) {
           const data = (await orgRes.json()) as unknown;
-          const list = normalizeOrganizations(data);
-          setOrganizations(list);
+          const lista = normalizarOrganizaciones(data);
+          setOrganizaciones(lista);
         } else {
           let detail = `No se pudo cargar el listado de organizaciones (HTTP ${orgRes.status}).`;
           try {
@@ -116,81 +116,81 @@ export default function CreateIncidentPage() {
             if (data?.detail) detail = `${detail} ${data.detail}`;
             else if (data?.error) detail = `${detail} ${data.error}`;
           } catch {
-            // keep fallback
+            // mantener el mensaje de fallback
           }
-          setOrganizationsError(detail);
+          setErrorOrganizaciones(detail);
         }
       } finally {
-        setOrganizationsLoading(false);
-        setLoading(false);
+        setCargandoOrganizaciones(false);
+        setCargando(false);
       }
     })();
-  }, [navigate]);
+  }, [navegar]);
 
-  const hasCoords = useMemo(() => latitude.trim() !== "" || longitude.trim() !== "", [latitude, longitude]);
+  const tieneCoordenadas = useMemo(() => latitud.trim() !== "" || longitud.trim() !== "", [latitud, longitud]);
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function manejarEnvio(event: FormEvent) {
     event.preventDefault();
-    setError("");
-    setSuccess("");
+    setErrorMensaje("");
+    setMensajeExito("");
 
-    if (!name.trim()) {
-      setError("El nombre del incidente es obligatorio.");
+    if (!nombre.trim()) {
+      setErrorMensaje("El nombre del incidente es obligatorio.");
       return;
     }
 
-    if ((latitude.trim() && !longitude.trim()) || (!latitude.trim() && longitude.trim())) {
-      setError("Debes enviar latitud y longitud juntas, o dejar ambas vacias.");
+    if ((latitud.trim() && !longitud.trim()) || (!latitud.trim() && longitud.trim())) {
+      setErrorMensaje("Debes enviar latitud y longitud juntas, o dejar ambas vacias.");
       return;
     }
 
-    const parsedLat = latitude.trim() ? Number(latitude) : undefined;
-    const parsedLon = longitude.trim() ? Number(longitude) : undefined;
+    const latParseada = latitud.trim() ? Number(latitud) : undefined;
+    const lonParseada = longitud.trim() ? Number(longitud) : undefined;
 
-    if (parsedLat !== undefined && Number.isNaN(parsedLat)) {
-      setError("La latitud no es valida.");
+    if (latParseada !== undefined && Number.isNaN(latParseada)) {
+      setErrorMensaje("La latitud no es valida.");
       return;
     }
-    if (parsedLon !== undefined && Number.isNaN(parsedLon)) {
-      setError("La longitud no es valida.");
+    if (lonParseada !== undefined && Number.isNaN(lonParseada)) {
+      setErrorMensaje("La longitud no es valida.");
       return;
     }
-    if (parsedLat !== undefined && (parsedLat < -90 || parsedLat > 90)) {
-      setError("La latitud debe estar entre -90 y 90.");
+    if (latParseada !== undefined && (latParseada < -90 || latParseada > 90)) {
+      setErrorMensaje("La latitud debe estar entre -90 y 90.");
       return;
     }
-    if (parsedLon !== undefined && (parsedLon < -180 || parsedLon > 180)) {
-      setError("La longitud debe estar entre -180 y 180.");
-      return;
-    }
-
-    if(organizations === undefined) {
-      setError("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la pagina.");
-      return;
-    }
-    if (!ownerOrganization) {
-      setError("Debes seleccionar una organizacion responsable.");
+    if (lonParseada !== undefined && (lonParseada < -180 || lonParseada > 180)) {
+      setErrorMensaje("La longitud debe estar entre -180 y 180.");
       return;
     }
 
+    if (organizaciones.length === 0) {
+      setErrorMensaje("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la pagina.");
+      return;
+    }
+    if (!organizacionResponsable) {
+      setErrorMensaje("Debes seleccionar una organizacion responsable.");
+      return;
+    }
 
 
 
-    const payload: CreateIncidentPayload = {
-      name: name.trim(),
-      incident_type: incidentType,
-      status,
-      description: description.trim() || undefined,
-      location_address: locationAddress.trim() || undefined,
-      latitude: parsedLat,
-      longitude: parsedLon,
-      owner_organization: ownerOrganization,
+
+    const payload: DatosIncidenteCrear = {
+      name: nombre.trim(),
+      incident_type: tipoIncidente,
+      status: estado,
+      description: descripcion.trim() || undefined,
+      location_address: direccionUbicacion.trim() || undefined,
+      latitude: latParseada,
+      longitude: lonParseada,
+      owner_organization: organizacionResponsable,
     };
 
 
-    setSubmitting(true);
+    setEnviando(true);
     try {
-      const res = await apiFetch(CREATE_INCIDENT_ENDPOINT, {
+      const res = await apiFetch(PUNTO_FINAL_CREAR_INCIDENTE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -214,25 +214,25 @@ export default function CreateIncidentPage() {
         } catch {
           // keep fallback
         }
-        setError(detail);
+        setErrorMensaje(detail);
         return;
       }
 
-      setSuccess("Incidente creado correctamente.");
-      setName("");
-      setIncidentType("WILDFIRE");
-      setStatus("OPEN");
-      setDescription("");
-      setLocationAddress("");
-      setLatitude("");
-      setLongitude("");
-      setOwnerOrganization("");
+      setMensajeExito("Incidente creado correctamente.");
+      setNombre("");
+      setTipoIncidente("WILDFIRE");
+      setEstado("OPEN");
+      setDescripcion("");
+      setDireccionUbicacion("");
+      setLatitud("");
+      setLongitud("");
+      setOrganizacionResponsable("");
     } finally {
-      setSubmitting(false);
+      setEnviando(false);
     }
   }
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
         <div className="flex items-center gap-3">
@@ -259,7 +259,7 @@ export default function CreateIncidentPage() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/incidents")}
+            onClick={() => navegar("/incidents")}
             className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
           >
             Volver
@@ -267,24 +267,24 @@ export default function CreateIncidentPage() {
         </div>
 
         <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
-          {error ? (
+          {errorMensaje ? (
             <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
+              {errorMensaje}
             </div>
           ) : null}
-          {success ? (
+          {mensajeExito ? (
             <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {success}
+              {mensajeExito}
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={manejarEnvio} className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Nombre del incidente</label>
                 <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={nombre}
+                  onChange={(event) => setNombre(event.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Forest Fire - Zone A"
                   required
@@ -294,11 +294,11 @@ export default function CreateIncidentPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de incidente</label>
                 <select
-                  value={incidentType}
-                  onChange={(event) => setIncidentType(event.target.value as IncidentType)}
+                  value={tipoIncidente}
+                  onChange={(event) => setTipoIncidente(event.target.value as TipoIncidente)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  {incidentTypeOptions.map((opt) => (
+                  {opcionesTipoIncidente.map((opt) => (
                     <option key={opt.value} value={opt.value} className="bg-slate-900">
                       {opt.label}
                     </option>
@@ -309,11 +309,11 @@ export default function CreateIncidentPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-300">Estado inicial</label>
                 <select
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value as IncidentStatus)}
+                  value={estado}
+                  onChange={(event) => setEstado(event.target.value as EstadoIncidente)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  {statusOptions.map((opt) => (
+                  {opcionesEstado.map((opt) => (
                     <option key={opt.value} value={opt.value} className="bg-slate-900">
                       {opt.label}
                     </option>
@@ -324,8 +324,8 @@ export default function CreateIncidentPage() {
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Descripcion</label>
                 <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  value={descripcion}
+                  onChange={(event) => setDescripcion(event.target.value)}
                   rows={4}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Describe situacion, riesgos y alcance."
@@ -335,8 +335,8 @@ export default function CreateIncidentPage() {
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Direccion / ubicacion textual</label>
                 <input
-                  value={locationAddress}
-                  onChange={(event) => setLocationAddress(event.target.value)}
+                  value={direccionUbicacion}
+                  onChange={(event) => setDireccionUbicacion(event.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Oakwood Forest, Zona A"
                 />
@@ -345,8 +345,8 @@ export default function CreateIncidentPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-300">Latitud</label>
                 <input
-                  value={latitude}
-                  onChange={(event) => setLatitude(event.target.value)}
+                  value={latitud}
+                  onChange={(event) => setLatitud(event.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="40.4168"
                   inputMode="decimal"
@@ -356,8 +356,8 @@ export default function CreateIncidentPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-300">Longitud</label>
                 <input
-                  value={longitude}
-                  onChange={(event) => setLongitude(event.target.value)}
+                  value={longitud}
+                  onChange={(event) => setLongitud(event.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="-3.7038"
                   inputMode="decimal"
@@ -367,24 +367,24 @@ export default function CreateIncidentPage() {
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-300">Organizacion responsable</label>
                 <select
-                  value={ownerOrganization}
-                  onChange={(event) => setOwnerOrganization(event.target.value)}
-                  disabled={organizationsLoading}
+                  value={organizacionResponsable}
+                  onChange={(event) => setOrganizacionResponsable(event.target.value)}
+                  disabled={cargandoOrganizaciones}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="" className="bg-slate-900">
-                    {organizationsLoading ? "Cargando organizaciones..." : "Sin organizacion"}
+                    {cargandoOrganizaciones ? "Cargando organizaciones..." : "Sin organizacion"}
                   </option>
-                  {organizations.map((organization) => (
+                  {organizaciones.map((organization) => (
                     <option key={organization.id} value={organization.id} className="bg-slate-900">
                       {organization.name}
                     </option>
                   ))}
                 </select>
-                {organizationsError ? (
-                  <p className="mt-1 text-xs text-amber-300">{organizationsError}</p>
+                {errorOrganizaciones ? (
+                  <p className="mt-1 text-xs text-amber-300">{errorOrganizaciones}</p>
                 ) : null}
-                {!organizationsLoading && !organizationsError && organizations.length === 0 ? (
+                {!cargandoOrganizaciones && !errorOrganizaciones && organizaciones.length === 0 ? (
                   <p className="mt-1 text-xs text-slate-400">
                     No hay organizaciones disponibles en la base de datos.
                   </p>
@@ -393,7 +393,7 @@ export default function CreateIncidentPage() {
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-400">
-              {hasCoords
+              {tieneCoordenadas
                 ? "Se enviaran coordenadas geograficas para generar el Point en backend."
                 : "Si no informas coordenadas, el incidente se guardara sin Point geografico."}
             </div>
@@ -401,17 +401,17 @@ export default function CreateIncidentPage() {
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => navigate("/incidents")}
+                onClick={() => navegar("/incidents")}
                 className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={enviando}
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-500 disabled:opacity-60 transition"
               >
-                {submitting ? "Creando..." : "Crear incidente"}
+                {enviando ? "Creando..." : "Crear incidente"}
               </button>
             </div>
           </form>
