@@ -5,7 +5,7 @@ from .models import (
     Incidente, Incident, Alerta, Alert,
     Dispositivo, Device,
     PuntoRastreo, TrackPoint, IncidentMember, AreaTrabajo, WorkArea,
-    RiskReport, CodigoResetPassword
+    RiskReport, CodigoResetPassword, Journey
 )
 
 
@@ -95,3 +95,10 @@ class CodigoResetPasswordAdmin(admin.ModelAdmin):
     list_display = ['email', 'codigo', 'user', 'creado_en', 'expira_en', 'verificado_en', 'usado_en']
     list_filter = ['creado_en', 'expira_en', 'verificado_en', 'usado_en']
     search_fields = ['email', 'user__username', 'user__email', 'codigo']
+
+
+@admin.register(Journey)
+class JourneyAdmin(GISModelAdmin):
+    list_display = ['id', 'user', 'start_date', 'end_date', 'created_at']
+    list_filter = ['created_at', 'start_date', 'end_date']
+    search_fields = ['user__username', 'user__email']

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Region, UrlTile } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
@@ -145,6 +145,7 @@ export default function MapaOperativo({
   const [cargando, setCargando] = useState(false);
   const [errorRemoto, setErrorRemoto] = useState('');
   const [mapaListo, setMapaListo] = useState(false);
+  const [errorMapa, setErrorMapa] = useState('');
 
   const cargarCapasRemotas = useCallback(async () => {
     if (!token) {
@@ -235,6 +236,16 @@ export default function MapaOperativo({
     mapaRef.current.animateToRegion(regionAjustada, 500);
   }, [mapaListo, regionAjustada]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (!mapaListo) {
+        setErrorMapa('El motor nativo del mapa no ha terminado de cargar en Android.');
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [mapaListo]);
+
   return (
     <View style={styles.container}>
       {mostrarCabecera ? (
@@ -258,28 +269,34 @@ export default function MapaOperativo({
       <MapView
         ref={mapaRef}
         style={styles.mapa}
+        provider={PROVIDER_GOOGLE}
         initialRegion={regionAjustada}
-        mapType={modoLigero ? 'standard' : 'none'}
+        mapType="standard"
         liteMode={modoLigero}
         cacheEnabled
+        loadingEnabled
         toolbarEnabled={!modoLigero}
         rotateEnabled={!modoLigero}
         pitchEnabled={!modoLigero}
         showsCompass={!modoLigero}
+        showsBuildings={!modoLigero}
+        showsUserLocation
         scrollEnabled
         zoomEnabled
-        onMapReady={() => setMapaListo(true)}
+        onMapReady={() => {
+          setMapaListo(true);
+          setErrorMapa('');
+        }}
       >
-        {!modoLigero ? (
-          <UrlTile
-            urlTemplate="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            maximumZ={19}
-            flipY={false}
-            zIndex={0}
-          />
-        ) : null}
         {renderizarMarcadores(marcadores)}
       </MapView>
+
+      {!mapaListo && errorMapa ? (
+        <View style={styles.estadoMapa}>
+          <Text style={styles.estadoMapaTitulo}>Mapa no disponible</Text>
+          <Text style={styles.estadoMapaTexto}>{errorMapa}</Text>
+        </View>
+      ) : null}
 
       {modoLigero ? (
         <View style={styles.leyendaInferior}>
@@ -304,9 +321,32 @@ export default function MapaOperativo({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0F172A',
   },
   mapa: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+  },
+  estadoMapa: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 24,
+    zIndex: 5,
+    backgroundColor: '#0F172AE6',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#334155',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  estadoMapaTitulo: {
+    color: '#F8FAFC',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  estadoMapaTexto: {
+    color: '#CBD5E1',
+    fontSize: 12,
   },
   cabecera: {
     position: 'absolute',

@@ -21,6 +21,7 @@ from .organization_serializers import OrganizationSerializer, OrganizationCreate
 from .lightning_serializers import LightningStrikeSerializer, LightningStrikeListSerializer
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
 from .workarea_serializers import WorkAreaSerializer, WorkAreaCreateSerializer
+from .journey_serializers import JourneySerializer, JourneyCreateSerializer
 
 # Alias en espanol para compatibilidad con vistas existentes
 PuntoRastreoSerializer = TrackPointSerializer
@@ -64,4 +65,6 @@ __all__ = [
     "OrganizationCreateSerializer",
     "RiskReportSerializer",
     "RiskReportCreateSerializer",
+    "JourneySerializer",
+    "JourneyCreateSerializer",
 ]

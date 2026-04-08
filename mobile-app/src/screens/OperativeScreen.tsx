@@ -164,6 +164,9 @@ export default function OperativeScreen({ navigation }: any) {
                 <Text style={styles.menuOptionText}>🌤️ Meteorologia</Text>
               </TouchableOpacity>
 
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('startShift')}>
+                <Text style={styles.menuOptionText}>▶️ Iniciar Jornada</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('startBreak')}>
                 <Text style={styles.menuOptionText}>⏸️ Iniciar descanso</Text>
               </TouchableOpacity>
@@ -171,7 +174,12 @@ export default function OperativeScreen({ navigation }: any) {
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('stopShift')}>
                 <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
-
+              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('Profile')}>
+                <Text style={styles.menuOptionText}>👤 Perfil</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('Settings')}>
+                <Text style={styles.menuOptionText}>⚙️ Configuración</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.menuOption, styles.logoutOption]}
                 onPress={() => handleMenuOption('logout')}
