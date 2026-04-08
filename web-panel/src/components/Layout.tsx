@@ -52,6 +52,12 @@ export default function Layout() {
           <Link to="/workarea" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
             Areas de trabajo
           </Link>
+          <Link to="/points" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
+            Puntos de interés
+          </Link>
+          <Link to="/journeys" className="block rounded-xl px-3 py-2.5 transition hover:bg-[color:var(--cm-info)]/25">
+            Jornadas
+          </Link>
         </nav>
         <div className="absolute bottom-0 w-full p-3">
           {/* Botón para salir */}
