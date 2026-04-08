@@ -357,18 +357,18 @@ export default function EditAlertPage() {
   }, [id]);
 
   useEffect(() => {
-    const userRefs = [createdBy, ackedBy, closedBy].filter(Boolean) as UsuarioResumen[];
+    const userRefs = [creadoPor, reconocidoPor, cerradoPor].filter(Boolean) as UsuarioResumen[];
 
     if (userRefs.length === 0) return;
 
     let cancelled = false;
 
     async function hydrateUsers() {
-      let userList: PanelUserListRow[] = [];
+      let userList: FilaListaUsuarioPanel[] = [];
       try {
         const listResponse = await apiFetch("/auth/panel/users/");
         if (listResponse.ok) {
-          const listPayload = (await listResponse.json()) as { results?: PanelUserListRow[] } | PanelUserListRow[];
+          const listPayload = (await listResponse.json()) as { results?: FilaListaUsuarioPanel[] } | FilaListaUsuarioPanel[];
           userList = Array.isArray(listPayload) ? listPayload : listPayload.results ?? [];
         }
       } catch {
@@ -394,7 +394,7 @@ export default function EditAlertPage() {
           try {
             const response = await apiFetch(`/auth/panel/users/${userId}/`);
             if (!response.ok) return null;
-            return (await response.json()) as PanelUserDetail;
+            return (await response.json()) as DetalleUsuarioPanel;
           } catch {
             return null;
           }
@@ -405,7 +405,7 @@ export default function EditAlertPage() {
 
       const mapped = new Map(
         detailResponses
-          .filter((user): user is PanelUserDetail => Boolean(user?.id))
+          .filter((user): user is DetalleUsuarioPanel => Boolean(user?.id))
           .map((user) => [
             user.id,
             {
@@ -448,9 +448,9 @@ export default function EditAlertPage() {
         return current;
       };
 
-      setCreatedBy((current) => resolveUser(current));
-      setAckedBy((current) => resolveUser(current));
-      setClosedBy((current) => resolveUser(current));
+      setCreadoPor((current) => resolveUser(current));
+      setReconocidoPor((current) => resolveUser(current));
+      setCerradoPor((current) => resolveUser(current));
     }
 
     void hydrateUsers();
@@ -458,14 +458,14 @@ export default function EditAlertPage() {
     return () => {
       cancelled = true;
     };
-  }, [createdBy?.id, createdBy?.display_name, ackedBy?.id, ackedBy?.display_name, closedBy?.id, closedBy?.display_name]);
+  }, [creadoPor?.id, creadoPor?.display_name, reconocidoPor?.id, reconocidoPor?.display_name, cerradoPor?.id, cerradoPor?.display_name]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadReadableLocation() {
-      const resolvedLat = parsedLocation?.lat ?? lat;
-      const resolvedLng = parsedLocation?.lng ?? lng;
+      const resolvedLat = ubicacionAnalizada?.lat ?? latitud;
+      const resolvedLng = ubicacionAnalizada?.lng ?? longitud;
 
       if (resolvedLat == null || resolvedLng == null) {
         setUbicacionLegible("");
@@ -487,7 +487,7 @@ export default function EditAlertPage() {
     return () => {
       cancelled = true;
     };
-  }, [parsedLocation, lat, lng]);
+  }, [ubicacionAnalizada, latitud, longitud]);
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -498,7 +498,7 @@ export default function EditAlertPage() {
     }
 
     setError("");
-    setSuccess("");
+    setExito("");
     setGuardando(true);
 
     try {
@@ -594,7 +594,7 @@ export default function EditAlertPage() {
           <div className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
             <div className="space-y-4">
               {error ? <div className="cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
-              {success ? <div className="cm-badge-success rounded-xl p-3 text-sm">{success}</div> : null}
+              {exito ? <div className="cm-badge-success rounded-xl p-3 text-sm">{exito}</div> : null}
 
               <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                 <div className="mb-5">

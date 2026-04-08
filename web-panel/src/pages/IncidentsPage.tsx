@@ -126,7 +126,7 @@ async function cargarTileComoBitmap(url: string) {
   return createImageBitmap(imagenBlob);
 }
 
-async function generarImagenMapaIncidente(incidente: IncidentRow): Promise<string | null> {
+async function generarImagenMapaIncidente(incidente: IncidenteFila): Promise<string | null> {
   if (!incidente.parsedLocation) return null;
 
   const [latitud, longitud] = incidente.parsedLocation;
@@ -239,7 +239,7 @@ function normalizarIncidentes(raw: unknown): IncidenteFila[] {
     : (raw as { results?: unknown[] } | null)?.results ?? [];
 
   return source
-    .map((item) => item as Partial<IncidentApiRow>)
+    .map((item) => item as Partial<IncidenteApiFila>)
     .filter((row) => typeof row?.id === "string" && typeof row?.name === "string")
     .map((row) => ({
       id: row.id as string,
@@ -662,7 +662,7 @@ export default function IncidentsPage() {
     const incidentesCerrados = incidentes.filter((incidente) => incidente.status === "CLOSED").length;
 
     return { incidentesAbiertos, incidentesEnEvaluacion, incidentesCerrados };
-  }, [incidents]);
+  }, [incidentes]);
 
   const totalPaginas = Math.max(1, Math.ceil(incidentesFiltrados.length / INCIDENTES_POR_PAGINA));
 
@@ -762,7 +762,7 @@ export default function IncidentsPage() {
     }
   }
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
         <p className="text-[color:var(--cm-text-muted)]">Cargando incidentes...</p>
@@ -844,9 +844,9 @@ export default function IncidentsPage() {
             <div>
               <input
                 type="text"
-                value={query}
+                value={consulta}
                 onChange={(e) => {
-                  setQuery(e.target.value);
+                  setConsulta(e.target.value);
                   setPaginaActual(1);
                 }}
                 placeholder="Buscar por nombre, tipo, estado o ubicacion..."
@@ -887,9 +887,9 @@ export default function IncidentsPage() {
 
         
 
-        {error && (
+        {errorMensaje && (
           <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
-            {error}
+            {errorMensaje}
           </div>
         )}
 
