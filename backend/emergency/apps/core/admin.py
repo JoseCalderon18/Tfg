@@ -5,7 +5,7 @@ from .models import (
     Incidente, Incident, Alerta, Alert,
     Dispositivo, Device,
     PuntoRastreo, TrackPoint, IncidentMember, AreaTrabajo, WorkArea,
-    RiskReport, CodigoResetPassword, Journey
+    RiskReport, CodigoResetPassword, Journey, PointOfInterest
 )
 
 
@@ -102,3 +102,10 @@ class JourneyAdmin(GISModelAdmin):
     list_display = ['id', 'user', 'start_date', 'end_date', 'created_at']
     list_filter = ['created_at', 'start_date', 'end_date']
     search_fields = ['user__username', 'user__email']
+
+
+@admin.register(PointOfInterest)
+class PointOfInterestAdmin(GISModelAdmin):
+    list_display = ['name', 'poi_type', 'incident', 'created_by', 'is_active', 'created_at']
+    list_filter = ['poi_type', 'is_active', 'created_at']
+    search_fields = ['name', 'description', 'created_by__username', 'incident__name']

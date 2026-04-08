@@ -12,6 +12,7 @@ from .models import (
     RiskReport,
     LightningStrike,
     Journey,
+    PointOfInterest,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     'RiskReport',
     'LightningStrike',
     'Journey',
+    'PointOfInterest',
 ]

@@ -6,13 +6,19 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import * as Location from 'expo-location';
+
+import { useAuth } from '../context/AuthContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 
 interface PointOfInterest {
   id: string;
   name: string;
   emoji: string;
   description: string;
+  poiType: string;
 }
 
 const POINTS_OF_INTEREST: PointOfInterest[] = [
@@ -20,41 +26,106 @@ const POINTS_OF_INTEREST: PointOfInterest[] = [
     id: '1',
     name: 'Hidrantes',
     emoji: '🚰',
-    description: 'Ubicación de hidrantes disponibles',
+    description: 'Ubicacion de hidrantes disponibles',
+    poiType: 'HYDRANT',
   },
   {
     id: '2',
     name: 'Asentamiento',
     emoji: '🏠',
     description: 'Zonas de asentamiento y viviendas',
+    poiType: 'SETTLEMENT',
   },
   {
     id: '3',
     name: 'Cortafuegos',
     emoji: '🔥',
-    description: 'Líneas de cortafuegos',
+    description: 'Lineas de cortafuegos',
+    poiType: 'FIREBREAK',
   },
   {
     id: '4',
     name: 'Puntos de Vigilancia',
     emoji: '👁️',
     description: 'Torres y puntos de vigilancia',
+    poiType: 'WATCHPOINT',
   },
   {
     id: '5',
     name: 'Estaciones Base',
     emoji: '🏢',
     description: 'Campamentos y estaciones base',
+    poiType: 'BASE_STATION',
   },
   {
     id: '6',
-    name: 'Vías de Evacuación',
+    name: 'Vias de Evacuacion',
     emoji: '🚪',
-    description: 'Rutas de evacuación recomendadas',
+    description: 'Rutas de evacuacion recomendadas',
+    poiType: 'EVAC_ROUTE',
   },
 ];
 
 export default function PointsOfInterestScreen({ navigation }: any) {
+  const { token } = useAuth();
+  const [savingPointId, setSavingPointId] = useState<string | null>(null);
+  const isSaving = savingPointId !== null;
+
+  const savePointOfInterest = async (point: PointOfInterest) => {
+    if (!token) {
+      Alert.alert('Sesion requerida', 'Debes iniciar sesion para guardar un punto de interes.');
+      return;
+    }
+
+    setSavingPointId(point.id);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Se necesita acceso a la ubicacion para marcar el punto.');
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({});
+
+      const response = await apiFetch('/points-of-interest/', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({
+          name: point.name,
+          poi_type: point.poiType,
+          description: point.description,
+          created_at: new Date().toISOString(),
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'No se pudo guardar el punto de interes.';
+
+        if (errorText) {
+          try {
+            const errorData = JSON.parse(errorText) as { detail?: string };
+            errorMessage = errorData.detail ?? errorMessage;
+          } catch {
+            errorMessage = errorText;
+          }
+        }
+
+        Alert.alert('Error', errorMessage);
+        return;
+      }
+
+      await parseJsonResponse(response);
+      Alert.alert('Exito', `Punto de ${point.name} guardado correctamente.`);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Error guardando el punto.');
+    } finally {
+      setSavingPointId(null);
+    }
+  };
+
   const handleSelectPoint = (point: PointOfInterest) => {
     Alert.alert(
       `${point.emoji} ${point.name}`,
@@ -63,15 +134,13 @@ export default function PointsOfInterestScreen({ navigation }: any) {
         {
           text: 'Ver en mapa',
           onPress: () => {
-            console.log(`Mostrando ${point.name} en el mapa`);
             navigation.goBack();
           },
         },
         {
-          text: 'Marcar como punto',
+          text: savingPointId === point.id ? 'Guardando...' : 'Marcar como punto',
           onPress: () => {
-            console.log(`Punto marcado: ${point.name}`);
-            Alert.alert('Éxito', `Punto de ${point.name} marcado correctamente`);
+            void savePointOfInterest(point);
           },
         },
         {
@@ -87,6 +156,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
       style={styles.card}
       onPress={() => handleSelectPoint(item)}
       activeOpacity={0.7}
+      disabled={isSaving}
     >
       <View style={styles.cardContent}>
         <Text style={styles.emoji}>{item.emoji}</Text>
@@ -94,14 +164,13 @@ export default function PointsOfInterestScreen({ navigation }: any) {
           <Text style={styles.cardName}>{item.name}</Text>
           <Text style={styles.cardDescription}>{item.description}</Text>
         </View>
-        <Text style={styles.arrow}>›</Text>
+        <Text style={styles.arrow}>{savingPointId === item.id ? '…' : '›'}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -109,25 +178,32 @@ export default function PointsOfInterestScreen({ navigation }: any) {
         >
           <Text style={styles.backButtonText}>‹ Volver</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Puntos de Interés</Text>
+        <Text style={styles.title}>Puntos de Interes</Text>
         <View style={{ width: 60 }} />
       </View>
 
-      {/* Lista de Puntos */}
       <FlatList
         data={POINTS_OF_INTEREST}
         renderItem={renderPointCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
-        scrollEnabled={true}
+        scrollEnabled
       />
 
-      {/* Footer Info */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          📌 Selecciona un punto para ver más opciones
+          Selecciona un punto y usa "Marcar como punto" para guardarlo en la base de datos.
         </Text>
       </View>
+
+      {isSaving ? (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#FF6B6B" />
+            <Text style={styles.loadingText}>Añadiendo punto de interes...</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -224,6 +300,34 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: 'white',
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  loadingCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    alignItems: 'center',
+    gap: 14,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
     textAlign: 'center',
   },
 });
