@@ -24,7 +24,7 @@ interface PointOfInterest {
 const POINTS_OF_INTEREST: PointOfInterest[] = [
   {
     id: '1',
-    name: 'Hidrantes',
+    name: 'Hidratación',
     emoji: '🚰',
     description: 'Ubicacion de hidrantes disponibles',
     poiType: 'HYDRANT',
@@ -64,6 +64,62 @@ const POINTS_OF_INTEREST: PointOfInterest[] = [
     description: 'Rutas de evacuacion recomendadas',
     poiType: 'EVAC_ROUTE',
   },
+  {
+    id: '7',
+    name: 'Toma de agua',
+    emoji: '💧',
+    description: 'Fuentes naturales de agua',
+    poiType: 'WATER_SOURCE',
+  },
+  {
+    id: '8',
+    name: 'Puntos de Encuentro',
+    emoji: '📍',
+    description: 'Puntos de encuentro para equipos y civiles',
+    poiType: 'MEETING_POINT',
+  },
+  {
+    id: '9',
+    name: 'Helisuperficies',
+    emoji: '🚁',
+    description: 'Zonas aptas para aterrizaje de helicópteros',
+    poiType: 'HELIPAD',
+  },
+  {
+    id: '10',
+    name: 'Antenas de Comunicacion',
+    emoji: '📡',
+    description: 'Ubicacion de antenas de comunicacion',
+    poiType: 'COMMUNICATION_TOWER',
+  },
+  {
+    id: '11',
+    name: 'Puntos de Control',
+    emoji: '🛑',
+    description: 'Puntos de control para acceso y seguridad',
+    poiType: 'CHECKPOINT',
+  },
+  {
+    id: '12',
+    name: 'Arbol caido o obstaculo',
+    emoji: '🌳',
+    description: 'Ubicacion de arboles caidos u otros obstaculos',
+    poiType: 'OBSTACLE',
+  },
+  {
+    id: '13',
+    name: 'Puente o paso elevado',
+    emoji: '🌉',
+    description: 'Puentes o pasos elevados en la zona',
+    poiType: 'BRIDGE',
+  },
+  {
+    id: '14',
+    name: 'Almacenes o puntos de suministros',
+    emoji: '📦',
+    description: 'Almacenes o puntos de suministros disponibles',
+    poiType: 'SUPPLY_POINT',
+  }
 ];
 
 export default function PointsOfInterestScreen({ navigation }: any) {

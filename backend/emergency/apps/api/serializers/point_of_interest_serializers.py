@@ -6,6 +6,7 @@ from emergency.apps.core.models import PointOfInterest
 
 class PointOfInterestSerializer(serializers.ModelSerializer):
     created_by = serializers.StringRelatedField(read_only=True)
+    created_by_username = serializers.CharField(source="created_by.username", read_only=True)
     incident_name = serializers.CharField(source="incident.name", read_only=True)
     latitude = serializers.FloatField(source="location.y", read_only=True)
     longitude = serializers.FloatField(source="location.x", read_only=True)
@@ -20,6 +21,7 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
             "incident",
             "incident_name",
             "created_by",
+            "created_by_username",
             "is_active",
             "created_at",
             "updated_at",
@@ -30,6 +32,7 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "created_by",
+            "created_by_username",
             "created_at",
             "updated_at",
             "incident_name",

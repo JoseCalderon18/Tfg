@@ -19,6 +19,12 @@ class PointOfInterest(models.Model):
         ("WATCHPOINT", "Punto de vigilancia"),
         ("BASE_STATION", "Estacion base"),
         ("EVAC_ROUTE", "Via de evacuacion"),
+        ("COMMUNICATION_TOWER", "Antena de comunicacion"),
+        ("CHECKPOINT", "Punto de control"),
+        ("OBSTACLE", "Obstaculo"),
+        ("BRIDGE", "Puente o paso elevado"),
+        ("SUPPLY_POINT", "Punto de suministro"),
+        ("HELIPAD", "Helisuperficie"),
         ("OTHER", "Otro"),
     ]
 
