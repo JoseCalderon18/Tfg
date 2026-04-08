@@ -12,6 +12,7 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer básico de usuario"""
+    profile_id = serializers.UUIDField(source='profile.id', read_only=True)
     role = serializers.CharField(source='profile.role', read_only=True)
     organization_name = serializers.CharField(source='profile.organization.name', read_only=True)
     specialties = serializers.ListField(source='profile.specialties', child=serializers.CharField(), read_only=True)
@@ -20,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                  'role', 'organization_name', 'phone', 'is_active', 'created_at', 'specialties', 'dni']
+                  'profile_id', 'role', 'organization_name', 'phone', 'is_active', 'created_at', 'specialties', 'dni']
         read_only_fields = ['id', 'created_at']
 
 

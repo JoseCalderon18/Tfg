@@ -1,14 +1,15 @@
 from django.contrib.gis.db import models as gis_models
 from django.db import models
+from django.utils import timezone
 
-from .user import User
+from .profile import Perfil
 
 
 class Journey(models.Model):
     id = models.BigAutoField(primary_key=True)
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(
-        User,
+        Perfil,
         on_delete=models.CASCADE,
         related_name="journeys",
         db_column="user_id",

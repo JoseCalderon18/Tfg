@@ -2,6 +2,7 @@
 
 import django.contrib.gis.db.models.fields
 import django.db.models.deletion
+import django.utils.timezone
 from django.conf import settings
 from django.db import migrations, models
 
@@ -20,7 +21,7 @@ class Migration(migrations.Migration):
                     name="Journey",
                     fields=[
                         ("id", models.BigAutoField(primary_key=True, serialize=False)),
-                        ("created_at", models.DateTimeField()),
+                        ("created_at", models.DateTimeField(default=django.utils.timezone.now)),
                         ("start_date", models.DateTimeField(blank=True, null=True)),
                         ("end_date", models.DateTimeField(blank=True, null=True)),
                         (
@@ -43,7 +44,7 @@ class Migration(migrations.Migration):
                                 db_constraint=False,
                                 on_delete=django.db.models.deletion.CASCADE,
                                 related_name="journeys",
-                                to=settings.AUTH_USER_MODEL,
+                                to="core.profile",
                             ),
                         ),
                     ],

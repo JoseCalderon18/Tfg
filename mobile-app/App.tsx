@@ -15,6 +15,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import AlertScreen from './src/screens/AlertScreen';
 import OperativeScreen from './src/screens/OperativeScreen';
 import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
+import StartJourneyScreen from './src/screens/StartJourneyScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
@@ -81,6 +82,11 @@ function OperativeNavigator() {
         <Stack.Screen
           name="PointsOfInterest"
           component={PointsOfInterestScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="StartJourney"
+          component={StartJourneyScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

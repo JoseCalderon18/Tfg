@@ -7,6 +7,7 @@ import { ApiConnectionError, apiFetch, parseJsonResponse } from '../services/api
  */
 interface User {
   id: string;
+  profile_id?: string;
   username: string;
   email: string;
   role: string;
