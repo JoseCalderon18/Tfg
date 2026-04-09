@@ -7,11 +7,12 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
+import { Circle, Polygon } from "react-leaflet";
 import { apiFetch } from "../utils/api";
 import "leaflet/dist/leaflet.css";
 
 // Fix for default markers in react-leaflet
-import L from "leaflet";
+import L, { type LatLngTuple } from "leaflet";
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -19,7 +20,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-function FitBounds({ positions }: { positions: [number, number][] }) {
+function FitBounds({ positions }: { positions: LatLngTuple[] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -69,6 +70,35 @@ type AlertRow = {
   created_at?: string | null;
 };
 
+type WorkAreaApiRow = {
+  id: number;
+  name?: string | null;
+  area_type?: string | null;
+  center?: unknown;
+  center_lat?: number | null;
+  center_lng?: number | null;
+  radius_m?: number | null;
+  polygon?: unknown;
+  polygon_coordinates?: unknown;
+  active?: boolean | null;
+  created_at?: string | null;
+  incident?: string | null;
+  incident_name?: string | null;
+};
+
+type WorkAreaRow = {
+  id: number;
+  name: string;
+  areaType: "CIRCLE" | "POLYGON";
+  center: LatLngTuple | null;
+  radiusM: number | null;
+  polygon: LatLngTuple[] | null;
+  active: boolean;
+  createdAt: string | null;
+  incidentId: string | null;
+  incidentName: string | null;
+};
+
 type UserRow = {
   id: string;
   role?: string | null;
@@ -91,6 +121,126 @@ const tileUrls: Record<LayerType, { url: string; attribution: string }> = {
     attribution: '&copy; OpenStreetMap, Humanitarian OpenStreetMap Team',
   },
 };
+
+function isValidLatLng(lat: number, lng: number) {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+function parsePoint(value: unknown): LatLngTuple | null {
+  if (!value) return null;
+
+  if (Array.isArray(value) && value.length >= 2) {
+    const lng = Number(value[0]);
+    const lat = Number(value[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng) && isValidLatLng(lat, lng)) return [lat, lng];
+  }
+
+  if (typeof value === "object") {
+    const candidate = value as { coordinates?: unknown; x?: unknown; y?: unknown };
+
+    if (Array.isArray(candidate.coordinates) && candidate.coordinates.length >= 2) {
+      const lng = Number(candidate.coordinates[0]);
+      const lat = Number(candidate.coordinates[1]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && isValidLatLng(lat, lng)) return [lat, lng];
+    }
+
+    if (candidate.x !== undefined && candidate.y !== undefined) {
+      const lng = Number(candidate.x);
+      const lat = Number(candidate.y);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && isValidLatLng(lat, lng)) return [lat, lng];
+    }
+  }
+
+  if (typeof value === "string") {
+    const match = value.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
+    if (match) {
+      const lng = Number(match[1]);
+      const lat = Number(match[3]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && isValidLatLng(lat, lng)) return [lat, lng];
+    }
+  }
+
+  return null;
+}
+
+function parsePolygon(value: unknown): LatLngTuple[] | null {
+  if (!value) return null;
+
+  const extractRing = (ring: unknown[]): LatLngTuple[] =>
+    ring
+      .map((point) => {
+        if (!Array.isArray(point) || point.length < 2) return null;
+        const lng = Number(point[0]);
+        const lat = Number(point[1]);
+        if (Number.isNaN(lat) || Number.isNaN(lng) || !isValidLatLng(lat, lng)) return null;
+        return [lat, lng] as LatLngTuple;
+      })
+      .filter((point): point is LatLngTuple => Boolean(point));
+
+  if (Array.isArray(value) && value.length > 0) {
+    if (Array.isArray(value[0]) && Array.isArray((value[0] as unknown[])[0])) {
+      const ring = extractRing(value[0] as unknown[]);
+      return ring.length >= 3 ? ring : null;
+    }
+
+    const ring = extractRing(value as unknown[]);
+    return ring.length >= 3 ? ring : null;
+  }
+
+  if (typeof value === "object") {
+    const candidate = value as { coordinates?: unknown };
+    if (Array.isArray(candidate.coordinates)) {
+      return parsePolygon(candidate.coordinates);
+    }
+  }
+
+  if (typeof value === "string") {
+    const match = value.match(/POLYGON\s*\(\((.+)\)\)/i);
+    if (!match) return null;
+
+    const ring = match[1]
+      .split(",")
+      .map((pair) => pair.trim().split(/\s+/))
+      .map((parts) => {
+        if (parts.length < 2) return null;
+        const lng = Number(parts[0]);
+        const lat = Number(parts[1]);
+        if (Number.isNaN(lat) || Number.isNaN(lng) || !isValidLatLng(lat, lng)) return null;
+        return [lat, lng] as LatLngTuple;
+      })
+      .filter((point): point is LatLngTuple => Boolean(point));
+
+    return ring.length >= 3 ? ring : null;
+  }
+
+  return null;
+}
+
+function normalizeWorkAreas(raw: unknown): WorkAreaRow[] {
+  const source = Array.isArray(raw) ? raw : (raw as { results?: unknown[] } | null)?.results ?? [];
+
+  return source
+    .map((item) => item as WorkAreaApiRow)
+    .filter((row) => typeof row?.id === "number")
+    .map((row) => {
+      const centerFromPayload =
+        row.center_lat != null && row.center_lng != null ? ([row.center_lat, row.center_lng] as LatLngTuple) : parsePoint(row.center);
+      const polygon = parsePolygon(row.polygon_coordinates ?? row.polygon);
+
+      return {
+        id: row.id,
+        name: row.name?.trim() || `Área ${row.id}`,
+        areaType: row.area_type === "POLYGON" ? "POLYGON" : "CIRCLE",
+        center: centerFromPayload,
+        radiusM: typeof row.radius_m === "number" ? row.radius_m : null,
+        polygon,
+        active: Boolean(row.active),
+        createdAt: row.created_at ?? null,
+        incidentId: row.incident ?? null,
+        incidentName: row.incident_name ?? null,
+      };
+    });
+}
 
 function parsePointLocation(location: unknown): [number, number] | null {
   if (!location) return null;
@@ -193,6 +343,7 @@ export default function DashboardPage() {
   const [units, setUnits] = useState<UserRow[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>("satellite");
   const [search, setSearch] = useState("");
+  const [workAreas, setWorkAreas] = useState<WorkAreaRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "OPEN" | "TRIAGE" | "CLOSED">("ALL");
   const navigate = useNavigate();
 
@@ -234,6 +385,20 @@ export default function DashboardPage() {
     () => positionedFilteredIncidents.map((item) => item.latLng),
     [positionedFilteredIncidents]
   );
+  const workAreaPositions = useMemo(
+    () =>
+      workAreas.flatMap((area) => {
+        if (!area.active) return [];
+        if (area.areaType === "CIRCLE" && area.center) return [area.center];
+        if (area.areaType === "POLYGON" && area.polygon) return area.polygon;
+        return [];
+      }),
+    [workAreas]
+  );
+  const mapBoundsPositions = useMemo(
+    () => [...filteredPositions, ...workAreaPositions],
+    [filteredPositions, workAreaPositions]
+  );
 
   const kpis = useMemo(() => {
     const abiertas = incidents.filter((incident) => incident.status === "OPEN").length;
@@ -269,10 +434,11 @@ export default function DashboardPage() {
 
       setMe(data);
 
-      const [incidentsRes, alertsRes, unitsRes] = await Promise.all([
+      const [incidentsRes, alertsRes, unitsRes, workAreasRes] = await Promise.all([
         apiFetch("/incidents/"),
         apiFetch("/alerts/"),
         apiFetch("/auth/panel/users/"),
+        apiFetch("/workareas/"),
       ]);
 
       if (incidentsRes.ok) {
@@ -294,6 +460,11 @@ export default function DashboardPage() {
       if (unitsRes.ok) {
         const unitsData = await unitsRes.json();
         setUnits(Array.isArray(unitsData) ? unitsData : []);
+      }
+
+      if (workAreasRes.ok) {
+        const workAreasData = await workAreasRes.json();
+        setWorkAreas(normalizeWorkAreas(workAreasData));
       }
 
       setLoading(false);
@@ -462,6 +633,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-warning)]" /> Incidente en revisión</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-success)]" /> Incidente resuelto</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Area de trabajo</div>
               </div>
             </div>
             {incidents.length === 0 && (
@@ -481,7 +653,7 @@ export default function DashboardPage() {
               </div>
             )}
             <MapContainer
-              center={filteredPositions.length ? filteredPositions[0] : [40.4168, -3.7038]}
+              center={mapBoundsPositions.length ? mapBoundsPositions[0] : [40.4168, -3.7038]}
               zoom={6}
               style={{ height: "100%", width: "100%" }}
               scrollWheelZoom={true}
@@ -490,7 +662,74 @@ export default function DashboardPage() {
                 attribution={tileUrls[activeLayer].attribution}
                 url={tileUrls[activeLayer].url}
               />
-              {filteredPositions.length > 0 && <FitBounds positions={filteredPositions} />}
+              {mapBoundsPositions.length > 0 && <FitBounds positions={mapBoundsPositions} />}
+              {workAreas.map((area) => {
+                if (!area.active) return null;
+
+                if (area.areaType === "CIRCLE" && area.center && area.radiusM) {
+                  return (
+                    <Circle
+                      key={`workarea-circle-${area.id}`}
+                      center={area.center}
+                      radius={area.radiusM}
+                      pathOptions={{ color: "#06b6d4", fillColor: "#22d3ee", fillOpacity: 0.14, weight: 2 }}
+                    >
+                      <Popup>
+                        <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Area de trabajo</p>
+                          <h3 className="mt-1 font-bold text-base">{area.name}</h3>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-200">
+                              Ci­rculo
+                            </span>
+                            {area.incidentName ? (
+                              <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                                {area.incidentName}
+                              </span>
+                            ) : null}
+                          </div>
+                          <button onClick={() => navigate(`/editIncident/${area.incidentId}`)}>
+                            <span className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold transition hover:brightness-110">
+                              Abrir incidente
+                            </span>
+                          </button>
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Radio: {Math.round(area.radiusM)} m</p>
+                        </div>
+                      </Popup>
+                    </Circle>
+                  );
+                }
+
+                if (area.areaType === "POLYGON" && area.polygon && area.polygon.length >= 3) {
+                  return (
+                    <Polygon
+                      key={`workarea-polygon-${area.id}`}
+                      positions={area.polygon}
+                      pathOptions={{ color: "#06b6d4", fillColor: "#22d3ee", fillOpacity: 0.14, weight: 2 }}
+                    >
+                      <Popup>
+                        <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ãrea de trabajo</p>
+                          <h3 className="mt-1 font-bold text-base">{area.name}</h3>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-200">
+                              PolÃ­gono
+                            </span>
+                            {area.incidentName ? (
+                              <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                                {area.incidentName}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Zona activa de operaciÃ³n</p>
+                        </div>
+                      </Popup>
+                    </Polygon>
+                  );
+                }
+
+                return null;
+              })}
               {positionedFilteredIncidents.map(({ incident, latLng }) => {
                 return (
                   <Marker
