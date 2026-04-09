@@ -1,7 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
 import jsPDF from "jspdf";
@@ -351,46 +350,6 @@ function formatDate(value?: string | null) {
   if (!value) return "-";
   const dt = new Date(value);
   return Number.isNaN(dt.getTime()) ? value : dt.toLocaleString();
-}
-
-function MiniMapaIncidente({
-  incident,
-  heightClassName = "h-56",
-}: {
-  incident: IncidenteFila;
-  heightClassName?: string;
-}) {
-  if (!incident.parsedLocation) {
-    return (
-      <div className={`grid place-items-center rounded-xl border border-slate-800 bg-slate-950/50 text-sm text-slate-400 ${heightClassName}`}>
-        Este incidente no tiene coordenadas en el campo location.
-      </div>
-    );
-  }
-
-  return (
-    <div className={`overflow-hidden rounded-xl ring-1 ring-slate-800 ${heightClassName}`}>
-      <MapContainer
-        center={incident.parsedLocation}
-        zoom={13}
-        scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          crossOrigin="anonymous"
-        />
-        <CircleMarker
-          center={incident.parsedLocation}
-          radius={8}
-          pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.8 }}
-        >
-          <Popup>{incident.name}</Popup>
-        </CircleMarker>
-      </MapContainer>
-    </div>
-  );
 }
 
 function obtenerEtiquetaTipoIncidente(tipo: string) {

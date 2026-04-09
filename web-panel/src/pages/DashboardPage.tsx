@@ -6,6 +6,7 @@ import {
   Popup,
   TileLayer,
   useMap,
+  Polyline,
 } from "react-leaflet";
 import { Circle, Polygon } from "react-leaflet";
 import { apiFetch } from "../utils/api";
@@ -131,6 +132,39 @@ type JourneyRow = JourneyApi &{
   notesText: string;
 }
 
+type TrackPointApi = {
+  id: string;
+  user: string;
+  incident: string;
+  location: {
+    type: string;
+    coordinates: [number, number]; // [lng, lat]
+  };
+  accuracy_m: number | null;
+  altitude: number | null;
+  speed: number | null;
+  recorded_at: string;
+  created_at: string;
+};
+
+type TrackPointRow = {
+  id: string;
+  user: string;
+  incident: string;
+  coords: LatLngTuple;
+  accuracyM: number | null;
+  altitude: number | null;
+  speed: number | null;
+  recordedAt: string;
+  createdAt: string;
+};
+
+type UserRow = {
+  id: string;
+  role?: string | null;
+  is_active?: boolean;
+};
+
 type WorkAreaApiRow = {
   id: number;
   name?: string | null;
@@ -158,12 +192,6 @@ type WorkAreaRow = {
   createdAt: string | null;
   incidentId: string | null;
   incidentName: string | null;
-};
-
-type UserRow = {
-  id: string;
-  role?: string | null;
-  is_active?: boolean;
 };
 
 type LayerType = "satellite" | "relief" | "vegetation";
@@ -353,6 +381,25 @@ function normalizePointsOfInterest(raw: unknown): PointOfInterestRow[] {
     }));
 }
 
+function normalizeTrackPoints(raw: unknown): TrackPointRow[] {
+  const source = Array.isArray(raw) ? raw : (raw as { results?: unknown[] } | null)?.results ?? [];
+
+  return source
+    .map((item) => item as TrackPointApi)
+    .filter((row) => typeof row?.id === "string" && row.location?.coordinates)
+    .map((row) => ({
+      id: row.id,
+      user: row.user,
+      incident: row.incident,
+      coords: [row.location.coordinates[1], row.location.coordinates[0]] as LatLngTuple, // [lat, lng]
+      accuracyM: row.accuracy_m,
+      altitude: row.altitude,
+      speed: row.speed,
+      recordedAt: row.recorded_at,
+      createdAt: row.created_at,
+    }));
+}
+
 function parsePointLocation(location: unknown): [number, number] | null {
   if (!location) return null;
 
@@ -509,6 +556,19 @@ function journeyStopIcon() {
   });
 }
 
+const userColors = [
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
+  "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
+  "#F8C471", "#82E0AA", "#F1948A", "#85C1E9", "#D7BDE2"
+];
+
+function getUserColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return userColors[Math.abs(hash) % userColors.length];
+}
 
 function alertStatusBadge(status?: string | null) {
   if (status === "OPEN") return "cm-badge-danger";
@@ -539,6 +599,8 @@ export default function DashboardPage() {
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incidentMembers, setIncidentMembers] = useState<IncidentMemberRow[]>([]);
   const [incidentPage, setIncidentPage] = useState(1);
+  const [trackPoints, setTrackPoints] = useState<TrackPointRow[]>([]);
+  const [showAllTracks, setShowAllTracks] = useState(true);
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -611,6 +673,30 @@ export default function DashboardPage() {
     );
   }, [journeys, relatedUserIds, selectedIncidentId]);
 
+  const visibleTrackPoints = useMemo(
+    () => {
+      if (showAllTracks) return trackPoints;
+      if (selectedIncidentId) return trackPoints.filter((point) => point.incident === selectedIncidentId);
+      return trackPoints;
+    },
+    [trackPoints, selectedIncidentId, showAllTracks]
+  );
+
+  const trackPointsByUser = useMemo(() => {
+    const grouped: Record<string, TrackPointRow[]> = {};
+    visibleTrackPoints.forEach((point) => {
+      if (!grouped[point.user]) {
+        grouped[point.user] = [];
+      }
+      grouped[point.user].push(point);
+    });
+    // Sort each user's points by recorded_at
+    Object.keys(grouped).forEach((user) => {
+      grouped[user].sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+    });
+    return grouped;
+  }, [visibleTrackPoints]);
+
   const positionedFilteredIncidents = useMemo(
     () =>
       visibleIncidents
@@ -656,8 +742,9 @@ export default function DashboardPage() {
       .map((point) => point.coords as LatLngTuple),
     ...journeyStartPositions,
     ...journeyStopPositions,
+    ...visibleTrackPoints.map((point) => point.coords),
   ],
-  [filteredPositions, workAreaPositions, visiblePointsOfInterest, journeyStartPositions, journeyStopPositions]
+  [filteredPositions, workAreaPositions, visiblePointsOfInterest, journeyStartPositions, journeyStopPositions, visibleTrackPoints]
 );
 
 
@@ -719,6 +806,21 @@ export default function DashboardPage() {
           ? incidentsData
           : incidentsData.results || [];
         setIncidents(incidentItems);
+
+        // Load track points for all incidents
+        const allTrackPoints: TrackPointRow[] = [];
+        for (const incident of incidentItems) {
+          try {
+            const trackRes = await apiFetch(`/tracking/incident/${incident.id}/`);
+            if (trackRes.ok) {
+              const trackData = await trackRes.json();
+              allTrackPoints.push(...normalizeTrackPoints(trackData));
+            }
+          } catch (error) {
+            console.error(`Error loading tracks for incident ${incident.id}:`, error);
+          }
+        }
+        setTrackPoints(allTrackPoints);
       }
 
       if(journeysRes.ok){
@@ -767,14 +869,14 @@ export default function DashboardPage() {
 
     (async () => {
       const response = await apiFetch(`/incidents/${selectedIncidentId}/members/`);
-      if (!response.ok) {
-        setIncidentMembers([]);
-        return;
-      }
 
-      const data = await response.json();
-      const items: IncidentMemberRow[] = Array.isArray(data) ? data : data.results || [];
-      setIncidentMembers(items);
+      if (response.ok) {
+        const data = await response.json();
+        const items: IncidentMemberRow[] = Array.isArray(data) ? data : data.results || [];
+        setIncidentMembers(items);
+      } else {
+        setIncidentMembers([]);
+      }
     })();
   }, [selectedIncidentId]);
 
@@ -944,6 +1046,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interes</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-green-600" /> Inicio de jornada</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-red-600" /> Fin de jornada</div>
+                <div className="flex items-center gap-2"><span className="h-2 w-4 border-2 border-purple-400 bg-purple-400/20" /> Rutas de usuarios</div>
               </div>
             </div>
             {incidents.length === 0 && (
@@ -1145,6 +1248,45 @@ export default function DashboardPage() {
                   </Marker>
                 ) : null
               )}
+              {Object.entries(trackPointsByUser).map(([userId, userPoints]) => {
+                const color = getUserColor(userId);
+                const positions = userPoints.map((point) => point.coords);
+                return (
+                  <Polyline
+                    key={`track-${userId}`}
+                    positions={positions}
+                    pathOptions={{ color, weight: 3, opacity: 0.8 }}
+                  />
+                );
+              })}
+              {visibleTrackPoints.map((point) => (
+                <Marker
+                  key={`track-point-${point.id}`}
+                  position={point.coords}
+                  icon={L.divIcon({
+                    className: "cm-track-point",
+                    html: `
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background: ${getUserColor(point.user)}; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);">
+                      </div>
+                    `,
+                    iconSize: [8, 8],
+                    iconAnchor: [4, 4],
+                  })}
+                >
+                  <Popup>
+                    <div className="min-w-[200px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Punto de rastreo</p>
+                      <h3 className="mt-1 font-bold text-base">{point.user}</h3>
+                      <div className="mt-3 text-xs text-[color:var(--cm-text-muted)]">
+                        <p>Registrado: {new Date(point.recordedAt).toLocaleString()}</p>
+                        {point.accuracyM && <p>Precisión: {point.accuracyM.toFixed(1)} m</p>}
+                        {point.altitude && <p>Altitud: {point.altitude.toFixed(1)} m</p>}
+                        {point.speed !== null && <p>Velocidad: {point.speed.toFixed(1)} m/s</p>}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
               {positionedFilteredIncidents.map(({ incidente, latLng }) => {
                 return (
                   <Marker
