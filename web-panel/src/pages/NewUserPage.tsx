@@ -10,46 +10,45 @@ type MeResponse = {
   has_panel_full_access?: boolean;
 };
 
-// Ajusta aquí tu endpoint real:
-const CREATE_OPERATIVE_ENDPOINT = "/auth/panel/users/create/";
+const ENDPOINT_CREAR_USUARIO = "/auth/panel/users/create/";
 
 export default function NewUserPage() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const navegar = useNavigate();
+  const [cargando, setCargando] = useState(true);
 
   // Form
-  const [username, setUsername] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   // UX
-  const [submitting, setSubmitting] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
+  const [enviado, setEnviado] = useState<string>("");
 
   // Guard: solo SUPERVISOR
   useEffect(() => {
     (async () => {
       const res = await apiFetch("/auth/panel/me/");
       if (!res.ok) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
       const data = (await res.json()) as MeResponse;
       if (!data.has_panel_full_access) {
-        navigate("/login", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
-      setLoading(false);
+      setCargando(false);
     })();
-  }, [navigate]);
+  }, [navegar]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setSuccess("");
+    setEnviado("");
 
-    if (!username.trim()) {
+    if (!usuario.trim()) {
       setError("El username es obligatorio.");
       return;
     }
@@ -62,15 +61,15 @@ export default function NewUserPage() {
       return;
     }
 
-    setSubmitting(true);
+    setEnviando(true);
     try {
       const payload = {
-        username: username.trim(),
+        username: usuario.trim(),
         email: email.trim(),
         password,
       };
 
-      const res = await apiFetch(CREATE_OPERATIVE_ENDPOINT, {
+      const res = await apiFetch(ENDPOINT_CREAR_USUARIO, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,11 +78,9 @@ export default function NewUserPage() {
       });
 
       if (!res.ok) {
-        // Intentar mostrar errores del backend
         let detail = "No se pudo crear el usuario.";
         try {
           const data = await res.json();
-          // DRF suele devolver {field: ["error"]} o {"detail": "..."}
           if (data?.detail) detail = String(data.detail);
           else if (typeof data === "object") {
             const firstKey = Object.keys(data)[0];
@@ -99,16 +96,16 @@ export default function NewUserPage() {
         return;
       }
 
-      setSuccess("Usuario operativo creado correctamente.");
-      setUsername("");
+      setEnviado("Usuario operativo creado correctamente.");
+      setUsuario("");
       setEmail("");
       setPassword("");
     } finally {
-      setSubmitting(false);
+      setEnviando(false);
     }
   }
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
         <div className="flex items-center gap-3">
@@ -140,7 +137,7 @@ export default function NewUserPage() {
 
           <button
             type="button"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navegar("/dashboard")}
             className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
           >
             Volver
@@ -154,9 +151,9 @@ export default function NewUserPage() {
               {error}
             </div>
           )}
-          {success && (
+          {enviado && (
             <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {success}
+              {enviado}
             </div>
           )}
 
@@ -167,8 +164,8 @@ export default function NewUserPage() {
                   Username
                 </label>
                 <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="operativo01"
                   autoComplete="username"
@@ -218,7 +215,7 @@ export default function NewUserPage() {
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navegar("/dashboard")}
                 className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
               >
                 Cancelar
@@ -226,10 +223,10 @@ export default function NewUserPage() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={enviando}
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-500 disabled:opacity-60 transition"
               >
-                {submitting ? "Creando..." : "Crear usuario"}
+                {enviando ? "Creando..." : "Crear usuario"}
               </button>
             </div>
           </form>

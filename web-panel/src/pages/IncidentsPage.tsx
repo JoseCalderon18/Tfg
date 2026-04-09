@@ -6,6 +6,7 @@ import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import MapaMiniUnidad from "../components/MapaMiniUnidad";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -1022,8 +1023,16 @@ export default function IncidentsPage() {
               <h2 className="text-xl font-bold text-slate-100">{incidenteSeleccionado.name}</h2>
             </div>
 
-            {!incidentePendienteEliminarId && (
-              <MiniMapaIncidente incident={incidenteSeleccionado} />
+            {!incidentePendienteEliminarId && incidenteSeleccionado.parsedLocation && (
+              <MapaMiniUnidad
+                latitud={incidenteSeleccionado.parsedLocation[0]}
+                longitud={incidenteSeleccionado.parsedLocation[1]}
+                etiqueta={
+                  incidenteSeleccionado.name
+                    ? `Ubicacion del incidente ${incidenteSeleccionado.name}`
+                    : "Ubicacion del incidente"
+                }
+              />
             )}
 
             <div className="grid gap-6 xl:grid-cols-2">

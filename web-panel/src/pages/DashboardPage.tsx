@@ -11,7 +11,6 @@ import { Circle, Polygon } from "react-leaflet";
 import { apiFetch } from "../utils/api";
 import "leaflet/dist/leaflet.css";
 
-// Fix for default markers in react-leaflet
 import L, { type LatLngTuple } from "leaflet";
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -68,6 +67,17 @@ type AlertRow = {
   location?: unknown;
   incident?: string | null;
   created_at?: string | null;
+};
+
+type IncidentMemberRow = {
+  id: string;
+  user?: string | null;
+  user_id?: string | null;
+  incident?: string | null;
+  role_in_incident?: string | null;
+  joined_at?: string | null;
+  left_at?: string | null;
+  is_active?: boolean | null;
 };
 
 type PointOfInterestApiRow = {
@@ -526,6 +536,9 @@ export default function DashboardPage() {
   const [workAreas, setWorkAreas] = useState<WorkAreaRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "OPEN" | "TRIAGE" | "CLOSED">("ALL");
   const [journeys, setJourneys] = useState<JourneyRow[]>([]);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [incidentMembers, setIncidentMembers] = useState<IncidentMemberRow[]>([]);
+  const [incidentPage, setIncidentPage] = useState(1);
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -551,15 +564,62 @@ export default function DashboardPage() {
     });
   }, [incidents, search, statusFilter]);
 
+  const selectedIncident = useMemo(
+    () => incidents.find((incident) => incident.id === selectedIncidentId) ?? null,
+    [incidents, selectedIncidentId]
+  );
+
+  const relatedUserIds = useMemo(
+    () =>
+      incidentMembers
+        .filter((member) => member.is_active !== false && member.user_id)
+        .map((member) => member.user_id as string),
+    [incidentMembers]
+  );
+
+  const visibleIncidents = useMemo(
+    () => (selectedIncidentId ? incidentsFiltered.filter((incident) => incident.id === selectedIncidentId) : incidentsFiltered),
+    [incidentsFiltered, selectedIncidentId]
+  );
+
+  const visibleAlerts = useMemo(
+    () => (selectedIncidentId ? alerts.filter((alert) => alert.incident === selectedIncidentId) : alerts),
+    [alerts, selectedIncidentId]
+  );
+
+  const visiblePointsOfInterest = useMemo(
+    () =>
+      (selectedIncidentId
+        ? pointsOfInterest.filter((point) => point.incidentId === selectedIncidentId)
+        : pointsOfInterest),
+    [pointsOfInterest, selectedIncidentId]
+  );
+
+  const visibleWorkAreas = useMemo(
+    () =>
+      (selectedIncidentId
+        ? workAreas.filter((area) => area.incidentId === selectedIncidentId)
+        : workAreas),
+    [workAreas, selectedIncidentId]
+  );
+
+  const visibleJourneys = useMemo(() => {
+    if (!selectedIncidentId) return journeys;
+    if (relatedUserIds.length === 0) return [];
+    return journeys.filter((journey) =>
+      Boolean(journey.account_user_id && relatedUserIds.includes(journey.account_user_id))
+    );
+  }, [journeys, relatedUserIds, selectedIncidentId]);
+
   const positionedFilteredIncidents = useMemo(
     () =>
-      incidentsFiltered
+      visibleIncidents
         .filter((incidente) => incidente.location && incidente.location.coordinates)
         .map((incidente) => ({
           incidente,
           latLng: [incidente.location!.coordinates[1], incidente.location!.coordinates[0]] as [number, number],
         })),
-    [incidentsFiltered]
+    [visibleIncidents]
   );
 
   const filteredPositions = useMemo(
@@ -568,36 +628,36 @@ export default function DashboardPage() {
   );
 
   const journeyStartPositions = useMemo(
-        () => journeys.filter((journey) => journey.startCoords).map((journey) => journey.startCoords as LatLngTuple),
-        [journeys]
+        () => visibleJourneys.filter((journey) => journey.startCoords).map((journey) => journey.startCoords as LatLngTuple),
+        [visibleJourneys]
       );
 
       const journeyStopPositions = useMemo(
-        () => journeys.filter((journey) => journey.stopCoords).map((journey) => journey.stopCoords as LatLngTuple),
-        [journeys]
+        () => visibleJourneys.filter((journey) => journey.stopCoords).map((journey) => journey.stopCoords as LatLngTuple),
+        [visibleJourneys]
       );
 
   const workAreaPositions = useMemo(
     () =>
-      workAreas.flatMap((area) => {
+      visibleWorkAreas.flatMap((area) => {
         if (!area.active) return [];
         if (area.areaType === "CIRCLE" && area.center) return [area.center];
         if (area.areaType === "POLYGON" && area.polygon) return area.polygon;
         return [];
       }),
-    [workAreas]
+    [visibleWorkAreas]
   );
   const mapBoundsPositions = useMemo(
   () => [
     ...filteredPositions,
     ...workAreaPositions,
-    ...pointsOfInterest
+    ...visiblePointsOfInterest
       .filter((point) => point.isActive && point.coords)
       .map((point) => point.coords as LatLngTuple),
     ...journeyStartPositions,
     ...journeyStopPositions,
   ],
-  [filteredPositions, workAreaPositions, pointsOfInterest, journeyStartPositions, journeyStopPositions]
+  [filteredPositions, workAreaPositions, visiblePointsOfInterest, journeyStartPositions, journeyStopPositions]
 );
 
 
@@ -611,12 +671,19 @@ export default function DashboardPage() {
     return { abiertas, evaluacion, cerradas, criticas, operativos };
   }, [incidents, alerts, units]);
 
-  const latestIncidents = useMemo(() => incidentsFiltered.slice(0, 5), [incidentsFiltered]);
-  const mappedAlerts = useMemo(
-    () => alerts.map((alert) => ({ ...alert, parsedLocation: parsePointLocation(alert.location) })).filter((alert) => alert.parsedLocation),
-    [alerts]
+  const totalIncidentPages = useMemo(
+    () => Math.max(1, Math.ceil(incidentsFiltered.length / 5)),
+    [incidentsFiltered]
   );
-  const latestAlerts = useMemo(() => alerts.slice(0, 6), [alerts]);
+  const paginatedIncidents = useMemo(() => {
+    const start = (incidentPage - 1) * 5;
+    return incidentsFiltered.slice(start, start + 5);
+  }, [incidentsFiltered, incidentPage]);
+  const mappedAlerts = useMemo(
+    () => visibleAlerts.map((alert) => ({ ...alert, parsedLocation: parsePointLocation(alert.location) })).filter((alert) => alert.parsedLocation),
+    [visibleAlerts]
+  );
+  const latestAlerts = useMemo(() => visibleAlerts.slice(0, 6), [visibleAlerts]);
 
   useEffect(() => {
     (async () => {
@@ -685,6 +752,31 @@ export default function DashboardPage() {
       setLoading(false);
     })();
   }, [navigate]);
+
+  useEffect(() => {
+    if (incidentPage > totalIncidentPages) {
+      setIncidentPage(totalIncidentPages);
+    }
+  }, [incidentPage, totalIncidentPages]);
+
+  useEffect(() => {
+    if (!selectedIncidentId) {
+      setIncidentMembers([]);
+      return;
+    }
+
+    (async () => {
+      const response = await apiFetch(`/incidents/${selectedIncidentId}/members/`);
+      if (!response.ok) {
+        setIncidentMembers([]);
+        return;
+      }
+
+      const data = await response.json();
+      const items: IncidentMemberRow[] = Array.isArray(data) ? data : data.results || [];
+      setIncidentMembers(items);
+    })();
+  }, [selectedIncidentId]);
 
   async function handleLogout() {
     await apiFetch("/auth/panel/logout/", { method: "POST" });
@@ -881,7 +973,7 @@ export default function DashboardPage() {
                 url={tileUrls[activeLayer].url}
               />
               {mapBoundsPositions.length > 0 && <FitBounds positions={mapBoundsPositions} />}
-              {workAreas.map((area) => {
+              {visibleWorkAreas.map((area) => {
                 if (!area.active) return null;
 
                 if (area.areaType === "CIRCLE" && area.center && area.radiusM) {
@@ -927,11 +1019,11 @@ export default function DashboardPage() {
                     >
                       <Popup>
                         <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ãrea de trabajo</p>
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Area de trabajo</p>
                           <h3 className="mt-1 font-bold text-base">{area.name}</h3>
                           <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                             <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-200">
-                              PolÃ­gono
+                              Poli­gono
                             </span>
                             {area.incidentName ? (
                               <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
@@ -939,7 +1031,7 @@ export default function DashboardPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Zona activa de operaciÃ³n</p>
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Zona activa de operacion</p>
                         </div>
                       </Popup>
                     </Polygon>
@@ -948,7 +1040,7 @@ export default function DashboardPage() {
 
                 return null;
               })}
-              {pointsOfInterest.map((point) =>
+              {visiblePointsOfInterest.map((point) =>
                 point.isActive && point.coords ? (
                   <Marker
                     key={`poi-${point.id}`}
@@ -975,7 +1067,7 @@ export default function DashboardPage() {
                   </Marker>
                 ) : null
               )}
-              {journeys.map((journey) =>
+              {visibleJourneys.map((journey) =>
                 journey.startCoords ? (
                   <Marker
                     key={`journey-start-${journey.id}`}
@@ -1014,7 +1106,7 @@ export default function DashboardPage() {
                   </Marker>
                 ) : null
               )}
-              {journeys.map((journey) =>
+              {visibleJourneys.map((journey) =>
                 journey.stopCoords ? (
                   <Marker
                     key={`journey-stop-${journey.id}`}
@@ -1139,20 +1231,31 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Actividad reciente</p>
                     <h2 className="mt-1 text-lg font-bold">Incidentes destacados</h2>
-                    <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Los incidentes destacados son el resumen de los eventos visibles y prioritarios del mapa.</p>
+                    <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Lista completa paginada. Al seleccionar un incidente, el mapa muestra solo sus elementos relacionados.</p>
                   </div>
-                <Link to="/incidents" className="rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
-                  Ver todo
-                </Link>
+                <div className="flex items-center gap-2">
+                  {selectedIncident ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedIncidentId(null)}
+                      className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3 py-1.5 text-xs font-semibold transition hover:border-[color:var(--cm-info)]/50"
+                    >
+                      Mostrar todo
+                    </button>
+                  ) : null}
+                  <Link to="/incidents" className="rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                    Ver todo
+                  </Link>
+                </div>
               </div>
 
               <div className="mt-4 space-y-3">
-                {latestIncidents.length === 0 ? (
+                {paginatedIncidents.length === 0 ? (
                   <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                     No hay incidentes disponibles para mostrar en el resumen.
                   </div>
                 ) : (
-                  latestIncidents.map((incident) => {
+                  paginatedIncidents.map((incident) => {
                     const statusClass = incident.status === "OPEN"
                       ? "cm-badge-danger"
                       : incident.status === "TRIAGE"
@@ -1160,7 +1263,16 @@ export default function DashboardPage() {
                       : "cm-badge-success";
 
                     return (
-                      <article key={incident.id} className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 transition hover:border-[color:var(--cm-info)]/50">
+                      <button
+                        key={incident.id}
+                        type="button"
+                        onClick={() => setSelectedIncidentId((current) => (current === incident.id ? null : incident.id))}
+                        className={`w-full rounded-2xl border bg-[color:var(--cm-surface-2)] p-4 text-left transition ${
+                          selectedIncidentId === incident.id
+                            ? "border-[color:var(--cm-info)] ring-1 ring-[color:var(--cm-info)]/40"
+                            : "border-[color:var(--cm-border)] hover:border-[color:var(--cm-info)]/50"
+                        }`}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <h3 className="font-semibold text-[color:var(--cm-text)]">{incident.name}</h3>
@@ -1172,10 +1284,30 @@ export default function DashboardPage() {
                           <span>{incident.incident_type}</span>
                           <span>{new Date(incident.created_at).toLocaleString()}</span>
                         </div>
-                      </article>
+                      </button>
                     );
                   })
                 )}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4 text-xs text-[color:var(--cm-text-muted)]">
+                <button
+                  type="button"
+                  onClick={() => setIncidentPage((page) => Math.max(1, page - 1))}
+                  disabled={incidentPage === 1}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span>Pagina {incidentPage} de {totalIncidentPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setIncidentPage((page) => Math.min(totalIncidentPages, page + 1))}
+                  disabled={incidentPage === totalIncidentPages}
+                  className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
               </div>
 
               <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">

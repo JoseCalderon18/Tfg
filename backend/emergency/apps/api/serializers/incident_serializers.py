@@ -5,11 +5,12 @@ from emergency.apps.core.models import Incident, IncidentMember
 class IncidentMemberSerializer(serializers.ModelSerializer):
     """Serializer para leer miembros de incidente"""
     user = serializers.StringRelatedField()
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
 
     class Meta:
         model = IncidentMember
         fields = [
-            'id', 'user', 'incident', 'role_in_incident',
+            'id', 'user', 'user_id', 'incident', 'role_in_incident',
             'joined_at', 'left_at', 'is_active'
         ]
         read_only_fields = fields
