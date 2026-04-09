@@ -102,6 +102,25 @@ type PointOfInterestRow = {
   coords: LatLngTuple | null;
 };
 
+type JourneyApi = {
+  id: number;
+  created_at?: string | null;
+  user_id? : string | null;
+  user?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  account_user_id?: string | null;
+  location_start?: unknown;
+  location_stop?: unknown;
+  notes?: unknown;
+}
+
+type JourneyRow = JourneyApi &{
+  startCoords: LatLngTuple | null;
+  stopCoords: LatLngTuple | null;
+  notesText: string;
+}
+
 type WorkAreaApiRow = {
   id: number;
   name?: string | null;
@@ -194,6 +213,31 @@ function parsePoint(value: unknown): LatLngTuple | null {
 
   return null;
 }
+
+function normalizeJourneyNotes(notes: unknown): string {
+  if (!notes) return "Sin notas adicionales.";
+  if (typeof notes === "string") return notes.trim() || "Sin notas adicionales.";
+  if (Array.isArray(notes)) return notes.map((n) => String(n).trim()).filter(Boolean).join("\n") || "Sin notas adicionales.";
+  if (typeof notes === "object") return JSON.stringify(notes, null, 2);
+  return String(notes).trim() || "Sin notas adicionales.";
+}
+
+function normalizeJourneys(payload: unknown): JourneyRow[] {
+  const source = Array.isArray(payload)
+    ? payload
+    : (payload as { results?: JourneyApi[] } | null)?.results ?? [];
+
+  return source
+    .map((journey) => journey as JourneyApi)
+    .filter((journey) => typeof journey.id === "number")
+    .map((journey) => ({
+      ...journey,
+      startCoords: parsePoint(journey.location_start),
+      stopCoords: parsePoint(journey.location_stop),
+      notesText: normalizeJourneyNotes(journey.notes),
+    }));
+}
+
 
 function parsePolygon(value: unknown): LatLngTuple[] | null {
   if (!value) return null;
@@ -427,6 +471,35 @@ function poiMarkerIcon(poiType?: string | null) {
   });
 }
 
+function journeyStartIcon() {
+  return L.divIcon({
+    className: "cm-map-pin",
+    html: `
+      <div style="width: 34px; height: 34px; border-radius: 9999px; background: #16a34a; border: 3px solid #bbf7d0; display:flex; align-items:center; justify-content:center; color: white; font-size: 10px; font-weight: 700;">
+        INI
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -18],
+  });
+}
+
+function journeyStopIcon() {
+  return L.divIcon({
+    className: "cm-map-pin",
+    html: `
+      <div style="width: 34px; height: 34px; border-radius: 9999px; background: #dc2626; border: 3px solid #fecaca; display:flex; align-items:center; justify-content:center; color: white; font-size: 10px; font-weight: 700;">
+        FIN
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -18],
+  });
+}
+
+
 function alertStatusBadge(status?: string | null) {
   if (status === "OPEN") return "cm-badge-danger";
   if (status === "ACK") return "cm-badge-alert";
@@ -452,6 +525,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
   const [workAreas, setWorkAreas] = useState<WorkAreaRow[]>([]);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "OPEN" | "TRIAGE" | "CLOSED">("ALL");
+  const [journeys, setJourneys] = useState<JourneyRow[]>([]);
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -492,6 +566,17 @@ export default function DashboardPage() {
     () => positionedFilteredIncidents.map((item) => item.latLng),
     [positionedFilteredIncidents]
   );
+
+  const journeyStartPositions = useMemo(
+        () => journeys.filter((journey) => journey.startCoords).map((journey) => journey.startCoords as LatLngTuple),
+        [journeys]
+      );
+
+      const journeyStopPositions = useMemo(
+        () => journeys.filter((journey) => journey.stopCoords).map((journey) => journey.stopCoords as LatLngTuple),
+        [journeys]
+      );
+
   const workAreaPositions = useMemo(
     () =>
       workAreas.flatMap((area) => {
@@ -503,15 +588,18 @@ export default function DashboardPage() {
     [workAreas]
   );
   const mapBoundsPositions = useMemo(
-    () => [
-      ...filteredPositions,
-      ...workAreaPositions,
-      ...pointsOfInterest
-        .filter((point) => point.isActive && point.coords)
-        .map((point) => point.coords as LatLngTuple),
-    ],
-    [filteredPositions, workAreaPositions, pointsOfInterest]
-  );
+  () => [
+    ...filteredPositions,
+    ...workAreaPositions,
+    ...pointsOfInterest
+      .filter((point) => point.isActive && point.coords)
+      .map((point) => point.coords as LatLngTuple),
+    ...journeyStartPositions,
+    ...journeyStopPositions,
+  ],
+  [filteredPositions, workAreaPositions, pointsOfInterest, journeyStartPositions, journeyStopPositions]
+);
+
 
   const kpis = useMemo(() => {
     const abiertas = incidents.filter((incidente) => incidente.status === "OPEN").length;
@@ -545,14 +633,17 @@ export default function DashboardPage() {
         return;
       }
 
+
+
       setMe(data);
 
-      const [incidentsRes, alertsRes, unitsRes, workAreasRes, pointsOfInterestRes] = await Promise.all([
+      const [incidentsRes, alertsRes, unitsRes, workAreasRes, pointsOfInterestRes, journeysRes] = await Promise.all([
         apiFetch("/incidents/"),
         apiFetch("/alerts/"),
         apiFetch("/auth/panel/users/"),
         apiFetch("/workareas/"),
         apiFetch("/points-of-interest/"),
+        apiFetch("/journeys/"),
       ]);
 
       if (incidentsRes.ok) {
@@ -561,6 +652,11 @@ export default function DashboardPage() {
           ? incidentsData
           : incidentsData.results || [];
         setIncidents(incidentItems);
+      }
+
+      if(journeysRes.ok){
+        const journeysData = await journeysRes.json();
+        setJourneys(normalizeJourneys(journeysData));
       }
 
       if (alertsRes.ok) {
@@ -754,6 +850,8 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Area de trabajo</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interes</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-green-600" /> Inicio de jornada</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-red-600" /> Fin de jornada</div>
               </div>
             </div>
             {incidents.length === 0 && (
@@ -872,6 +970,84 @@ export default function DashboardPage() {
                           ) : null}
                         </div>
                         <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">{point.description}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+              {journeys.map((journey) =>
+                journey.startCoords ? (
+                  <Marker
+                    key={`journey-start-${journey.id}`}
+                    position={journey.startCoords}
+                    icon={journeyStartIcon()}
+                  >
+                    <Popup>
+                      <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Inicio de jornada</p>
+                        <h3 className="mt-1 font-bold text-base">Jornada #{journey.id}</h3>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                          <span className="rounded-full bg-green-500/15 px-2.5 py-1 font-semibold text-green-200">
+                            INI
+                          </span>
+                          {journey.user ? (
+                            <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                              {journey.user}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+                          Inicio: {journey.start_date ? new Date(journey.start_date).toLocaleString() : "Sin fecha"}
+                        </p>
+                        {journey.notesText ? (
+                          <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">{journey.notesText}</p>
+                        ) : null}
+                        <Link
+                          to="/journeys"
+                          style={{ color: "white", textDecoration: "none" }}
+                          className="mt-3 inline-flex rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold transition hover:brightness-110"
+                        >
+                          Ver jornadas
+                        </Link>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+              {journeys.map((journey) =>
+                journey.stopCoords ? (
+                  <Marker
+                    key={`journey-stop-${journey.id}`}
+                    position={journey.stopCoords}
+                    icon={journeyStopIcon()}
+                  >
+                    <Popup>
+                      <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Fin de jornada</p>
+                        <h3 className="mt-1 font-bold text-base">Jornada #{journey.id}</h3>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                          <span className="rounded-full bg-red-500/15 px-2.5 py-1 font-semibold text-red-200">
+                            FIN
+                          </span>
+                          {journey.user ? (
+                            <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                              {journey.user}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+                          Fin: {journey.end_date ? new Date(journey.end_date).toLocaleString() : "Sin fecha"}
+                        </p>
+                        {journey.notesText ? (
+                          <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">{journey.notesText}</p>
+                        ) : null}
+                        <Link
+                          to="/journeys"
+                          style={{ color: "white", textDecoration: "none" }}
+                          className="mt-3 inline-flex rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold transition hover:brightness-110"
+                        >
+                          Ver jornadas
+                        </Link>
                       </div>
                     </Popup>
                   </Marker>
