@@ -87,7 +87,7 @@ export default function LoginPage() {
               onClick={() => setMostrarContrasena((current) => !current)}
               className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-[color:var(--cm-text-muted)] transition hover:text-[color:var(--cm-text)]"
             >
-              {mostrarContrasena ? "🙈" : "👁"}
+              {mostrarContrasena ? "Ocultar" : "Ver"}
             </button>
           </div>
         </div>
