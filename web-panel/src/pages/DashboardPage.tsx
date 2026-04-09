@@ -70,6 +70,38 @@ type AlertRow = {
   created_at?: string | null;
 };
 
+type PointOfInterestApiRow = {
+  id: string;
+  name?: string | null;
+  poi_type?: string | null;
+  description?: string | null;
+  incident?: string | null;
+  incident_name?: string | null;
+  created_by?: string | null;
+  created_by_username?: string | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location?: unknown;
+};
+
+type PointOfInterestRow = {
+  id: string;
+  name: string;
+  poiType: string;
+  description: string;
+  incidentId: string | null;
+  incidentName: string | null;
+  createdBy: string | null;
+  createdByUsername: string | null;
+  isActive: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+  coords: LatLngTuple | null;
+};
+
 type WorkAreaApiRow = {
   id: number;
   name?: string | null;
@@ -242,6 +274,31 @@ function normalizeWorkAreas(raw: unknown): WorkAreaRow[] {
     });
 }
 
+function normalizePointsOfInterest(raw: unknown): PointOfInterestRow[] {
+  const source = Array.isArray(raw) ? raw : (raw as { results?: unknown[] } | null)?.results ?? [];
+
+  return source
+    .map((item) => item as PointOfInterestApiRow)
+    .filter((row) => typeof row?.id === "string")
+    .map((row) => ({
+      id: row.id,
+      name: row.name?.trim() || "Punto sin nombre",
+      poiType: row.poi_type ?? "OTHER",
+      description: row.description?.trim() || "Sin descripcion adicional.",
+      incidentId: row.incident ?? null,
+      incidentName: row.incident_name ?? null,
+      createdBy: row.created_by ?? null,
+      createdByUsername: row.created_by_username ?? null,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at ?? null,
+      updatedAt: row.updated_at ?? null,
+      coords:
+        row.latitude != null && row.longitude != null
+          ? ([row.latitude, row.longitude] as LatLngTuple)
+          : parsePoint(row.location),
+    }));
+}
+
 function parsePointLocation(location: unknown): [number, number] | null {
   if (!location) return null;
 
@@ -321,6 +378,55 @@ function markerIcon(color: string) {
   });
 }
 
+function poiVisual(poiType?: string | null) {
+  switch (poiType) {
+    case "HYDRANT":
+      return { label: "H2O", bg: "#2563eb", border: "#bfdbfe" };
+    case "SETTLEMENT":
+      return { label: "CASA", bg: "#92400e", border: "#fcd34d" };
+    case "FIREBREAK":
+      return { label: "FUE", bg: "#dc2626", border: "#fca5a5" };
+    case "WATCHPOINT":
+      return { label: "OJO", bg: "#7c3aed", border: "#ddd6fe" };
+    case "BASE_STATION":
+      return { label: "BASE", bg: "#334155", border: "#cbd5e1" };
+    case "EVAC_ROUTE":
+      return { label: "EVAC", bg: "#16a34a", border: "#bbf7d0" };
+    case "COMMUNICATION_TOWER":
+      return { label: "COM", bg: "#0891b2", border: "#a5f3fc" };
+    case "CHECKPOINT":
+      return { label: "CTRL", bg: "#ca8a04", border: "#fde68a" };
+    case "OBSTACLE":
+      return { label: "OBS", bg: "#b91c1c", border: "#fecaca" };
+    case "BRIDGE":
+      return { label: "PTE", bg: "#0f766e", border: "#99f6e4" };
+    case "SUPPLY_POINT":
+      return { label: "SUM", bg: "#ea580c", border: "#fdba74" };
+    case "HELIPAD":
+      return { label: "HEL", bg: "#475569", border: "#e2e8f0" };
+    default:
+      return { label: "POI", bg: "#0f766e", border: "#99f6e4" };
+  }
+}
+
+function poiMarkerIcon(poiType?: string | null) {
+  const visual = poiVisual(poiType);
+
+  return L.divIcon({
+    className: "cm-map-pin",
+    html: `
+      <div style="position: relative; width: 36px; height: 36px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.45));">
+        <div style="min-width: 30px; height: 30px; padding: 0 6px; border-radius: 9999px; background: ${visual.bg}; border: 3px solid ${visual.border}; display:flex; align-items:center; justify-content:center; color: white; font-size: 9px; font-weight: 700; letter-spacing: 0.04em;">
+          ${visual.label}
+        </div>
+      </div>
+    `,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
+  });
+}
+
 function alertStatusBadge(status?: string | null) {
   if (status === "OPEN") return "cm-badge-danger";
   if (status === "ACK") return "cm-badge-alert";
@@ -340,6 +446,7 @@ export default function DashboardPage() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [pointsOfInterest, setPointsOfInterest] = useState<PointOfInterestRow[]>([]);
   const [units, setUnits] = useState<UserRow[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>("satellite");
   const [search, setSearch] = useState("");
@@ -361,11 +468,11 @@ export default function DashboardPage() {
     const query = search.trim().toLowerCase();
     if (!query && statusFilter === "ALL") return incidents;
 
-    return incidents.filter((incident) => {
-      const matchesQuery = `${incident.name} ${incident.incident_type} ${incident.status} ${incident.location_address ?? ""}`
+    return incidents.filter((incidente) => {
+      const matchesQuery = `${incidente.name} ${incidente.incident_type} ${incidente.status} ${incidente.location_address ?? ""}`
         .toLowerCase()
         .includes(query);
-      const matchesStatus = statusFilter === "ALL" || incident.status === statusFilter;
+      const matchesStatus = statusFilter === "ALL" || incidente.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
   }, [incidents, search, statusFilter]);
@@ -373,10 +480,10 @@ export default function DashboardPage() {
   const positionedFilteredIncidents = useMemo(
     () =>
       incidentsFiltered
-        .filter((incident) => incident.location && incident.location.coordinates)
-        .map((incident) => ({
-          incident,
-          latLng: [incident.location!.coordinates[1], incident.location!.coordinates[0]] as [number, number],
+        .filter((incidente) => incidente.location && incidente.location.coordinates)
+        .map((incidente) => ({
+          incidente,
+          latLng: [incidente.location!.coordinates[1], incidente.location!.coordinates[0]] as [number, number],
         })),
     [incidentsFiltered]
   );
@@ -396,14 +503,20 @@ export default function DashboardPage() {
     [workAreas]
   );
   const mapBoundsPositions = useMemo(
-    () => [...filteredPositions, ...workAreaPositions],
-    [filteredPositions, workAreaPositions]
+    () => [
+      ...filteredPositions,
+      ...workAreaPositions,
+      ...pointsOfInterest
+        .filter((point) => point.isActive && point.coords)
+        .map((point) => point.coords as LatLngTuple),
+    ],
+    [filteredPositions, workAreaPositions, pointsOfInterest]
   );
 
   const kpis = useMemo(() => {
-    const abiertas = incidents.filter((incident) => incident.status === "OPEN").length;
-    const evaluacion = incidents.filter((incident) => incident.status === "TRIAGE").length;
-    const cerradas = incidents.filter((incident) => incident.status === "CLOSED").length;
+    const abiertas = incidents.filter((incidente) => incidente.status === "OPEN").length;
+    const evaluacion = incidents.filter((incidente) => incidente.status === "TRIAGE").length;
+    const cerradas = incidents.filter((incidente) => incidente.status === "CLOSED").length;
     const criticas = alerts.filter((alert) => (alert.status ?? "OPEN") !== "CLOSED" && (alert.severity ?? 5) <= 2).length;
     const operativos = units.filter((unit) => unit.is_active && unit.role === "OPERATIVE").length;
 
@@ -434,11 +547,12 @@ export default function DashboardPage() {
 
       setMe(data);
 
-      const [incidentsRes, alertsRes, unitsRes, workAreasRes] = await Promise.all([
+      const [incidentsRes, alertsRes, unitsRes, workAreasRes, pointsOfInterestRes] = await Promise.all([
         apiFetch("/incidents/"),
         apiFetch("/alerts/"),
         apiFetch("/auth/panel/users/"),
         apiFetch("/workareas/"),
+        apiFetch("/points-of-interest/"),
       ]);
 
       if (incidentsRes.ok) {
@@ -465,6 +579,11 @@ export default function DashboardPage() {
       if (workAreasRes.ok) {
         const workAreasData = await workAreasRes.json();
         setWorkAreas(normalizeWorkAreas(workAreasData));
+      }
+
+      if (pointsOfInterestRes.ok) {
+        const pointsOfInterestData = await pointsOfInterestRes.json();
+        setPointsOfInterest(normalizePointsOfInterest(pointsOfInterestData));
       }
 
       setLoading(false);
@@ -634,6 +753,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-success)]" /> Incidente resuelto</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Area de trabajo</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interes</div>
               </div>
             </div>
             {incidents.length === 0 && (
@@ -730,49 +850,76 @@ export default function DashboardPage() {
 
                 return null;
               })}
-              {positionedFilteredIncidents.map(({ incident, latLng }) => {
+              {pointsOfInterest.map((point) =>
+                point.isActive && point.coords ? (
+                  <Marker
+                    key={`poi-${point.id}`}
+                    position={point.coords}
+                    icon={poiMarkerIcon(point.poiType)}
+                  >
+                    <Popup>
+                      <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Punto de interes</p>
+                        <h3 className="mt-1 font-bold text-base">{point.name}</h3>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                          <span className="rounded-full bg-teal-500/15 px-2.5 py-1 font-semibold text-teal-200">
+                            {point.poiType}
+                          </span>
+                          {point.incidentName ? (
+                            <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
+                              {point.incidentName}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">{point.description}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+              {positionedFilteredIncidents.map(({ incidente, latLng }) => {
                 return (
                   <Marker
-                    key={incident.id}
+                    key={incidente.id}
                     position={latLng}
-                    icon={markerIcon(incidentMarkerColor(incident.status))}
+                    icon={markerIcon(incidentMarkerColor(incidente.status))}
                   >
                     <Popup>
                       <div className="min-w-[230px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidente</p>
-                            <h3 className="mt-1 font-bold text-base">{incident.name}</h3>
+                            <h3 className="mt-1 font-bold text-base">{incidente.name}</h3>
                           </div>
-                          <span className={`${incidentStatusBadge(incident.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
-                            {incidentStatusLabel(incident.status)}
+                          <span className={`${incidentStatusBadge(incidente.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                            {incidentStatusLabel(incidente.status)}
                           </span>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                           <span className="cm-badge-info rounded-full px-2.5 py-1 font-semibold">
-                            {incidentTypeLabel(incident.incident_type)}
+                            {incidentTypeLabel(incidente.incident_type)}
                           </span>
-                          {incident.owner_organization ? (
+                          {incidente.owner_organization ? (
                             <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-2.5 py-1 text-[color:var(--cm-text-muted)]">
-                              {incident.owner_organization}
+                              {incidente.owner_organization}
                             </span>
                           ) : null}
                         </div>
-                        {incident.description && (
-                          <p className="mt-3 text-sm leading-6 text-[color:var(--cm-text-muted)]">{incident.description}</p>
+                        {incidente.description && (
+                          <p className="mt-3 text-sm leading-6 text-[color:var(--cm-text-muted)]">{incidente.description}</p>
                         )}
-                        {incident.location_address && (
-                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">📍 {incident.location_address}</p>
+                        {incidente.location_address && (
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">📍 {incidente.location_address}</p>
                         )}
                         <p className="mt-3 text-xs text-[color:var(--cm-text-muted)]">
-                          Creado: {new Date(incident.created_at).toLocaleString()}
+                          Creado: {new Date(incidente.created_at).toLocaleString()}
                         </p>
                         <Link
-                          to="/incidents"
+                          to={`/editIncident/${incidente.id}`}
                           style={{ color: "white", textDecoration: "none" }}
                           className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold transition hover:brightness-110"
                         >
-                          Ver detalles
+                          Ver incidente
                         </Link>
                       </div>
                     </Popup>
@@ -790,6 +937,16 @@ export default function DashboardPage() {
                     <div className="min-w-[210px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Alerta</p>
                       <p className="mt-1 font-semibold">{alert.title || "Alerta operativa"}</p>
+                      <button>
+                        <Link
+                          to={`/editAlert/${alert.id}`}
+                          style={{ color: "white", textDecoration: "none" }}
+                          className="mt-3 inline-flex rounded-lg bg-[color:var(--cm-alert)] px-3 py-1.5 text-xs font-semibold transition hover:brightness-110"
+                        >
+                          Ver alerta
+                        </Link>
+                      </button>
+                      <br></br>
                       <span className={`${alertStatusBadge(alert.status)} mt-3 inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
                         {alertStatusLabel(alert.status)}
                       </span>
