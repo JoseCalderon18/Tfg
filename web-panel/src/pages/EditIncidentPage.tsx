@@ -1,5 +1,5 @@
 import "leaflet/dist/leaflet.css";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
@@ -7,6 +7,9 @@ import { apiFetch } from "../utils/api";
 
 type RespuestaUsuario = {
   authenticated: boolean;
+  id?: string;
+  username?: string;
+  role?: string | null;
   has_panel_full_access?: boolean;
 };
 
@@ -34,6 +37,18 @@ type DetalleIncidenteResponse = {
   location?: unknown;
   location_address?: string | null;
   owner_organization?: string | { id?: string; name?: string } | null;
+};
+
+type MensajeIncidente = {
+  id: string;
+  incident: string;
+  author_id: string;
+  author_username: string;
+  author_name: string;
+  author_role?: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
 };
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
@@ -131,6 +146,12 @@ export default function EditIncidentPage() {
   const [exitoMensaje, setExitoMensaje] = useState("");
 
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([]);
+  const [usuarioActual, setUsuarioActual] = useState<RespuestaUsuario | null>(null);
+  const [mensajes, setMensajes] = useState<MensajeIncidente[]>([]);
+  const [cargandoMensajes, setCargandoMensajes] = useState(true);
+  const [errorMensajes, setErrorMensajes] = useState("");
+  const [mensajeNuevo, setMensajeNuevo] = useState("");
+  const [enviandoMensaje, setEnviandoMensaje] = useState(false);
 
   const [nombre, setNombre] = useState("");
   const [tipoIncidente, setTipoIncidente] = useState<TipoIncidente>("WILDFIRE");
@@ -142,6 +163,7 @@ export default function EditIncidentPage() {
   const [latitud, setLatitud] = useState("");
   const [longitud, setLongitud] = useState("");
   const [mapaEditable, setMapaEditable] = useState(false);
+  const panelMensajesRef = useRef<HTMLDivElement | null>(null);
 
   const coordenadas = useMemo<LatLngTuple | null>(() => {
     const lat = Number(latitud);
@@ -166,6 +188,7 @@ export default function EditIncidentPage() {
         return;
       }
       const meData = (await meRes.json()) as RespuestaUsuario;
+      setUsuarioActual(meData);
       if (!meData.has_panel_full_access) {
         navegar("/login", { replace: true });
         return;
@@ -209,6 +232,56 @@ export default function EditIncidentPage() {
       setCargando(false);
     })();
   }, [id, navegar]);
+
+  async function cargarMensajes(options?: { silent?: boolean }) {
+    if (!id) return;
+
+    if (!options?.silent) {
+      setCargandoMensajes(true);
+    }
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/messages/`);
+      if (!res.ok) {
+        let detail = "No se pudo cargar el chat del incidente.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string" && data.detail.trim()) {
+            detail = data.detail;
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        throw new Error(detail);
+      }
+      const data = (await res.json()) as MensajeIncidente[];
+      setMensajes(Array.isArray(data) ? data : []);
+      setErrorMensajes("");
+    } catch (error) {
+      setErrorMensajes(error instanceof Error ? error.message : "No se pudo cargar el chat del incidente.");
+    } finally {
+      if (!options?.silent) {
+        setCargandoMensajes(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!id) return;
+
+    void cargarMensajes();
+    const intervalId = window.setInterval(() => {
+      void cargarMensajes({ silent: true });
+    }, 8000);
+
+    return () => window.clearInterval(intervalId);
+  }, [id]);
+
+  useEffect(() => {
+    const panel = panelMensajesRef.current;
+    if (!panel) return;
+    panel.scrollTop = panel.scrollHeight;
+  }, [mensajes]);
 
   function manejarSeleccionMapa(value: LatLngTuple) {
     setLatitud(value[0].toFixed(6));
@@ -301,6 +374,60 @@ export default function EditIncidentPage() {
     }
   }
 
+  async function manejarEnvioMensaje(event: FormEvent) {
+    event.preventDefault();
+    if (!id || enviandoMensaje) return;
+
+    const texto = mensajeNuevo.trim();
+    if (!texto) return;
+
+    setEnviandoMensaje(true);
+    setErrorMensajes("");
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/messages/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: texto }),
+      });
+
+      if (!res.ok) {
+        let detail = "No se pudo enviar el mensaje.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          } else if (Array.isArray(data.content) && typeof data.content[0] === "string") {
+            detail = data.content[0];
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorMensajes(detail);
+        return;
+      }
+
+      const nuevoMensaje = (await res.json()) as MensajeIncidente;
+      setMensajes((prev) => [...prev, nuevoMensaje]);
+      setMensajeNuevo("");
+    } finally {
+      setEnviandoMensaje(false);
+    }
+  }
+
+  function formatearFechaMensaje(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return new Intl.DateTimeFormat("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
   if (cargando) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
@@ -316,7 +443,7 @@ export default function EditIncidentPage() {
         <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-600 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-5xl px-6 py-10">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-10">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-slate-400">Operaciones · Supervisores</p>
@@ -332,17 +459,18 @@ export default function EditIncidentPage() {
           </button>
         </div>
 
-        <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
-          {errorMensaje ? (
-            <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{errorMensaje}</div>
-          ) : null}
-          {exitoMensaje ? (
-            <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {exitoMensaje}
-            </div>
-          ) : null}
+        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.75fr)_24rem]">
+          <div className="rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
+            {errorMensaje ? (
+              <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{errorMensaje}</div>
+            ) : null}
+            {exitoMensaje ? (
+              <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                {exitoMensaje}
+              </div>
+            ) : null}
 
-          <form onSubmit={manejarEnvio} className="space-y-8">
+            <form onSubmit={manejarEnvio} className="space-y-8">
   <section className="rounded-2xl bg-slate-950/30 p-5 ring-1 ring-slate-800">
     <div className="mb-5">
       <h2 className="text-xl font-bold text-slate-100">Información del incidente</h2>
@@ -566,6 +694,91 @@ export default function EditIncidentPage() {
     </button>
   </div>
 </form>
+          </div>
+
+          <aside className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800 shadow-2xl xl:sticky xl:top-6 xl:h-[calc(100vh-5rem)] xl:max-h-[52rem]">
+            <div className="flex h-full flex-col">
+              <div className="border-b border-slate-800 pb-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-sky-300/80">Mensajeria</p>
+                <h2 className="mt-2 text-xl font-bold text-slate-100">Chat del incidente</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Canal rapido para coordinacion y seguimiento entre los miembros del operativo.
+                </p>
+              </div>
+
+              {errorMensajes ? (
+                <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+                  {errorMensajes}
+                </div>
+              ) : null}
+
+              <div
+                ref={panelMensajesRef}
+                className="mt-4 min-h-[20rem] flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-950/40 p-3 ring-1 ring-slate-800"
+              >
+                {cargandoMensajes ? (
+                  <div className="grid h-full min-h-[16rem] place-items-center text-sm text-slate-400">
+                    Cargando mensajes...
+                  </div>
+                ) : mensajes.length === 0 ? (
+                  <div className="grid h-full min-h-[16rem] place-items-center text-center text-sm text-slate-400">
+                    Todavia no hay mensajes en este incidente. El primer mensaje quedara registrado aqui.
+                  </div>
+                ) : (
+                  mensajes.map((mensaje) => {
+                    const esPropio = Boolean(usuarioActual?.id) && usuarioActual?.id === mensaje.author_id;
+                    return (
+                      <article
+                        key={mensaje.id}
+                        className={`max-w-[92%] rounded-2xl px-4 py-3 ring-1 ${
+                          esPropio
+                            ? "ml-auto bg-sky-500/15 text-slate-100 ring-sky-500/30"
+                            : "bg-slate-900/80 text-slate-100 ring-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{mensaje.author_name || mensaje.author_username}</p>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                              {mensaje.author_role === "SUPERVISOR"
+                                ? "Supervisor"
+                                : mensaje.author_role === "ADMIN"
+                                ? "Administrador"
+                                : "Operativo"}
+                            </p>
+                          </div>
+                          <time className="text-[11px] text-slate-400">{formatearFechaMensaje(mensaje.created_at)}</time>
+                        </div>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-200">{mensaje.content}</p>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <form onSubmit={manejarEnvioMensaje} className="mt-4 space-y-3">
+                <textarea
+                  value={mensajeNuevo}
+                  onChange={(event) => setMensajeNuevo(event.target.value)}
+                  rows={4}
+                  placeholder="Escribe una actualizacion, instruccion o comentario para el equipo..."
+                  className="w-full rounded-2xl bg-slate-950/40 px-4 py-3 text-sm text-slate-100 ring-1 ring-slate-800 outline-none transition focus:ring-2 focus:ring-sky-500"
+                />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-slate-500">
+                    Los mensajes se actualizan automaticamente cada pocos segundos.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={enviandoMensaje || !mensajeNuevo.trim()}
+                    className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {enviandoMensaje ? "Enviando..." : "Enviar"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
