@@ -144,6 +144,8 @@ export function ViewUnidadesPage() {
   const [campoOrden, setCampoOrden] = useState<CampoOrden>("username");
   const [direccionOrden, setDireccionOrden] = useState<DireccionOrden>("asc");
   const [paginaActual, setPaginaActual] = useState(1);
+  const [unidadPendienteEliminarId, setUnidadPendienteEliminarId] = useState("");
+  const [unidadEliminandoId, setUnidadEliminandoId] = useState("");
   const TAMANO_PAGINA = 10;
 
 
@@ -292,6 +294,19 @@ export function ViewUnidadesPage() {
     }
   }, [paginaActual, totalPaginas]);
 
+  useEffect(() => {
+    if (!unidadPendienteEliminarId) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !unidadEliminandoId) {
+        setUnidadPendienteEliminarId("");
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [unidadPendienteEliminarId, unidadEliminandoId]);
+
 
 
   
@@ -328,6 +343,42 @@ export function ViewUnidadesPage() {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5);
   }, [unidadesFiltradas]);
+
+  const unidadPendienteEliminar =
+    unidades.find((unidad) => unidad.id === unidadPendienteEliminarId) ?? null;
+
+  async function prepararEliminarUnidad(unitId: string) {
+    setUnidadPendienteEliminarId(unitId);
+  }
+
+  async function confirmarEliminarUnidad(unitId: string) {
+    if (unidadEliminandoId) return;
+
+    setError("");
+    setUnidadEliminandoId(unitId);
+    try {
+      const respuesta = await apiFetch(`/auth/panel/users/${unitId}/`, { method: "DELETE" });
+      if (!respuesta.ok) {
+        let detalle = "No se pudo borrar la unidad.";
+        try {
+          const data = (await respuesta.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detalle = data.detail;
+          }
+        } catch {
+          // mantenemos el fallback
+        }
+        setError(detalle);
+        return;
+      }
+
+      setUnidades((prev) => prev.filter((unidad) => unidad.id !== unitId));
+      setTotal((prev) => Math.max(0, prev - 1));
+      setUnidadPendienteEliminarId("");
+    } finally {
+      setUnidadEliminandoId("");
+    }
+  }
 
   if (loading) {
     return (
@@ -578,13 +629,23 @@ export function ViewUnidadesPage() {
                         </td>
                         <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{new Date(unidad.created_at).toLocaleString()}</td>
                         <td className="px-4 py-3.5">
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/editunit/${unidad.id}`)}
-                            className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
-                          >
-                            Abrir ficha
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/editunit/${unidad.id}`)}
+                              className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                            >
+                              Abrir ficha
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void prepararEliminarUnidad(unidad.id)}
+                              disabled={Boolean(unidadEliminandoId)}
+                              className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-60"
+                            >
+                              {unidadEliminandoId === unidad.id ? "Borrando..." : "Borrar"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -678,6 +739,48 @@ export function ViewUnidadesPage() {
           </aside>
         </div>
       </div>
+
+      {unidadPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unidad-eliminar-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar unidad</p>
+            <h2 id="unidad-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta unidad?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente la unidad
+              {unidadPendienteEliminar.username ? ` "${unidadPendienteEliminar.username}"` : ""}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Esta accion no se puede deshacer.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setUnidadPendienteEliminarId("")}
+                disabled={Boolean(unidadEliminandoId)}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEliminarUnidad(unidadPendienteEliminar.id)}
+                disabled={Boolean(unidadEliminandoId)}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {unidadEliminandoId === unidadPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

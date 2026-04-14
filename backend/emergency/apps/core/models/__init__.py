@@ -16,6 +16,7 @@ from .device import Dispositivo as Device
 from .track_point import PuntoRastreo
 from .track_point import PuntoRastreo as TrackPoint
 from .incident_member import IncidentMember
+from .incident_message import IncidentMessage
 from .workarea import AreaTrabajo
 from .workarea import AreaTrabajo as WorkArea
 from .lightning import LightningStrike
@@ -39,6 +40,7 @@ __all__ = [
     'PuntoRastreo',
     'TrackPoint',
     'IncidentMember',
+    'IncidentMessage',
     'AreaTrabajo',
     'WorkArea',
     'RiskReport',

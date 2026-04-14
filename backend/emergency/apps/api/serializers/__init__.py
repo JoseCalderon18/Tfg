@@ -11,6 +11,10 @@ from .incident_serializers import (
     IncidentMemberSerializer,
     IncidentMemberCreateSerializer,
 )
+from .incident_message_serializers import (
+    IncidentMessageSerializer,
+    IncidentMessageCreateSerializer,
+)
 from .alert_serializers import (
     AlertSerializer,
     AlertCreateSerializer,
@@ -48,6 +52,8 @@ __all__ = [
     "IncidentCreateSerializer",
     "IncidentMemberSerializer",
     "IncidentMemberCreateSerializer",
+    "IncidentMessageSerializer",
+    "IncidentMessageCreateSerializer",
     "IncidenteSerializer",
     "IncidenteCreateSerializer",
     "AlertSerializer",

@@ -56,6 +56,8 @@ export default function ViewOrganizationsPage() {
   const [query, setQuery] = useState("");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizacionSeleccionadaId, setOrganizacionSeleccionadaId] = useState("");
+  const [organizacionPendienteEliminarId, setOrganizacionPendienteEliminarId] = useState("");
+  const [organizacionEliminandoId, setOrganizacionEliminandoId] = useState("");
 
   const organizacionSeleccionada = useMemo(
     () => organizations.find((org) => org.id === organizacionSeleccionadaId) ?? null,
@@ -135,6 +137,54 @@ export default function ViewOrganizationsPage() {
       setOrganizacionSeleccionadaId("");
     }
   }, [organizations, organizacionSeleccionadaId]);
+
+  useEffect(() => {
+    if (!organizacionPendienteEliminarId) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !organizacionEliminandoId) {
+        setOrganizacionPendienteEliminarId("");
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [organizacionPendienteEliminarId, organizacionEliminandoId]);
+
+  const organizacionPendienteEliminar =
+    organizations.find((org) => org.id === organizacionPendienteEliminarId) ?? null;
+
+  async function prepararEliminarOrganizacion(organizationId: string) {
+    setOrganizacionPendienteEliminarId(organizationId);
+  }
+
+  async function confirmarEliminarOrganizacion(organizationId: string) {
+    if (organizacionEliminandoId) return;
+
+    setError("");
+    setOrganizacionEliminandoId(organizationId);
+    try {
+      const response = await apiFetch(`/organizations/${organizationId}/`, { method: "DELETE" });
+      if (!response.ok) {
+        let detail = "No se pudo borrar la organizacion.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          }
+        } catch {
+          // mantenemos el fallback
+        }
+        setError(detail);
+        return;
+      }
+
+      setOrganizations((prev) => prev.filter((org) => org.id !== organizationId));
+      setOrganizacionPendienteEliminarId("");
+    } finally {
+      setOrganizacionEliminandoId("");
+    }
+  }
 
   if (loading) {
     return (
@@ -264,15 +314,30 @@ export default function ViewOrganizationsPage() {
                       {org.created_at ? new Date(org.created_at).toLocaleString() : "Fecha desconocida"}
                     </td>
                     <td className="px-4 py-3.5">
-                    <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(`/editorganization/${org.id}`);
-                        }}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
-                      >Editar</button>
-                      </td>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/editorganization/${org.id}`);
+                          }}
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void prepararEliminarOrganizacion(org.id);
+                          }}
+                          disabled={Boolean(organizacionEliminandoId)}
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110 disabled:opacity-60"
+                        >
+                          {organizacionEliminandoId === org.id ? "Borrando..." : "Borrar"}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -308,6 +373,48 @@ export default function ViewOrganizationsPage() {
           </div>
         )}
       </div>
+
+      {organizacionPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="organizacion-eliminar-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar organizacion</p>
+            <h2 id="organizacion-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta organizacion?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente la organizacion
+              {organizacionPendienteEliminar.name ? ` "${organizacionPendienteEliminar.name}"` : ""}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Esta accion no se puede deshacer.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setOrganizacionPendienteEliminarId("")}
+                disabled={Boolean(organizacionEliminandoId)}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEliminarOrganizacion(organizacionPendienteEliminar.id)}
+                disabled={Boolean(organizacionEliminandoId)}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {organizacionEliminandoId === organizacionPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

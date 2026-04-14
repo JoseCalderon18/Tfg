@@ -702,6 +702,32 @@ class PanelUserDetailView(APIView):
         user.refresh_from_db()
         return Response(self._serialize_user(user, request), status=status.HTTP_200_OK)
 
+    @transaction.atomic
+    def delete(self, request, user_id):
+        unauthorized = self._ensure_supervisor(request)
+        if unauthorized:
+            return unauthorized
+
+        user = User.objects.select_related("profile").filter(id=user_id).first()
+        if not user:
+            return Response({"detail": "Usuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.id == request.user.id:
+            return Response(
+                {"detail": "No puedes borrar tu propia cuenta desde el panel."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        profile = getattr(user, "profile", None)
+        if profile and profile.role == "ADMIN":
+            return Response(
+                {"detail": "No se permite borrar usuarios con rol administrador desde esta pantalla."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class JWTLoginView(APIView):
     permission_classes = [AllowAny]
