@@ -37,21 +37,29 @@ function obtenerEtiquetaSeveridad(severity?: number | null) {
   return "Informativa";
 }
 
+const ALERTAS_POR_PAGINA = 10;
+
 export default function AlertsPage() {
   const navegar = useNavigate();
   const [alertas, setAlertas] = useState<FilaAlerta[]>([]);
   const [consulta, setConsulta] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [errorMensaje, setErrorMensaje] = useState("");
+  const [alertaPendienteEliminarId, setAlertaPendienteEliminarId] = useState("");
+  const [alertaEliminandoId, setAlertaEliminandoId] = useState("");
 
   useEffect(() => {
     (async () => {
       const response = await apiFetch("/alerts/");
       if (!response.ok) {
+        setErrorMensaje("No se pudieron cargar las alertas.");
         setCargando(false);
         return;
       }
       const payload = (await response.json()) as { results?: FilaAlerta[] } | FilaAlerta[];
       setAlertas(Array.isArray(payload) ? payload : payload.results ?? []);
+      setErrorMensaje("");
       setCargando(false);
     })();
   }, []);
@@ -66,6 +74,13 @@ export default function AlertsPage() {
     );
   }, [alertas, consulta]);
 
+  const totalPaginas = Math.max(1, Math.ceil(alertasFiltradas.length / ALERTAS_POR_PAGINA));
+
+  const alertasPaginadas = useMemo(() => {
+    const inicio = (paginaActual - 1) * ALERTAS_POR_PAGINA;
+    return alertasFiltradas.slice(inicio, inicio + ALERTAS_POR_PAGINA);
+  }, [alertasFiltradas, paginaActual]);
+
   const indicadores = useMemo(() => {
     const abiertas = alertas.filter((alerta) => alerta.status === "OPEN").length;
     const reconocidas = alertas.filter((alerta) => alerta.status === "ACK").length;
@@ -73,6 +88,61 @@ export default function AlertsPage() {
     const criticas = alertas.filter((alerta) => (alerta.severity ?? 5) <= 2 && alerta.status !== "CLOSED").length;
     return { abiertas, reconocidas, cerradas, criticas };
   }, [alertas]);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [consulta]);
+
+  useEffect(() => {
+    setPaginaActual((pagina) => Math.min(pagina, totalPaginas));
+  }, [totalPaginas]);
+
+  useEffect(() => {
+    if (!alertaPendienteEliminarId) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !alertaEliminandoId) {
+        setAlertaPendienteEliminarId("");
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [alertaPendienteEliminarId, alertaEliminandoId]);
+
+  const alertaPendienteEliminar = alertas.find((alerta) => alerta.id === alertaPendienteEliminarId) ?? null;
+
+  async function prepararEliminarAlerta(alertId: string) {
+    setAlertaPendienteEliminarId(alertId);
+  }
+
+  async function confirmarEliminarAlerta(alertId: string) {
+    if (alertaEliminandoId) return;
+
+    setErrorMensaje("");
+    setAlertaEliminandoId(alertId);
+    try {
+      const response = await apiFetch(`/alerts/${alertId}/`, { method: "DELETE" });
+      if (!response.ok) {
+        let detail = "No se pudo borrar la alerta.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorMensaje(detail);
+        return;
+      }
+
+      setAlertas((prev) => prev.filter((alerta) => alerta.id !== alertId));
+      setAlertaPendienteEliminarId("");
+    } finally {
+      setAlertaEliminandoId("");
+    }
+  }
 
   if (cargando) {
     return (
@@ -108,8 +178,20 @@ export default function AlertsPage() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input type="text" value={consulta} onChange={(event) => setConsulta(event.target.value)} placeholder="Buscar por tipo, titulo, estado o creador..." className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]" />
+          <input
+            type="text"
+            value={consulta}
+            onChange={(event) => setConsulta(event.target.value)}
+            placeholder="Buscar por tipo, titulo, estado o creador..."
+            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
+          />
         </div>
+
+        {errorMensaje ? (
+          <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
+            {errorMensaje}
+          </div>
+        ) : null}
 
         <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <table className="min-w-[1220px] w-full text-sm">
@@ -125,7 +207,7 @@ export default function AlertsPage() {
               </tr>
             </thead>
             <tbody>
-              {alertasFiltradas.map((alerta) => (
+              {alertasPaginadas.map((alerta) => (
                 <tr key={alerta.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
                     <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
@@ -167,15 +249,19 @@ export default function AlertsPage() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex gap-2">
-                      <button className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-alert)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
-                        ACK
-                      </button>
                       <button
                         type="button"
                         onClick={() => navegar(`/editAlert/${alerta.id}`)}
                         className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                       >
                         Ver
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => prepararEliminarAlerta(alerta.id)}
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                      >
+                        Eliminar
                       </button>
                     </div>
                   </td>
@@ -190,8 +276,78 @@ export default function AlertsPage() {
               ) : null}
             </tbody>
           </table>
+
+          {alertasFiltradas.length > 0 ? (
+            <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[color:var(--cm-text-muted)]">
+                Pagina {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                  disabled={paginaActual === 1}
+                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                  disabled={paginaActual === totalPaginas}
+                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
+
+      {alertaPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="alerta-eliminar-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar alerta</p>
+            <h2 id="alerta-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta alerta?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente la alerta
+              {alertaPendienteEliminar.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Esta accion no se puede deshacer.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setAlertaPendienteEliminarId("")}
+                disabled={Boolean(alertaEliminandoId)}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEliminarAlerta(alertaPendienteEliminar.id)}
+                disabled={Boolean(alertaEliminandoId)}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {alertaEliminandoId === alertaPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
