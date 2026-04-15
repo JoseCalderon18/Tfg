@@ -901,7 +901,7 @@ export default function EditUnitPage() {
                     }}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                   >
-                    <option value="">Sin organizaciÃ³n</option>
+                    <option value="">Sin organización</option>
                     {(opcionesFormulario.organizations ?? []).map((organizacionOpcion) => (
                       <option key={organizacionOpcion.id} value={organizacionOpcion.id}>
                         {organizacionOpcion.name}

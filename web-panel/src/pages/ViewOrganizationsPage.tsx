@@ -23,12 +23,37 @@ type Organization = {
   incident_count?: number;
 };
 
+function obtenerEtiquetaTipoOrganizacion(tipo: string) {
+  switch (tipo) {
+    case "FIRE_DEPT":
+      return "Departamento de Bomberos";
+    case "MEDICAL":
+      return "Servicio Médico";
+    case "POLICE":
+      return "Departamento de Policía";
+    case "RESCUE":
+      return "Servicio de Rescate";
+    case "GOV":
+      return "Agencia Gubernamental";
+    case "NGO":
+      return "Organización No Gubernamental";
+    case "PRIVATE":
+      return "Empresa Privada";
+    case "CIVIL_PROTECTION":
+      return "Protección Civil";
+    case "VOLUNTEER":
+      return "Voluntarios";
+    case "OTHER":
+      return "Otro";
+    default:
+      return tipo;
+  }
+}
+
 function normalizeOrganizations(raw: unknown): Organization[] {
   const source = Array.isArray(raw)
     ? raw
     : (raw as { results?: unknown[] } | null)?.results ?? [];
-
-
 
   return source
     .map((item) => item as Partial<Organization>)
@@ -65,8 +90,8 @@ export default function ViewOrganizationsPage() {
   );
 
   const organizationKpis = useMemo(() => {
-  const totalMembers = organizations.reduce((acc, org) => acc + (org.member_count ?? 0), 0);
-  const totalIncidents = organizations.reduce((acc, org) => acc + (org.incident_count ?? 0), 0);
+    const totalMembers = organizations.reduce((acc, org) => acc + (org.member_count ?? 0), 0);
+    const totalIncidents = organizations.reduce((acc, org) => acc + (org.incident_count ?? 0), 0);
 
     return {
       totalOrganizations: organizations.length,
@@ -74,7 +99,6 @@ export default function ViewOrganizationsPage() {
       totalIncidents: organizacionSeleccionada?.incident_count ?? totalIncidents,
     };
   }, [organizations, organizacionSeleccionada]);
-
 
   useEffect(() => {
     (async () => {
@@ -219,6 +243,7 @@ export default function ViewOrganizationsPage() {
             </button>
           </div>
         </div>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organizaciones</p>
@@ -276,7 +301,7 @@ export default function ViewOrganizationsPage() {
             <tbody>
               {filteredOrganizations.length === 0 ? (
                 <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
+                  <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                     No hay organizaciones para mostrar.
                   </td>
                 </tr>
@@ -290,21 +315,16 @@ export default function ViewOrganizationsPage() {
                     }`}
                   >
                     <td className="px-4 py-3.5 font-medium whitespace-nowrap">{org.name}</td>
-                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.org_type === "FIRE_DEPT" ? "Departamento de Bomberos": 
-                    org.org_type === "MEDICAL" ? "Servicio Médico" :
-                    org.org_type === "POLICE" ? "Departamento de Policía" :
-                    org.org_type === "RESCUE" ? "Servicio de Rescate" :
-                    org.org_type === "OTHER" ? "Otro" : org.org_type
-                    }</td>
+                    <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
+                      {obtenerEtiquetaTipoOrganizacion(org.org_type)}
+                    </td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.contact_email || "-"}</td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{org.contact_phone || "-"}</td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">{org.address || "-"}</td>
                     <td className="px-4 py-3.5">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
-                          org.is_active
-                            ? "cm-badge-success"
-                            : "cm-badge-warning"
+                          org.is_active ? "cm-badge-success" : "cm-badge-warning"
                         }`}
                       >
                         {org.is_active ? "Activa" : "Inactiva"}
@@ -418,4 +438,3 @@ export default function ViewOrganizationsPage() {
     </div>
   );
 }
-

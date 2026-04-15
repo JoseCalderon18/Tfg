@@ -31,6 +31,11 @@ class Organizacion(models.Model):
         ('RESCUE', 'Equipo de Rescate'),
         ('MEDICAL', 'Servicios Médicos'),
         ('OTHER', 'Otro'),
+        ('GOV', 'Agencia Gubernamental'),
+        ('NGO', 'Organización No Gubernamental'),
+        ('PRIVATE', 'Empresa Privada'),
+        ('CIVIL_PROTECTION', 'Protección Civil'),
+        ('VOLUNTEER', 'Voluntarios'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

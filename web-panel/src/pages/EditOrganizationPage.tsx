@@ -8,6 +8,11 @@ const TIPOS_ORGANIZACION = [
   { value: "RESCUE", label: "Servicio de Rescate" },
   { value: "MEDICAL", label: "Servicio Medico" },
   { value: "OTHER", label: "Otra organizacion" },
+  { value: "GOV", label: "Agencia Gubernamental" },
+  { value: "NGO", label: "Organización No Gubernamental" },
+  { value: "PRIVATE", label: "Empresa Privada" },
+  { value: "CIVIL_PROTECTION", label: "Protección Civil" },
+  { value: "VOLUNTEER", label: "Voluntarios" },
 ];
 
 
@@ -49,7 +54,24 @@ export default function EditOrganizationPage() {
     });
 
     if (!respuesta.ok) {
-        setError("No se pudo guardar la organizacion.");
+        let detalle = "No se pudo guardar la organizacion.";
+        try {
+          const datosError = await respuesta.json();
+          if (datosError?.detail) {
+            detalle = String(datosError.detail);
+          } else if (typeof datosError === "object" && datosError !== null) {
+            const primeraClave = Object.keys(datosError)[0];
+            if (primeraClave) {
+              const valor = (datosError as Record<string, unknown>)[primeraClave];
+              detalle = Array.isArray(valor)
+                ? `${primeraClave}: ${String(valor[0])}`
+                : `${primeraClave}: ${String(valor)}`;
+            }
+          }
+        } catch {
+          // Si no hay JSON legible, dejamos el mensaje por defecto.
+        }
+        setError(detalle);
         return;
         }
     navigate("/vieworganizations");
