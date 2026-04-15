@@ -29,6 +29,7 @@ import NewWorkAreaPage from './pages/NewWorkAreaPage';
 import EditWorkAreaPage from './pages/EditWorkAreaPage';
 import JourneysPage from './pages/JourneysPage';
 import PointOfInterestPage from './pages/PointOfInterestPage';
+import CreatePointOfInterestPage from './pages/CreatePointOfInterestPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -70,6 +71,7 @@ function App() {
         <Route path="editWorkArea/:id" element={<EditWorkAreaPage />} />
         <Route path='journeys' element={<JourneysPage />} />
         <Route path="points" element={<PointOfInterestPage />} />
+        <Route path="createPointOfInterest" element={<CreatePointOfInterestPage />} />
         {/* Si no encuentra la página, va al dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

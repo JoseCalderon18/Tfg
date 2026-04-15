@@ -375,6 +375,11 @@ export default function PointOfInterestPage() {
             </div>
           )}
         </section>
+        <div>
+          <button type="button" onClick={() => navigate("/createPointOfInterest")} className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110">
+            Crear nuevo punto de interes
+          </button>
+        </div>
       </div>
     </div>
   );
