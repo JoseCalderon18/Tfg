@@ -470,8 +470,8 @@ class PanelUserDetailView(APIView):
             "id": str(user.id),
             "username": user.username,
             "email": user.email,
-            "first_name": getattr(profile, "name", ""),
-            "last_name": getattr(profile, "lastname", ""),
+            "first_name": getattr(user, "first_name", ""),
+            "last_name": getattr(user, "last_name", ""),
             "phone": user.phone,
             "is_active": user.is_active,
             "created_at": user.created_at,
@@ -552,12 +552,10 @@ class PanelUserDetailView(APIView):
         profile_updated_fields = []
 
         if "first_name" in payload:
-            profile.name = str(payload.get("first_name", "")).strip()
-            profile_updated_fields.append("name")
+            user.first_name = str(payload.get("first_name", "")).strip()
 
         if "last_name" in payload:
-            profile.lastname = str(payload.get("last_name", "")).strip()
-            profile_updated_fields.append("lastname")
+            user.last_name = str(payload.get("last_name", "")).strip()
 
         if "phone" in payload:
             user.phone = str(payload.get("phone", "")).strip()

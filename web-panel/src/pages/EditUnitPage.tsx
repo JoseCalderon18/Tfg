@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
@@ -29,14 +29,319 @@ type RespuestaDetalleUnidad = {
   emergency_phone?: string;
   medical_notes?: string[];
   organization_id?: string;
+  dni?: string;
+  avatar?: string;
+  language?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  birth_date?: string;
   specialties?: string[];
   operative_schedule?: string;
+  blood_type?: string;
   device_id?: string;
   assigned_supervisor_id?: string;
   location_lat?: number | null;
   location_lng?: number | null;
   location_address?: string;
 };
+
+const OPCIONES_IDIOMA = [
+  { value: "", label: "Selecciona un idioma" },
+  { value: "es", label: "Espanol" },
+  { value: "en", label: "Ingles" },
+  { value: "fr", label: "Frances" },
+  { value: "de", label: "Aleman" },
+  { value: "it", label: "Italiano" },
+  { value: "pt", label: "Portugues" },
+  { value: "zh", label: "Chino" },
+  { value: "ja", label: "Japones" },
+  { value: "cat", label: "Catalan" },
+  { value: "eus", label: "Euskera" },
+  { value: "gall", label: "Gallego" },
+];
+
+const OPCIONES_PAIS = [
+  { value: "", label: "Selecciona un pais" },
+  { value: "Espana", label: "Espana" },
+  { value: "Portugal", label: "Portugal" },
+  { value: "Francia", label: "Francia" },
+  { value: "Italia", label: "Italia" },
+  { value: "Alemania", label: "Alemania" },
+  { value: "Reino Unido", label: "Reino Unido" },
+  { value: "Estados Unidos", label: "Estados Unidos" },
+  { value: "Andorra", label: "Andorra" },
+  { value: "Marruecos", label: "Marruecos" },
+];
+
+// ESPAÑA
+const OPCIONES_PROVINCIA_ESPANA = [
+  { value: "", label: "Selecciona una provincia" },
+  { value: "Alava", label: "Alava" },
+  { value: "Albacete", label: "Albacete" },
+  { value: "Alicante", label: "Alicante" },
+  { value: "Almeria", label: "Almeria" },
+  { value: "Asturias", label: "Asturias" },
+  { value: "Avila", label: "Avila" },
+  { value: "Badajoz", label: "Badajoz" },
+  { value: "Illes Balears", label: "Illes Balears" },
+  { value: "Burgos", label: "Burgos" },
+  { value: "Caceres", label: "Caceres" },
+  { value: "Cadiz", label: "Cadiz" },
+  { value: "Cantabria", label: "Cantabria" },
+  { value: "Castellon", label: "Castellon" },
+  { value: "Ceuta", label: "Ceuta" },
+  { value: "Ciudad Real", label: "Ciudad Real" },
+  { value: "Cordoba", label: "Cordoba" },
+  { value: "A Coruna", label: "A Coruna" },
+  { value: "Cuenca", label: "Cuenca" },
+  { value: "Girona", label: "Girona" },
+  { value: "Granada", label: "Granada" },
+  { value: "Guadalajara", label: "Guadalajara" },
+  { value: "Gipuzkoa", label: "Gipuzkoa" },
+  { value: "Huelva", label: "Huelva" },
+  { value: "Huesca", label: "Huesca" },
+  { value: "Jaen", label: "Jaen" },
+  { value: "Leon", label: "Leon" },
+  { value: "Lleida", label: "Lleida" },
+  { value: "La Rioja", label: "La Rioja" },
+  { value: "Lugo", label: "Lugo" },
+  { value: "Malaga", label: "Malaga" },
+  { value: "Melilla", label: "Melilla" },
+  { value: "Navarra", label: "Navarra" },
+  { value: "Ourense", label: "Ourense" },
+  { value: "Palencia", label: "Palencia" },
+  { value: "Las Palmas", label: "Las Palmas" },
+  { value: "Pontevedra", label: "Pontevedra" },
+  { value: "Salamanca", label: "Salamanca" },
+  { value: "Santa Cruz de Tenerife", label: "Santa Cruz de Tenerife" },
+  { value: "Segovia", label: "Segovia" },
+  { value: "Soria", label: "Soria" },
+  { value: "Tarragona", label: "Tarragona" },
+  { value: "Teruel", label: "Teruel" },
+  { value: "Toledo", label: "Toledo" },
+  { value: "Valladolid", label: "Valladolid" },
+  { value: "Bizkaia", label: "Bizkaia" },
+  { value: "Zamora", label: "Zamora" },
+  { value: "Madrid", label: "Madrid" },
+  { value: "Barcelona", label: "Barcelona" },
+  { value: "Valencia", label: "Valencia" },
+  { value: "Sevilla", label: "Sevilla" },
+  { value: "Zaragoza", label: "Zaragoza" },
+  { value: "Málaga", label: "Málaga" },
+  { value: "Murcia", label: "Murcia" },
+];
+
+// PORTUGAL
+const OPCIONES_PROVINCIA_PORTUGAL = [
+  { value: "", label: "Selecciona una provincia" },
+  { value: "Aveiro", label: "Aveiro" },
+  { value: "Beja", label: "Beja" },
+  { value: "Braganca", label: "Braganca" },
+  { value: "Castelo Branco", label: "Castelo Branco" },
+  { value: "Evora", label: "Evora" },
+  { value: "Guarda", label: "Guarda" },
+  { value: "Leiria", label: "Leiria" },
+  { value: "Lisboa", label: "Lisboa" },
+  { value: "Portalegre", label: "Portalegre" },
+  { value: "Porto", label: "Porto" },
+  { value: "Braga", label: "Braga" },
+  { value: "Coimbra", label: "Coimbra" },
+  { value: "Faro", label: "Faro" },
+  { value: "Santarem", label: "Santarem" },
+  { value: "Setubal", label: "Setubal" },
+  { value: "Viana do Castelo", label: "Viana do Castelo" },
+  { value: "Vila Real", label: "Vila Real" },
+  { value: "Viseu", label: "Viseu" },
+  { value: "Azores", label: "Azores" },
+  { value: "Madeira", label: "Madeira" },
+];
+
+// FRANCIA
+const OPCIONES_PROVINCIA_FRANCIA = [
+  { value: "", label: "Selecciona una región" },
+  { value: "Île-de-France", label: "Île-de-France" },
+  { value: "Provence-Alpes-Côte d'Azur", label: "Provence-Alpes-Côte d'Azur" },
+  { value: "Nouvelle-Aquitaine", label: "Nouvelle-Aquitaine" },
+  { value: "Occitanie", label: "Occitanie" },
+  { value: "Auvergne-Rhône-Alpes", label: "Auvergne-Rhône-Alpes" },
+];
+
+// ITALIA
+const OPCIONES_PROVINCIA_ITALIA = [
+  { value: "", label: "Selecciona una región" },
+  { value: "Lombardia", label: "Lombardia" },
+  { value: "Lazio", label: "Lazio" },
+  { value: "Campania", label: "Campania" },
+  { value: "Sicilia", label: "Sicilia" },
+  { value: "Veneto", label: "Veneto" },
+];
+
+// ALEMANIA
+const OPCIONES_PROVINCIA_ALEMANIA = [
+  { value: "", label: "Selecciona un estado" },
+  { value: "Baviera", label: "Baviera" },
+  { value: "Berlín", label: "Berlín" },
+  { value: "Hamburgo", label: "Hamburgo" },
+  { value: "Hesse", label: "Hesse" },
+  { value: "Sajonia", label: "Sajonia" },
+];
+
+const OPCIONES_PROVINCIA_FRANCIA_COMPLETA = [
+  { value: "", label: "Selecciona una region" },
+  { value: "Auvergne-Rhone-Alpes", label: "Auvergne-Rhone-Alpes" },
+  { value: "Bourgogne-Franche-Comte", label: "Bourgogne-Franche-Comte" },
+  { value: "Bretagne", label: "Bretagne" },
+  { value: "Centre-Val de Loire", label: "Centre-Val de Loire" },
+  { value: "Corse", label: "Corse" },
+  { value: "Grand Est", label: "Grand Est" },
+  { value: "Hauts-de-France", label: "Hauts-de-France" },
+  { value: "Ile-de-France", label: "Ile-de-France" },
+  { value: "Normandie", label: "Normandie" },
+  { value: "Nouvelle-Aquitaine", label: "Nouvelle-Aquitaine" },
+  { value: "Occitanie", label: "Occitanie" },
+  { value: "Pays de la Loire", label: "Pays de la Loire" },
+  { value: "Provence-Alpes-Cote d'Azur", label: "Provence-Alpes-Cote d'Azur" },
+  { value: "Guadeloupe", label: "Guadeloupe" },
+  { value: "Martinique", label: "Martinique" },
+  { value: "Guyane", label: "Guyane" },
+  { value: "La Reunion", label: "La Reunion" },
+  { value: "Mayotte", label: "Mayotte" },
+];
+
+const OPCIONES_PROVINCIA_ITALIA_COMPLETA = [
+  { value: "", label: "Selecciona una region" },
+  { value: "Abruzzo", label: "Abruzzo" },
+  { value: "Basilicata", label: "Basilicata" },
+  { value: "Calabria", label: "Calabria" },
+  { value: "Campania", label: "Campania" },
+  { value: "Emilia-Romagna", label: "Emilia-Romagna" },
+  { value: "Friuli-Venezia Giulia", label: "Friuli-Venezia Giulia" },
+  { value: "Lazio", label: "Lazio" },
+  { value: "Liguria", label: "Liguria" },
+  { value: "Lombardia", label: "Lombardia" },
+  { value: "Marche", label: "Marche" },
+  { value: "Molise", label: "Molise" },
+  { value: "Piemonte", label: "Piemonte" },
+  { value: "Puglia", label: "Puglia" },
+  { value: "Sardegna", label: "Sardegna" },
+  { value: "Sicilia", label: "Sicilia" },
+  { value: "Toscana", label: "Toscana" },
+  { value: "Trentino-Alto Adige", label: "Trentino-Alto Adige" },
+  { value: "Umbria", label: "Umbria" },
+  { value: "Valle d'Aosta", label: "Valle d'Aosta" },
+  { value: "Veneto", label: "Veneto" },
+];
+
+const OPCIONES_PROVINCIA_ALEMANIA_COMPLETA = [
+  { value: "", label: "Selecciona un estado" },
+  { value: "Baden-Wurttemberg", label: "Baden-Wurttemberg" },
+  { value: "Baviera", label: "Baviera" },
+  { value: "Berlin", label: "Berlin" },
+  { value: "Brandeburgo", label: "Brandeburgo" },
+  { value: "Bremen", label: "Bremen" },
+  { value: "Hamburgo", label: "Hamburgo" },
+  { value: "Hesse", label: "Hesse" },
+  { value: "Mecklemburgo-Pomerania Occidental", label: "Mecklemburgo-Pomerania Occidental" },
+  { value: "Baja Sajonia", label: "Baja Sajonia" },
+  { value: "Renania del Norte-Westfalia", label: "Renania del Norte-Westfalia" },
+  { value: "Renania-Palatinado", label: "Renania-Palatinado" },
+  { value: "Sarre", label: "Sarre" },
+  { value: "Sajonia", label: "Sajonia" },
+  { value: "Sajonia-Anhalt", label: "Sajonia-Anhalt" },
+  { value: "Schleswig-Holstein", label: "Schleswig-Holstein" },
+  { value: "Turingia", label: "Turingia" },
+];
+
+const OPCIONES_PROVINCIA_REINO_UNIDO = [
+  { value: "", label: "Selecciona una division" },
+  { value: "Inglaterra", label: "Inglaterra" },
+  { value: "Escocia", label: "Escocia" },
+  { value: "Gales", label: "Gales" },
+  { value: "Irlanda del Norte", label: "Irlanda del Norte" },
+];
+
+const OPCIONES_PROVINCIA_ESTADOS_UNIDOS = [
+  { value: "", label: "Selecciona un estado" },
+  { value: "Alabama", label: "Alabama" },
+  { value: "Alaska", label: "Alaska" },
+  { value: "Arizona", label: "Arizona" },
+  { value: "Arkansas", label: "Arkansas" },
+  { value: "California", label: "California" },
+  { value: "Colorado", label: "Colorado" },
+  { value: "Connecticut", label: "Connecticut" },
+  { value: "Delaware", label: "Delaware" },
+  { value: "Florida", label: "Florida" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Hawaii", label: "Hawaii" },
+  { value: "Idaho", label: "Idaho" },
+  { value: "Illinois", label: "Illinois" },
+  { value: "Indiana", label: "Indiana" },
+  { value: "Iowa", label: "Iowa" },
+  { value: "Kansas", label: "Kansas" },
+  { value: "Kentucky", label: "Kentucky" },
+  { value: "Louisiana", label: "Louisiana" },
+  { value: "Maine", label: "Maine" },
+  { value: "Maryland", label: "Maryland" },
+  { value: "Massachusetts", label: "Massachusetts" },
+  { value: "Michigan", label: "Michigan" },
+  { value: "Minnesota", label: "Minnesota" },
+  { value: "Mississippi", label: "Mississippi" },
+  { value: "Missouri", label: "Missouri" },
+  { value: "Montana", label: "Montana" },
+  { value: "Nebraska", label: "Nebraska" },
+  { value: "Nevada", label: "Nevada" },
+  { value: "New Hampshire", label: "New Hampshire" },
+  { value: "New Jersey", label: "New Jersey" },
+  { value: "New Mexico", label: "New Mexico" },
+  { value: "New York", label: "New York" },
+  { value: "North Carolina", label: "North Carolina" },
+  { value: "North Dakota", label: "North Dakota" },
+  { value: "Ohio", label: "Ohio" },
+  { value: "Oklahoma", label: "Oklahoma" },
+  { value: "Oregon", label: "Oregon" },
+  { value: "Pennsylvania", label: "Pennsylvania" },
+  { value: "Rhode Island", label: "Rhode Island" },
+  { value: "South Carolina", label: "South Carolina" },
+  { value: "South Dakota", label: "South Dakota" },
+  { value: "Tennessee", label: "Tennessee" },
+  { value: "Texas", label: "Texas" },
+  { value: "Utah", label: "Utah" },
+  { value: "Vermont", label: "Vermont" },
+  { value: "Virginia", label: "Virginia" },
+  { value: "Washington", label: "Washington" },
+  { value: "West Virginia", label: "West Virginia" },
+  { value: "Wisconsin", label: "Wisconsin" },
+  { value: "Wyoming", label: "Wyoming" },
+  { value: "District of Columbia", label: "District of Columbia" },
+];
+
+const OPCIONES_PROVINCIA_ANDORRA = [
+  { value: "", label: "Selecciona una parroquia" },
+  { value: "Andorra la Vella", label: "Andorra la Vella" },
+  { value: "Canillo", label: "Canillo" },
+  { value: "Encamp", label: "Encamp" },
+  { value: "Escaldes-Engordany", label: "Escaldes-Engordany" },
+  { value: "La Massana", label: "La Massana" },
+  { value: "Ordino", label: "Ordino" },
+  { value: "Sant Julia de Loria", label: "Sant Julia de Loria" },
+];
+
+const OPCIONES_PROVINCIA_MARRUECOS = [
+  { value: "", label: "Selecciona una region" },
+  { value: "Casablanca-Settat", label: "Casablanca-Settat" },
+  { value: "Rabat-Sale-Kenitra", label: "Rabat-Sale-Kenitra" },
+  { value: "Marrakesh-Safi", label: "Marrakesh-Safi" },
+  { value: "Fes-Meknes", label: "Fes-Meknes" },
+  { value: "Tangier-Tetouan-Al Hoceima", label: "Tangier-Tetouan-Al Hoceima" },
+  { value: "Souss-Massa", label: "Souss-Massa" },
+  { value: "Beni Mellal-Khenifra", label: "Beni Mellal-Khenifra" },
+  { value: "Oriental", label: "Oriental" },
+  { value: "Draa-Tafilalet", label: "Draa-Tafilalet" },
+  { value: "Guelmim-Oued Noun", label: "Guelmim-Oued Noun" },
+  { value: "Laayoune-Sakia El Hamra", label: "Laayoune-Sakia El Hamra" },
+  { value: "Dakhla-Oued Ed-Dahab", label: "Dakhla-Oued Ed-Dahab" },
+];
 
 type OpcionOrganizacion = {
   id: string;
@@ -83,11 +388,20 @@ export default function EditUnitPage() {
   const [latitudUbicacionActual, setLatitudUbicacionActual] = useState<number | null>(null);
   const [longitudUbicacionActual, setLongitudUbicacionActual] = useState<number | null>(null);
   const [direccionLegible, setDireccionLegible] = useState("");
-  const [especialidadPrincipal, setEspecialidadPrincipal] = useState("");
+  const [especialidades, setEspecialidades] = useState("");
   const [horarioOperativo, setHorarioOperativo] = useState("");
   const [contactoEmergencia, setContactoEmergencia] = useState("");
   const [telefonoEmergencia, setTelefonoEmergencia] = useState("");
   const [notasOperativas, setNotasOperativas] = useState("");
+  const [dni, setDni] = useState("");
+  const [archivoAvatar, setArchivoAvatar] = useState<File | null>(null);
+  const [vistaPreviaAvatar, setVistaPreviaAvatar] = useState("");
+  const [idioma, setIdioma] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [provincia, setProvincia] = useState("");
+  const [pais, setPais] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [grupoSanguineo, setGrupoSanguineo] = useState("");
   const [unidadActiva, setUnidadActiva] = useState(true);
   const [organizacionId, setOrganizacionId] = useState("");
   const [supervisorAsignadoId, setSupervisorAsignadoId] = useState("");
@@ -105,6 +419,31 @@ export default function EditUnitPage() {
         OPCIONES_ESTADO.find((opcion) => opcion.value === estadoOperativo)?.label ?? "Sin estado",
     };
   }, [rol, estadoOperativo]);
+
+  const opcionesProvincia = useMemo(() => {
+    switch (pais) {
+      case "Espana":
+        return OPCIONES_PROVINCIA_ESPANA;
+      case "Portugal":
+        return OPCIONES_PROVINCIA_PORTUGAL;
+      case "Francia":
+        return OPCIONES_PROVINCIA_FRANCIA_COMPLETA;
+      case "Italia":
+        return OPCIONES_PROVINCIA_ITALIA_COMPLETA;
+      case "Alemania":
+        return OPCIONES_PROVINCIA_ALEMANIA_COMPLETA;
+      case "Reino Unido":
+        return OPCIONES_PROVINCIA_REINO_UNIDO;
+      case "Estados Unidos":
+        return OPCIONES_PROVINCIA_ESTADOS_UNIDOS;
+      case "Andorra":
+        return OPCIONES_PROVINCIA_ANDORRA;
+      case "Marruecos":
+        return OPCIONES_PROVINCIA_MARRUECOS;
+      default:
+        return [{ value: "", label: "Selecciona primero un pais" }];
+    }
+  }, [pais]);
 
   const [edicionDesbloqueada, setEdicionDesbloqueada] = useState(false);
 
@@ -151,7 +490,7 @@ export default function EditUnitPage() {
         setDispositivoAsignado(
           dispositivoEncontrado ? `${dispositivoEncontrado.name} · ${dispositivoEncontrado.platform}` : ""
         );
-        setEspecialidadPrincipal((unidad.specialties ?? [])[0] ?? "");
+        setEspecialidades((unidad.specialties ?? []).join("\n"));
         setHorarioOperativo(unidad.operative_schedule ?? "");
         setLatitudUbicacionActual(unidad.location_lat ?? null);
         setLongitudUbicacionActual(unidad.location_lng ?? null);
@@ -159,6 +498,15 @@ export default function EditUnitPage() {
         setContactoEmergencia(unidad.emergency_contact ?? "");
         setTelefonoEmergencia(unidad.emergency_phone ?? "");
         setNotasOperativas((unidad.medical_notes ?? []).join("\n"));
+        setDni(unidad.dni ?? "");
+        setVistaPreviaAvatar(unidad.avatar ?? "");
+        setIdioma(unidad.language ?? "");
+        setCiudad(unidad.city ?? "");
+        setProvincia(unidad.province ?? "");
+        setPais(unidad.country ?? "");
+        setFechaNacimiento(unidad.birth_date ?? "");
+        setGrupoSanguineo(unidad.blood_type ?? "");
+        setUltimaUbicacion(unidad.location_address ?? "");
         setUnidadActiva(Boolean(unidad.is_active));
       } catch {
         setError("Error de red al cargar la unidad.");
@@ -167,6 +515,15 @@ export default function EditUnitPage() {
       }
     })();
   }, [id]);
+
+  function manejarCambioAvatar(evento: ChangeEvent<HTMLInputElement>) {
+    const nuevoArchivoAvatar = evento.target.files?.[0] ?? null;
+    setArchivoAvatar(nuevoArchivoAvatar);
+
+    if (nuevoArchivoAvatar) {
+      setVistaPreviaAvatar(URL.createObjectURL(nuevoArchivoAvatar));
+    }
+  }
 
   async function manejarGuardar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -182,9 +539,6 @@ export default function EditUnitPage() {
 
     try {
       const datosFormulario = new FormData();
-      datosFormulario.append("username", nombreUsuario.trim());
-      datosFormulario.append("email", correo.trim());
-      datosFormulario.append("phone", telefono.trim());
       datosFormulario.append("role", rol);
       datosFormulario.append("is_active", String(unidadActiva));
       datosFormulario.append("emergency_contact", contactoEmergencia.trim());
@@ -201,17 +555,29 @@ export default function EditUnitPage() {
         )
       );
       datosFormulario.append("organization_id", organizacionId);
+      datosFormulario.append("dni", dni.trim());
+      datosFormulario.append("language", idioma);
+      datosFormulario.append("city", ciudad);
+      datosFormulario.append("province", provincia);
+      datosFormulario.append("country", pais);
+      datosFormulario.append("birth_date", fechaNacimiento);
       datosFormulario.append(
         "specialties",
         JSON.stringify(
-          [especialidadPrincipal]
+          especialidades
+            .split("\n")
             .map((valor) => valor.trim())
             .filter(Boolean)
         )
       );
       datosFormulario.append("operative_schedule", horarioOperativo.trim());
+      datosFormulario.append("blood_type", grupoSanguineo.trim());
       datosFormulario.append("device_id", dispositivoAsignadoId);
       datosFormulario.append("assigned_supervisor_id", supervisorAsignadoId);
+
+      if (archivoAvatar) {
+        datosFormulario.append("avatar", archivoAvatar);
+      }
 
       const respuesta = await apiFetch(`/auth/panel/users/${id}/`, {
         method: "PATCH",
@@ -248,22 +614,29 @@ export default function EditUnitPage() {
         (opcion) => opcion.id === (unidadActualizada.device_id ?? "")
       );
 
-      setNombreUsuario(unidadActualizada.username ?? "");
-      setCorreo(unidadActualizada.email ?? "");
-      setTelefono(unidadActualizada.phone ?? "");
       setRol(unidadActualizada.role ?? "OPERATIVE");
       setUnidadActiva(Boolean(unidadActualizada.is_active));
       setContactoEmergencia(unidadActualizada.emergency_contact ?? "");
       setTelefonoEmergencia(unidadActualizada.emergency_phone ?? "");
       setHorarioOperativo(unidadActualizada.operative_schedule ?? "");
-      setEspecialidadPrincipal((unidadActualizada.specialties ?? [])[0] ?? "");
+      setEspecialidades((unidadActualizada.specialties ?? []).join("\n"));
       setNotasOperativas((unidadActualizada.medical_notes ?? []).join("\n"));
       setLatitudUbicacionActual(unidadActualizada.location_lat ?? null);
       setLongitudUbicacionActual(unidadActualizada.location_lng ?? null);
       setDireccionLegible(unidadActualizada.location_address ?? "");
+      setUltimaUbicacion(unidadActualizada.location_address ?? "");
       setOrganizacionId(unidadActualizada.organization_id ?? "");
       setSupervisorAsignadoId(unidadActualizada.assigned_supervisor_id ?? "");
       setDispositivoAsignadoId(unidadActualizada.device_id ?? "");
+      setDni(unidadActualizada.dni ?? "");
+      setVistaPreviaAvatar(unidadActualizada.avatar ?? vistaPreviaAvatar);
+      setArchivoAvatar(null);
+      setIdioma(unidadActualizada.language ?? "");
+      setCiudad(unidadActualizada.city ?? "");
+      setProvincia(unidadActualizada.province ?? "");
+      setPais(unidadActualizada.country ?? "");
+      setFechaNacimiento(unidadActualizada.birth_date ?? "");
+      setGrupoSanguineo(unidadActualizada.blood_type ?? "");
       setOrganizacion(organizacionActualizada?.name ?? organizacion);
       setDispositivoAsignado(
         dispositivoActualizado ? `${dispositivoActualizado.name} · ${dispositivoActualizado.platform}` : dispositivoAsignado
@@ -372,6 +745,132 @@ export default function EditUnitPage() {
                   >
                     {OPCIONES_ROL.map((opcion) => (
                       <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Perfil</p>
+                <h2 className="mt-2 text-xl font-bold">Identidad operativa</h2>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr_auto]">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Avatar</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={!edicionDesbloqueada}
+                    onChange={manejarCambioAvatar}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-[color:var(--cm-info)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                  />
+                  <p className="mt-2 text-xs text-[color:var(--cm-text-muted)]">
+                    Imagen del avatar asociada al profile.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">DNI</label>
+                  <input
+                    value={dni}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => setDni(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                    placeholder="Documento de identidad"
+                  />
+                </div>
+
+                <div className="flex items-end justify-start lg:justify-center">
+                  {vistaPreviaAvatar ? (
+                    <img
+                      src={vistaPreviaAvatar}
+                      alt="Avatar de la unidad"
+                      className="h-24 w-24 rounded-2xl object-cover ring-1 ring-[color:var(--cm-border)]"
+                    />
+                  ) : (
+                    <div className="grid h-24 w-24 place-items-center rounded-2xl bg-[color:var(--cm-surface-2)] text-xs text-[color:var(--cm-text-muted)] ring-1 ring-[color:var(--cm-border)]">
+                      Sin avatar
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Idioma</label>
+                  <select
+                    value={idioma}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => setIdioma(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                  >
+                    {OPCIONES_IDIOMA.map((opcion) => (
+                      <option key={opcion.value || "vacio"} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Fecha de nacimiento</label>
+                  <input
+                    type="date"
+                    value={fechaNacimiento}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => setFechaNacimiento(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Ciudad</label>
+                  <input
+                    value={ciudad}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => setCiudad(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                    placeholder="Escribe la ciudad"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Provincia</label>
+                  <select
+                    value={provincia}
+                    disabled={!edicionDesbloqueada || !pais}
+                    onChange={(e) => setProvincia(e.target.value)}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                  >
+                    {opcionesProvincia.map((opcion) => (
+                      <option key={opcion.value || "vacio"} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Pais</label>
+                  <select
+                    value={pais}
+                    disabled={!edicionDesbloqueada}
+                    onChange={(e) => {
+                      const nuevoPais = e.target.value;
+                      setPais(nuevoPais);
+                      setProvincia("");
+                    }}
+                    className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                  >
+                    {OPCIONES_PAIS.map((opcion) => (
+                      <option key={opcion.value || "vacio"} value={opcion.value}>
                         {opcion.label}
                       </option>
                     ))}
@@ -510,13 +1009,13 @@ export default function EditUnitPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Especialidad principal</label>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Grupo sanguineo</label>
                   <input
-                    value={especialidadPrincipal}
+                    value={grupoSanguineo}
                     disabled ={!edicionDesbloqueada}
-                    onChange={(e) => setEspecialidadPrincipal(e.target.value)}
+                    onChange={(e) => setGrupoSanguineo(e.target.value)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
-                    placeholder="Rescate, comunicaciones, primeros auxilios..."
+                    placeholder="Ej. O+"
                   />
                 </div>
 
@@ -541,6 +1040,18 @@ export default function EditUnitPage() {
                     placeholder="40.4168, -3.7038 · Madrid"
                   />
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Especialidades</label>
+                <textarea
+                  value={especialidades}
+                  disabled ={!edicionDesbloqueada}
+                  onChange={(e) => setEspecialidades(e.target.value)}
+                  rows={5}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
+                  placeholder="Introduce una especialidad por linea"
+                />
               </div>
             </section>
 
