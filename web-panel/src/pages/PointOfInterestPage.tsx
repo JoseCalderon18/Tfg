@@ -177,6 +177,7 @@ function FitToMarkers({ points }: { points: PointOfInterestRow[] }) {
   return null;
 }
 
+
 export default function PointOfInterestPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -184,7 +185,44 @@ export default function PointOfInterestPage() {
   const [search, setSearch] = useState("");
   const [points, setPoints] = useState<PointOfInterestRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [puntoPendienteEliminarId, setPuntoPendienteEliminarId] = useState<string | null>(null);
+  const [puntoEliminandoId, setPuntoEliminandoId] = useState<string | null>(null);
 
+  function prepararEliminarPuntoInteres(id: string) {
+    setPuntoPendienteEliminarId(id);
+  }
+
+  async function eliminarPuntoInteres(id: string) {
+    if (puntoEliminandoId) return;
+
+    setError("");
+    setPuntoEliminandoId(id);
+
+    try {
+      const response = await apiFetch(`/points-of-interest/${id}/`, { method: "DELETE" });
+      if (!response.ok) {
+        let detail = "No se pudo eliminar el punto de interes.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          }
+        } catch {
+          // mantenemos el fallback
+        }
+        setError(detail);
+        return;
+      }
+
+      setPoints((prev) => prev.filter((point) => point.id !== id));
+      setSelectedId((prev) => (prev === id ? null : prev));
+      setPuntoPendienteEliminarId(null);
+    } catch {
+      setError("Error de red al eliminar el punto de interes. Intenta de nuevo.");
+    } finally {
+      setPuntoEliminandoId(null);
+    }
+  }
   useEffect(() => {
     (async () => {
       try {
@@ -233,6 +271,9 @@ export default function PointOfInterestPage() {
     filteredPoints.find((point) => point.id === selectedId) ??
     points.find((point) => point.id === selectedId) ??
     null;
+
+  const puntoPendienteEliminar =
+    points.find((point) => point.id === puntoPendienteEliminarId) ?? null;
 
   useEffect(() => {
     if (!selectedPoint && filteredPoints[0]) {
@@ -363,15 +404,25 @@ export default function PointOfInterestPage() {
                 </p>
               </div>
 
-              {selectedPoint.incidentId ? (
+              <div className="flex flex-wrap gap-3">
+                {selectedPoint.incidentId ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/editIncident/${selectedPoint.incidentId}`)}
+                    className="rounded-xl bg-[color:var(--cm-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                  >
+                    Abrir incidente relacionado
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => navigate(`/editIncident/${selectedPoint.incidentId}`)}
-                  className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                  onClick={() => prepararEliminarPuntoInteres(selectedPoint.id)}
+                  disabled={Boolean(puntoEliminandoId)}
+                  className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                 >
-                  Abrir incidente relacionado
+                  {puntoEliminandoId === selectedPoint.id ? "Borrando..." : "Borrar"}
                 </button>
-              ) : null}
+              </div>
             </div>
           )}
         </section>
@@ -381,6 +432,48 @@ export default function PointOfInterestPage() {
           </button>
         </div>
       </div>
+
+      {puntoPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/55 px-4 lg:px-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="punto-eliminar-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] lg:mr-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar punto de interes</p>
+            <h2 id="punto-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar este punto de interes?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente
+              {puntoPendienteEliminar.name ? ` "${puntoPendienteEliminar.name}"` : ""}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Esta accion no se puede deshacer.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setPuntoPendienteEliminarId(null)}
+                disabled={Boolean(puntoEliminandoId)}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void eliminarPuntoInteres(puntoPendienteEliminar.id)}
+                disabled={Boolean(puntoEliminandoId)}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {puntoEliminandoId === puntoPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
