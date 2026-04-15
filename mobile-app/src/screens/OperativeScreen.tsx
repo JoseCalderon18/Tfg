@@ -171,7 +171,7 @@ export default function OperativeScreen({ navigation }: any) {
                 <Text style={styles.menuOptionText}>⏸️ Iniciar descanso</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('StopShift')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('StopJourney')}>
                 <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('Profile')}>
