@@ -5,6 +5,7 @@ Compatibiliza nombres en espanol e ingles usados en las vistas.
 
 from .auth_serializers import UserSerializer, UserCreateSerializer, ProfileSerializer
 from .track_serializers import TrackPointSerializer, TrackPointCreateSerializer
+from .journey_serializers import JourneySerializer, JourneyCreateSerializer, JourneyStopSerializer
 from .incident_serializers import (
     IncidentSerializer,
     IncidentCreateSerializer,
@@ -25,7 +26,6 @@ from .organization_serializers import OrganizationSerializer, OrganizationCreate
 from .lightning_serializers import LightningStrikeSerializer, LightningStrikeListSerializer
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
 from .workarea_serializers import WorkAreaSerializer, WorkAreaCreateSerializer
-from .journey_serializers import JourneySerializer, JourneyCreateSerializer
 from .point_of_interest_serializers import PointOfInterestSerializer, PointOfInterestCreateSerializer
 
 # Alias en espanol para compatibilidad con vistas existentes
@@ -74,6 +74,7 @@ __all__ = [
     "RiskReportCreateSerializer",
     "JourneySerializer",
     "JourneyCreateSerializer",
+    "JourneyStopSerializer",
     "PointOfInterestSerializer",
     "PointOfInterestCreateSerializer",
 ]

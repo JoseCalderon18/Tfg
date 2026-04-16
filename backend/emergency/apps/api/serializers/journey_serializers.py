@@ -1,4 +1,5 @@
 from django.contrib.gis.geos import Point
+from django.utils import timezone
 from rest_framework import serializers
 
 from emergency.apps.core.models import Journey
@@ -54,3 +55,19 @@ class JourneyCreateSerializer(serializers.ModelSerializer):
             validated_data["location_start"] = Point(longitude, latitude, srid=4326)
 
         return Journey.objects.create(**validated_data)
+
+
+class JourneyStopSerializer(serializers.Serializer):
+    latitude = serializers.FloatField(required=True)
+    longitude = serializers.FloatField(required=True)
+    end_date = serializers.DateTimeField(required=False)
+
+    def save(self, **kwargs):
+        journey = self.context["journey"]
+        latitude = self.validated_data["latitude"]
+        longitude = self.validated_data["longitude"]
+        end_date = self.validated_data.get("end_date")
+        journey.end_date = end_date or timezone.now()
+        journey.location_stop = Point(longitude, latitude, srid=4326)
+        journey.save(update_fields=["end_date", "location_stop"])
+        return journey

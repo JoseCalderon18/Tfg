@@ -1,11 +1,13 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from emergency.apps.core.models import Journey
-from ..serializers import JourneyCreateSerializer, JourneySerializer
+from ..serializers import JourneyCreateSerializer, JourneySerializer, JourneyStopSerializer
 
 
 class JourneyViewSet(viewsets.ModelViewSet):
@@ -21,7 +23,38 @@ class JourneyViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in {"create", "update", "partial_update"}:
             return JourneyCreateSerializer
+        if self.action == "stop_current":
+            return JourneyStopSerializer
         return JourneySerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user.profile)
+
+    @action(detail=False, methods=["post"], url_path="stop-current")
+    def stop_current(self, request):
+        try:
+            profile = request.user.profile
+        except Exception:
+            return Response(
+                {"detail": "El usuario autenticado no tiene perfil asociado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        journey = (
+            Journey.objects
+            .filter(user=profile, end_date__isnull=True)
+            .order_by("-created_at")
+            .first()
+        )
+
+        if journey is None:
+            return Response(
+                {"detail": "No hay una jornada activa para este usuario."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.get_serializer(data=request.data, context={"journey": journey})
+        serializer.is_valid(raise_exception=True)
+        journey = serializer.save()
+
+        return Response(JourneySerializer(journey).data, status=status.HTTP_200_OK)

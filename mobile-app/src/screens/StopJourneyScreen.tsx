@@ -209,7 +209,7 @@ export default function StopJourneyScreen({ navigation }: any) {
   const [screenError, setScreenError] = useState('');
   const [locationPermission, setLocationPermission] = useState(false);
   const { token, user } = useAuth();
-  const { location: trackedLocation } = useLocation();
+  const { location: trackedLocation, stopTracking } = useLocation();
   const [manualLocation, setManualLocation] = useState<Location.LocationObject | null>(null);
 
   useEffect(() => {
@@ -355,14 +355,50 @@ export default function StopJourneyScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      Alert.alert(
-        'Confirmacion',
-        'La parte visual ya muestra la jornada real. Falta completar el endpoint de cierre definitivo.'
-      );
+      const response = await apiFetch('/journeys/stop-current/', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({
+          latitude: freshLocation.coords.latitude,
+          longitude: freshLocation.coords.longitude,
+          end_date: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'No se pudo finalizar la jornada.';
+
+        if (errorText) {
+          try {
+            const errorData = JSON.parse(errorText) as { detail?: string };
+            errorMessage = errorData.detail ?? errorMessage;
+          } catch {
+            errorMessage = errorText;
+          }
+        }
+
+        Alert.alert('Error', errorMessage);
+        return;
+      }
+
+      const updatedJourney = await parseJsonResponse<JourneyApi>(response);
+      setJourney(updatedJourney);
+      stopTracking();
+
+      Alert.alert('Exito', 'Jornada finalizada correctamente.', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Error de conexion');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <SafeAreaView style={styles.screen}>
