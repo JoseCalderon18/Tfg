@@ -48,6 +48,7 @@ export default function AlertsPage() {
   const [errorMensaje, setErrorMensaje] = useState("");
   const [alertaPendienteEliminarId, setAlertaPendienteEliminarId] = useState("");
   const [alertaEliminandoId, setAlertaEliminandoId] = useState("");
+  const [alertaActualizandoId, setAlertaActualizandoId] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -141,6 +142,43 @@ export default function AlertsPage() {
       setAlertaPendienteEliminarId("");
     } finally {
       setAlertaEliminandoId("");
+    }
+  }
+
+  async function actualizarEstadoAlerta(alertId: string, accion: "acknowledge" | "close") {
+    if (alertaActualizandoId) return;
+
+    setErrorMensaje("");
+    setAlertaActualizandoId(alertId);
+    try {
+      const response = await apiFetch(`/alerts/${alertId}/${accion}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(accion === "acknowledge" ? { ack_notes: "" } : { close_notes: "" }),
+      });
+
+      if (!response.ok) {
+        let detail = accion === "acknowledge" ? "No se pudo reconocer la alerta." : "No se pudo cerrar la alerta.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          } else if (typeof data.error === "string") {
+            detail = data.error;
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorMensaje(detail);
+        return;
+      }
+
+      const alertaActualizada = (await response.json()) as FilaAlerta;
+      setAlertas((prev) => prev.map((alerta) => (alerta.id === alertId ? { ...alerta, ...alertaActualizada } : alerta)));
+    } finally {
+      setAlertaActualizandoId("");
     }
   }
 
@@ -256,6 +294,26 @@ export default function AlertsPage() {
                       >
                         Ver
                       </button>
+                      {alerta.status === "OPEN" ? (
+                        <button
+                          type="button"
+                          onClick={() => void actualizarEstadoAlerta(alerta.id, "acknowledge")}
+                          disabled={alertaActualizandoId === alerta.id}
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-warning)] px-2.5 py-1.5 text-xs font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {alertaActualizandoId === alerta.id ? "Guardando..." : "Reconocer"}
+                        </button>
+                      ) : null}
+                      {alerta.status !== "CLOSED" ? (
+                        <button
+                          type="button"
+                          onClick={() => void actualizarEstadoAlerta(alerta.id, "close")}
+                          disabled={alertaActualizandoId === alerta.id}
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-success)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {alertaActualizandoId === alerta.id ? "Guardando..." : "Cerrar"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => prepararEliminarAlerta(alerta.id)}

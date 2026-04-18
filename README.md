@@ -1,218 +1,93 @@
-# Aplicación de Gestión Logística y Seguridad para Cuerpos de Emergencias
+# Plataforma de Gestion Operativa para Emergencias
 
-Aplicación móvil + panel web para **cuerpos de emergencias** (incendios forestales y/o búsqueda de personas) que permite tracking GPS de operativos en tiempo real, alertas SOS con geolocalización y gestión de incidentes.
+Proyecto monorepo para coordinacion de operativos de emergencias con tres modulos principales:
 
----
+- `backend/`: API REST en Django + DRF + PostGIS.
+- `web-panel/`: panel web para supervision y gestion operativa.
+- `mobile-app/`: app Expo/React Native para personal en terreno.
 
-## 📁 Estructura del Proyecto
+## Estado actual
 
-```
+El sistema ya cubre el flujo base de una operacion:
+
+- autenticacion para panel web y app mobile
+- gestion de incidentes, alertas, usuarios, organizaciones y areas de trabajo
+- tracking GPS en tiempo real desde la app
+- jornadas operativas con inicio y cierre
+- puntos de interes geolocalizados
+- mapas operativos, meteorologia y capa de rayos en el panel
+
+## Arquitectura
+
+```text
 Proyecto/
-├── backend/                          # Django REST API
-│   ├── emergency/
-│   │   ├── apps/
-│   │   │   ├── core/               # Modelos y admin
-│   │   │   │   ├── models/         # Entidades principales
-│   │   │   │   └── admin.py        # Configuración admin
-│   │   │   └── api/                # API REST
-│   │   │       ├── serializers/     # Serializadores DRF
-│   │   │       └── views/          # Vistas API
-│   │   └── config/                 # Configuración Django
-│   │       ├── settings.py
-│   │       ├── urls.py
-│   │       └── wsgi.py
-│   ├── manage.py                   # CLI Django
-│   ├── requirements.txt            # Dependencias Python
-│   ├── Dockerfile                  # Imagen Docker
-│   └── docker-compose.yml          # Orquestación Docker
-├── mobile-app/                      # React Native + Expo
-│   ├── src/
-<<<<<<< HEAD
-│   │   ├── context/                  # AuthContext, LocationContext
-│   │   └── screens/                  # Pantallas
-│   │       ├── LoginScreen.tsx       # Autenticación
-│   │       ├── OperativeScreen.tsx   # Pantalla principal operativo
-│   │       ├── PointsOfInterestScreen.tsx  # Puntos de interés
-│   │       ├── MapScreen.tsx         # Visualización del mapa
-│   │       ├── AlertScreen.tsx       # Formulario de alertas
-│   │       └── HomeScreen.tsx        # Pantalla de inicio (legacy)
-=======
-│   │   ├── context/               # AuthContext, LocationContext
-│   │   └── screens/               # Pantallas
->>>>>>> f943b3c14cd95417887e7e5fca7917e137cc2082
-│   ├── App.tsx
-│   └── package.json
-├── web-panel/                      # React + Vite + TypeScript
-│   ├── src/
-│   │   ├── components/             # Componentes reutilizables
-│   │   ├── pages/                  # Páginas
-│   │   └── store/                  # Zustand stores
-│   ├── index.html
-│   └── package.json
-└── README.md
+|- backend/      API Django REST + PostGIS
+|- web-panel/    React + Vite + TypeScript
+|- mobile-app/   Expo + React Native + TypeScript
+`- schema.sql    referencia de base de datos
 ```
 
----
+## Funcionalidades actuales
 
-## 🗄️ Entidades del Sistema
+### Backend
 
-Las entidades están definidas en `backend/emergency/apps/core/models/`:
+- API REST bajo `/api/`
+- JWT para la app mobile
+- sesion + CSRF para el panel web
+- documentacion en `/api/docs/swagger/` y `/api/docs/redoc/`
+- tracking por punto y por incidente
+- CRUD de incidentes, alertas, organizaciones, usuarios, jornadas, areas de trabajo y puntos de interes
 
-| Entidad | Descripción | Campos principales |
-|---------|-------------|-------------------|
-| **User** | Usuario base (extiende AbstractUser) | username, email, password, phone |
-| **Perfil** | Perfil extendido con roles | role (ADMIN/SUPERVISOR/OPERATIVE), organization |
-| **Organization** | Organización (bomberos, policía, etc.) | name, org_type, contact |
-| **Incident** | Incidente/Operativo | name, type (WILDFIRE/SEARCH), status (OPEN/CLOSED), location (Point) |
-| **IncidentMember** | Relación N:M usuario-incidente | role_in_incident, joined_at |
-| **TrackPoint** | Punto GPS de tracking | location (Point), accuracy_m, speed, recorded_at |
-| **Alert** | Alerta SOS o emergencia urgente | type (SOS/MAN_DOWN), severity (1-5), status (OPEN/ACK/CLOSED) |
-| **RiskReport** | Reporte de zona de riesgo | location (Point), description, severity (LOW/MEDIUM/HIGH) |
-| **Device** | Dispositivo para notificaciones push | fcm_token, platform |
-| **WorkArea** | Área de trabajo (círculo o polígono) | area_type, center, radius_m, polygon |
+Mas detalle en `backend/README.md`.
 
----
+### Panel web
 
-## 🚀 Guía de Inicio Rápido
+- login y recuperacion de contrasena
+- dashboard con metricas operativas
+- gestion de incidentes y exportacion PDF
+- gestion de alertas
+- gestion de usuarios, unidades y organizaciones
+- gestion geoespacial de areas de trabajo y puntos de interes
+- vistas de meteorologia, rayos y jornadas
 
-### Opción 1: Docker 
+Mas detalle en `web-panel/README.md`.
+
+### App mobile
+
+- login con persistencia segura de sesion
+- pantalla operativa con estado GPS
+- tracking continuo de ubicacion
+- mapa operativo a pantalla completa
+- alta manual de alertas con geolocalizacion
+- inicio y fin de jornada
+- carga de puntos de interes desde campo
+
+Mas detalle en `mobile-app/README.md`.
+
+## Puesta en marcha rapida
+
+### 1. Backend
 
 ```bash
-# 1. Clonar el proyecto
-git clone <repo-url>
-cd Proyecto
-
-# 2. Levantar servicios
 cd backend
-docker-compose up --build
-
-# 3. Acceder a los servicios
-# API: http://localhost:8000
-# Admin: http://localhost:8000/admin
-# Swagger: http://localhost:8000/api/docs/
+cp .env.example .env
+docker compose up --build
 ```
 
-## 🐳 Docker
+API: `http://localhost:8000/api/`
 
-### Servicios disponibles:
-
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| Backend (Django) | 8000 | API REST |
-| PostgreSQL + PostGIS | 5432 | Base de datos |
-
-### Comandos Docker:
+### 2. Panel web
 
 ```bash
-# Iniciar servicios
-docker-compose up
-
-# Iniciar en background
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Parar servicios
-docker-compose down
-
-# Rebuild y iniciar
-docker-compose up --build
+cd web-panel
+npm install
+cp .env.example .env
+npm run dev
 ```
 
----
+Panel: `http://localhost:5173`
 
-## 📡 Endpoints de la API
-
-### Autenticación
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/auth/register/` | Registrar usuario |
-| POST | `/api/auth/panel/login/` | Iniciar sesión (web panel) |
-| POST | `/api/auth/login/` | Iniciar sesión (mobile app) |
-| POST | `/api/auth/panel/logout/` | Cerrar sesión |
-| GET | `/api/auth/me/` | Usuario actual |
-| GET | `/api/auth/me/profile/` | Perfil del usuario |
-
-### Incidentes
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/incidents/` | Lista de incidentes |
-| POST | `/api/incidents/` | Crear incidente |
-| GET | `/api/incidents/{id}/` | Detalle de incidente |
-| PUT | `/api/incidents/{id}/` | Actualizar incidente |
-| DELETE | `/api/incidents/{id}/` | Eliminar incidente |
-| POST | `/api/incidents/{id}/join/` | Unirse al incidente |
-| POST | `/api/incidents/{id}/leave/` | Abandonar incidente |
-| POST | `/api/incidents/{id}/close/` | Cerrar incidente |
-| GET | `/api/incidents/{id}/members/` | Ver miembros |
-| GET | `/api/incidents/active/` | Incidentes activos |
-| GET | `/api/incidents/my_incidents/` | Mis incidentes |
-
-### Alertas
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/alerts/` | Lista de alertas |
-| POST | `/api/alerts/` | Crear alerta |
-| POST | `/api/alerts/{id}/acknowledge/` | Reconocer alerta |
-| POST | `/api/alerts/{id}/close/` | Cerrar alerta |
-| GET | `/api/alerts/open/` | Alertas abiertas |
-| GET | `/api/alerts/my_alerts/` | Mis alertas |
-
-### Reportes de Riesgo (RiskReport)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/risk-reports/` | Lista de reportes de riesgo |
-| POST | `/api/risk-reports/` | Crear reporte de riesgo |
-| GET | `/api/risk-reports/{id}/` | Detalle de reporte |
-| POST | `/api/risk-reports/{id}/deactivate/` | Desactivar reporte |
-| GET | `/api/risk-reports/active/` | Reportes activos |
-| GET | `/api/risk-reports/by_incident/?incident_id=` | Reportes de un incidente |
-
-### Tracking GPS
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/tracking/point/` | Enviar punto GPS |
-| POST | `/api/tracking/batch/` | Enviar varios puntos |
-| GET | `/api/tracking/last/` | Última posición |
-| GET | `/api/tracking/route/?user_id=&incident_id=` | Ruta de un usuario |
-| GET | `/api/tracking/incident/{id}/` | Tracking de incidente |
-
-### Usuarios y Organizaciones
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/users/` | Lista de usuarios |
-| GET | `/api/organizations/` | Lista de organizaciones |
-| POST | `/api/organizations/` | Crear organización |
-
----
-
-## 🔐 Autenticación
-
-El sistema usa **JWT (JSON Web Tokens)**.
-
-### Headers requeridos:
-```
-Authorization: Bearer <token>
-```
-
-### Obtener token:
-```bash
-# Login para mobile-app
-curl -X POST http://localhost:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
-```
-
----
-
-## 📱 Mobile App
+### 3. App mobile
 
 ```bash
 cd mobile-app
@@ -220,90 +95,40 @@ npm install
 npx expo start
 ```
 
-Una vez ejecutado, escanea el código QR con **Expo Go** en tu dispositivo iOS o Android.
+## Variables utiles
 
-### Pantallas de la App Móvil
+### Web panel
 
-#### 🔐 **LoginScreen**
-- Pantalla de autenticación
-- Campos: Username y Password
-- Valida credenciales contra el backend
+- `VITE_API_BASE_URL=http://127.0.0.1:8000/api`
 
-#### 🏠 **OperativeScreen** - Pantalla Principal del Operativo
-La interfaz principal de trabajo para operativos en el terreno.
+### Mobile app
 
-**Componentes:**
-- **Header (Rojo):** 
-  - Botón menú hamburguesa (≡)
-  - Título "Emergency App"
-  - Nombre del usuario
+- `EXPO_PUBLIC_API_BASE_URL=http://<host>:8000/api`
+- `EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000`
+- `EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000`
 
-- **Área Central:** Espacio reservado para el mapa (placeholder "Mapa")
+## Mejoras recomendadas
 
-- **Menú Inferior (15% altura):**
-  - 📍 **MARCAR PUNTO** (izquierda) - Accede a puntos de interés
-  - 🚨 **ALERTA** (centro, rojo, destacado) - Envía alerta SOS con confirmación
-  - ☎️ **LLAMAR** (derecha) - Función de llamada de emergencia
+### Para el panel web
 
-- **Menú Hamburguesa:**
-  - 👥 Compañeros - Ver ubicación de compañeros
-  - 🌤️ Meteorología - Información meteorológica
-  - ⏸️ Iniciar Descanso - Registrar descanso
-  - 🛑 Parar Jornada - Finalizar jornada de trabajo
-  - 🚪 Cerrar Sesión - Logout
+- centralizar permisos y guardas por ruta
+- usar `react-query` para cache, refetch y mutaciones
+- unificar nombres de rutas y pantallas
+- permitir reconocer/cerrar alertas e incidentes desde listados
+- agregar filtros persistentes y enlaces compartibles
+- separar mejor el concepto de usuarios y unidades
 
-**Funcionalidades:**
-- Confirmación requerida para enviar alerta SOS
-- Navegación fluida entre pantallas
-- Almacenamiento seguro de tokens con Expo Secure Store
+### Para la app mobile
 
-#### 📍 **PointsOfInterestScreen** - Puntos de Interés
-Pantalla dedicada a marcar y visualizar puntos de interés en el terreno.
+- corregir rutas de navegacion a pantallas no registradas
+- alinear tipos de puntos de interes con los soportados por backend
+- mejorar soporte offline para tracking, alertas y puntos
+- homogeneizar textos y estados de la UX
+- agregar flujo real de descansos
+- implementar refresh automatico de token
 
-**Opciones disponibles:**
-- 🚰 **Hidrantes** - Ubicación de hidrantes disponibles
-- 🏠 **Asentamiento** - Zonas de viviendas y asentamientos
-- 🔥 **Cortafuegos** - Líneas de cortafuegos
-- 👁️ **Puntos de Vigilancia** - Torres y puntos de vigilancia
-- 🏢 **Estaciones Base** - Campamentos y estaciones base
-- 🚪 **Vías de Evacuación** - Rutas de evacuación recomendadas
+## Observaciones tecnicas
 
-**Interactividad:**
-- Selecciona un punto para ver opciones
-- "Ver en mapa" - Visualiza el punto en el mapa principal
-- "Marcar como punto" - Registra el punto en el sistema
-
-#### 🗺️ **MapScreen**
-- Visualización del mapa en tiempo real
-- Muestra la ubicación actual del operativo
-- Marcador de posición GPS
-
-#### 🚨 **AlertScreen**
-- Formulario para enviar alertas manuales
-- Campos:
-  - Tipo de alerta (SOS, Man Down, Pérdida, Otro)
-  - Severidad (1-5)
-  - Descripción
-- Incluye geolocalización automática
-- Confirmación antes de enviar
-
----
-
-## 🖥️ Web Panel
-
-```bash
-cd web-panel
-npm install
-npm run dev
-```
-
----
-
-## 🧪 Tests
-
-```bash
-cd backend
-python manage.py test
-```
-
-
+- El README raiz anterior tenia marcadores de conflicto de merge y fue normalizado.
+- La ruta correcta de Swagger es `/api/docs/swagger/`.
+- Hay documentacion especifica por modulo en `backend/README.md`, `web-panel/README.md` y `mobile-app/README.md`.

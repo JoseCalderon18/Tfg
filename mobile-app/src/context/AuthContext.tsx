@@ -5,7 +5,7 @@ import { ApiConnectionError, apiFetch, parseJsonResponse } from '../services/api
 /**
  * Interface que define la estructura de un Usuario
  */
-interface User {
+export interface User {
   id: string;
   profile_id?: string;
   username: string;

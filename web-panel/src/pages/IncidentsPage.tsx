@@ -398,6 +398,7 @@ export default function IncidentsPage() {
   const [errorAlertas, setErrorAlertas] = useState("");
   const [incidenteSeleccionadoId, setIncidenteSeleccionadoId] = useState<string>("");
   const [incidenteEliminandoId, setIncidenteEliminandoId] = useState<string>("");
+  const [incidenteActualizandoId, setIncidenteActualizandoId] = useState<string>("");
   const [incidentePendienteEliminarId, setIncidentePendienteEliminarId] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
 
@@ -716,9 +717,44 @@ export default function IncidentsPage() {
         setErrorMensaje(detail);
         return;
       }
+      setIncidentes((prev) => prev.filter((incidente) => incidente.id !== incidentId));
+      if (incidenteSeleccionadoId === incidentId) {
+        setIncidenteSeleccionadoId("");
+      }
       setIncidentePendienteEliminarId("");
     } finally {
       setIncidenteEliminandoId("");
+    }
+  }
+
+  async function cerrarIncidente(incidentId: string) {
+    if (incidenteActualizandoId) return;
+
+    setErrorMensaje("");
+    setIncidenteActualizandoId(incidentId);
+    try {
+      const res = await apiFetch(`/incidents/${incidentId}/close/`, { method: "POST" });
+      if (!res.ok) {
+        let detail = "No se pudo cerrar el incidente.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") detail = data.detail;
+          else if (typeof data.error === "string") detail = data.error;
+        } catch {
+          // keep fallback
+        }
+        setErrorMensaje(detail);
+        return;
+      }
+
+      const incidenteActualizado = normalizarIncidentes([await res.json()])[0];
+      if (!incidenteActualizado) return;
+
+      setIncidentes((prev) =>
+        prev.map((incidente) => (incidente.id === incidentId ? incidenteActualizado : incidente))
+      );
+    } finally {
+      setIncidenteActualizandoId("");
     }
   }
 
@@ -927,6 +963,19 @@ export default function IncidentsPage() {
                           >
                             Editar
                           </button>
+                          {incident.status !== "CLOSED" ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void cerrarIncidente(incident.id);
+                              }}
+                              disabled={Boolean(incidenteActualizandoId)}
+                              className="rounded-lg bg-[color:var(--cm-success)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                            >
+                              {incidenteActualizandoId === incident.id ? "Cerrando..." : "Cerrar"}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={(e) => {

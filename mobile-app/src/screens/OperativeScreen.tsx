@@ -47,7 +47,7 @@ export default function OperativeScreen({ navigation }: any) {
       case 'stopShift':
         Alert.alert('Parar jornada', '¿Desea finalizar su jornada?', [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Finalizar', onPress: () => console.log('Jornada finalizada') },
+          { text: 'Finalizar', onPress: () => navigation.navigate('StopJourney') },
         ]);
         break;
       case 'startBreak':
@@ -164,20 +164,35 @@ export default function OperativeScreen({ navigation }: any) {
                 <Text style={styles.menuOptionText}>🌤️ Meteorologia</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('StartJourney')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('StartJourney');
+              }}>
                 <Text style={styles.menuOptionText}>▶️ Iniciar Jornada</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('StartBreak')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('StartBreak');
+              }}>
                 <Text style={styles.menuOptionText}>⏸️ Iniciar descanso</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('StopJourney')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('StopJourney');
+              }}>
                 <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('Profile')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Profile');
+              }}>
                 <Text style={styles.menuOptionText}>👤 Perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => navigation.navigate('Settings')}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Settings');
+              }}>
                 <Text style={styles.menuOptionText}>⚙️ Configuración</Text>
               </TouchableOpacity>
               <TouchableOpacity
