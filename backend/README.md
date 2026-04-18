@@ -1,8 +1,8 @@
 # Backend
 
-API central del sistema de emergencias construida con Django REST Framework y soporte geoespacial con PostGIS.
+En esta carpeta tenemos la API principal del proyecto. Es la parte que centraliza autenticacion, entidades del sistema, tracking, jornadas y toda la logica necesaria para conectar el panel web y la app mobile.
 
-## Stack
+## Stack que estamos usando
 
 - Django 5
 - Django REST Framework
@@ -11,27 +11,25 @@ API central del sistema de emergencias construida con Django REST Framework y so
 - PostgreSQL + PostGIS
 - drf-spectacular
 
-## Ejecucion con Docker
+## Arranque con Docker
+
+La forma mas comoda de levantarlo en desarrollo es esta:
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-Servicios principales:
+Una vez levantado, normalmente trabajamos con estas rutas:
 
 - API: `http://localhost:8000/api/`
 - Admin: `http://localhost:8000/admin/`
 - Swagger: `http://localhost:8000/api/docs/swagger/`
 - ReDoc: `http://localhost:8000/api/docs/redoc/`
 
-Notas:
-
-- el contenedor aplica migraciones al iniciar
-- la base usa PostGIS
-- no se ejecutan seeds automaticos
-
 ## Instalacion local
+
+Si queremos ejecutarlo sin Docker, solemos seguir este flujo:
 
 ```bash
 python -m venv venv
@@ -44,9 +42,9 @@ python manage.py runserver
 
 ## Variables de entorno
 
-Ver `backend/.env.example`.
+La referencia base esta en `backend/.env.example`.
 
-Minimas para desarrollo:
+Las variables minimas que solemos configurar son:
 
 - `DB_HOST`
 - `DB_NAME`
@@ -57,7 +55,7 @@ Minimas para desarrollo:
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
 
-## Endpoints principales
+## Endpoints que mas usamos
 
 ### Autenticacion mobile
 
@@ -75,7 +73,7 @@ Minimas para desarrollo:
 - `GET /api/auth/panel/users/`
 - `POST /api/auth/panel/users/create/`
 
-### Operacion
+### Operativa
 
 - `POST /api/tracking/point/`
 - `POST /api/tracking/batch/`
@@ -83,7 +81,7 @@ Minimas para desarrollo:
 - `GET /api/tracking/route/`
 - `GET /api/tracking/incident/<uuid:incident_id>/`
 
-### Recursos CRUD
+### Recursos principales
 
 - `/api/incidents/`
 - `/api/alerts/`
@@ -95,9 +93,9 @@ Minimas para desarrollo:
 - `/api/journeys/`
 - `/api/points-of-interest/`
 
-## Datos demo
+## Datos de prueba
 
-Si necesitas cargar datos manuales tras crear la base:
+Si necesitamos cargar datos demo despues de levantar la base, usamos:
 
 ```powershell
 Get-Content .\datas.sql | docker compose exec -T db psql -U postgres -d emergency_db
@@ -109,7 +107,7 @@ Get-Content .\datas.sql | docker compose exec -T db psql -U postgres -d emergenc
 python manage.py test
 ```
 
-## Archivos clave
+## Archivos que solemos tocar mas
 
 - `emergency/config/settings.py`
 - `emergency/config/urls.py`

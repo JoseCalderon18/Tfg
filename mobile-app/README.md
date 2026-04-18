@@ -1,6 +1,6 @@
 # Mobile App
 
-Aplicacion Expo para personal operativo en terreno.
+Aqui esta la aplicacion mobile del proyecto, pensada para personal operativo que trabaja directamente sobre el terreno. La idea de esta parte es que el usuario pueda operar rapido, con acceso al mapa, al tracking y a las alertas.
 
 ## Stack
 
@@ -12,18 +12,23 @@ Aplicacion Expo para personal operativo en terreno.
 - expo-secure-store
 - react-native-maps
 
-## Funcionalidades actuales
+## Funcionalidad actual
+
+En el punto actual del proyecto, la app ya permite:
 
 - login con JWT
 - persistencia segura de sesion
 - tracking GPS continuo
-- pantalla operativa con acciones rapidas
-- mapa de incidentes, alertas y posicion del usuario
-- envio de alertas manuales con ubicacion
+- pantalla operativa con accesos rapidos
+- mapa con incidentes, alertas y posicion del usuario
+- envio manual de alertas con ubicacion
 - inicio y fin de jornada
-- registro de puntos de interes con coordenadas actuales
+- registro de descansos dentro de la jornada
+- registro de puntos de interes usando coordenadas actuales
 
 ## Pantallas principales
+
+Las pantallas mas claras ahora mismo son:
 
 - `Login`
 - `Operative`
@@ -31,7 +36,10 @@ Aplicacion Expo para personal operativo en terreno.
 - `Alert`
 - `PointsOfInterest`
 - `StartJourney`
+- `StartBreak`
 - `StopJourney`
+- `Profile`
+- `Settings`
 
 ## Ejecucion
 
@@ -40,7 +48,7 @@ npm install
 npx expo start
 ```
 
-## Variables de entorno utiles
+## Variables utiles
 
 ```bash
 EXPO_PUBLIC_API_BASE_URL=http://<host>:8000/api
@@ -50,19 +58,22 @@ EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
 
 ## Notas de conexion
 
+En desarrollo nos solemos apoyar en estas referencias:
+
 - en Android por USB puede hacer falta `adb reverse tcp:8000 tcp:8000`
-- si no se define `EXPO_PUBLIC_API_BASE_URL`, la app intenta varias URLs fallback
+- si no definimos `EXPO_PUBLIC_API_BASE_URL`, la app intenta varias URLs fallback
 
-## Cambios recomendados
+## Siguientes mejoras que tenemos en mente
 
-- corregir navegacion hacia `StartBreak`, `Profile` y `Settings`, que no estan registradas en el stack actual
-- alinear los tipos de puntos de interes con los aceptados por backend
-- implementar cola offline para tracking, alertas y puntos
-- agregar refresh automatico de token usando el `refreshToken` ya almacenado
-- tipar mejor la navegacion y reducir uso de `any`
-- completar el flujo real de descansos, que hoy solo aparece insinuado en la UI
+Todavia tenemos varias cosas que nos gustaria seguir puliendo:
 
-## Archivos clave
+- mejorar soporte offline para tracking, alertas y puntos
+- automatizar mejor el refresh del token
+- tipar mas la navegacion y reducir uso de `any`
+- mejorar consistencia visual y de estados
+- seguir afinando el flujo de operativa en campo
+
+## Archivos importantes del modulo
 
 - `App.tsx`
 - `src/context/AuthContext.tsx`
@@ -73,5 +84,6 @@ EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
 - `src/screens/MapScreen.tsx`
 - `src/screens/AlertScreen.tsx`
 - `src/screens/StartJourneyScreen.tsx`
+- `src/screens/StartBreakScreen.tsx`
 - `src/screens/StopJourneyScreen.tsx`
 - `src/screens/PointsOfInterestScreen.tsx`

@@ -1,23 +1,27 @@
 # Plataforma de Gestion Operativa para Emergencias
 
-Proyecto monorepo para coordinacion de operativos de emergencias con tres modulos principales:
+Este repositorio recoge el trabajo de nuestro equipo para una plataforma pensada para coordinacion de operativos de emergencia. La idea del proyecto es tener en un mismo entorno el backend, el panel web de supervision y la aplicacion mobile para personal desplegado en campo.
 
-- `backend/`: API REST en Django + DRF + PostGIS.
-- `web-panel/`: panel web para supervision y gestion operativa.
-- `mobile-app/`: app Expo/React Native para personal en terreno.
+## Como esta organizado el proyecto
 
-## Estado actual
+Ahora mismo el repositorio se divide en tres bloques principales:
 
-El sistema ya cubre el flujo base de una operacion:
+- `backend/`: API en Django REST con soporte geoespacial.
+- `web-panel/`: panel web para gestion, supervision y seguimiento operativo.
+- `mobile-app/`: app mobile para uso en terreno.
 
-- autenticacion para panel web y app mobile
+## Que cubre actualmente
+
+A dia de hoy el proyecto ya permite trabajar con el flujo principal de una operacion:
+
+- autenticacion para panel web y para app mobile
 - gestion de incidentes, alertas, usuarios, organizaciones y areas de trabajo
-- tracking GPS en tiempo real desde la app
-- jornadas operativas con inicio y cierre
-- puntos de interes geolocalizados
-- mapas operativos, meteorologia y capa de rayos en el panel
+- tracking GPS desde la app
+- gestion de jornadas con inicio, descansos y cierre
+- registro de puntos de interes geolocalizados
+- visualizacion de informacion operativa en mapas, meteorologia y rayos
 
-## Arquitectura
+## Estructura general
 
 ```text
 Proyecto/
@@ -27,46 +31,34 @@ Proyecto/
 `- schema.sql    referencia de base de datos
 ```
 
-## Funcionalidades actuales
+## Resumen por modulo
 
 ### Backend
 
-- API REST bajo `/api/`
-- JWT para la app mobile
+En el backend tenemos la API principal del sistema. Desde aqui se resuelven autenticacion, tracking, incidentes, alertas, jornadas, areas de trabajo, puntos de interes y el resto de entidades del proyecto.
+
+- base `/api/`
+- JWT para mobile
 - sesion + CSRF para el panel web
 - documentacion en `/api/docs/swagger/` y `/api/docs/redoc/`
-- tracking por punto y por incidente
-- CRUD de incidentes, alertas, organizaciones, usuarios, jornadas, areas de trabajo y puntos de interes
 
 Mas detalle en `backend/README.md`.
 
 ### Panel web
 
-- login y recuperacion de contrasena
-- dashboard con metricas operativas
-- gestion de incidentes y exportacion PDF
-- gestion de alertas
-- gestion de usuarios, unidades y organizaciones
-- gestion geoespacial de areas de trabajo y puntos de interes
-- vistas de meteorologia, rayos y jornadas
+El panel web es la parte pensada para supervisores o usuarios con vision global del operativo. Desde aqui se puede consultar el dashboard, gestionar incidentes y alertas, revisar usuarios, unidades, organizaciones y trabajar con informacion geoespacial.
 
 Mas detalle en `web-panel/README.md`.
 
 ### App mobile
 
-- login con persistencia segura de sesion
-- pantalla operativa con estado GPS
-- tracking continuo de ubicacion
-- mapa operativo a pantalla completa
-- alta manual de alertas con geolocalizacion
-- inicio y fin de jornada
-- carga de puntos de interes desde campo
+La app mobile esta orientada a personal en terreno. Permite iniciar sesion, activar tracking, ver el mapa operativo, lanzar alertas, registrar puntos de interes y gestionar la jornada.
 
 Mas detalle en `mobile-app/README.md`.
 
 ## Puesta en marcha rapida
 
-### 1. Backend
+### Backend
 
 ```bash
 cd backend
@@ -74,9 +66,9 @@ cp .env.example .env
 docker compose up --build
 ```
 
-API: `http://localhost:8000/api/`
+API disponible en `http://localhost:8000/api/`.
 
-### 2. Panel web
+### Panel web
 
 ```bash
 cd web-panel
@@ -85,9 +77,9 @@ cp .env.example .env
 npm run dev
 ```
 
-Panel: `http://localhost:5173`
+Panel disponible en `http://localhost:5173`.
 
-### 3. App mobile
+### Mobile app
 
 ```bash
 cd mobile-app
@@ -95,7 +87,7 @@ npm install
 npx expo start
 ```
 
-## Variables utiles
+## Variables que solemos usar
 
 ### Web panel
 
@@ -107,28 +99,16 @@ npx expo start
 - `EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000`
 - `EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000`
 
-## Mejoras recomendadas
+## Cosas que tenemos pendientes o que queremos seguir mejorando
 
-### Para el panel web
+En el estado actual todavia vemos margen para seguir puliendo varias partes:
 
-- centralizar permisos y guardas por ruta
-- usar `react-query` para cache, refetch y mutaciones
-- unificar nombres de rutas y pantallas
-- permitir reconocer/cerrar alertas e incidentes desde listados
-- agregar filtros persistentes y enlaces compartibles
-- separar mejor el concepto de usuarios y unidades
+- centralizar mejor permisos y guardas en el panel
+- mejorar cache y refetch de datos en web
+- reforzar modo offline en mobile
+- seguir afinando consistencia de nombres, rutas y flujos
+- dejar mas fino el flujo de operativa en tiempo real
 
-### Para la app mobile
+## Nota
 
-- corregir rutas de navegacion a pantallas no registradas
-- alinear tipos de puntos de interes con los soportados por backend
-- mejorar soporte offline para tracking, alertas y puntos
-- homogeneizar textos y estados de la UX
-- agregar flujo real de descansos
-- implementar refresh automatico de token
-
-## Observaciones tecnicas
-
-- El README raiz anterior tenia marcadores de conflicto de merge y fue normalizado.
-- La ruta correcta de Swagger es `/api/docs/swagger/`.
-- Hay documentacion especifica por modulo en `backend/README.md`, `web-panel/README.md` y `mobile-app/README.md`.
+Este README raiz intenta dar una vision general del proyecto. Para detalles mas concretos de cada modulo, lo mejor es ir a `backend/README.md`, `web-panel/README.md` y `mobile-app/README.md`.
