@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
+import { useOfflineSync } from '../context/OfflineSyncContext';
 
 const { height } = Dimensions.get('window');
 const ALTURA_MENU_INFERIOR = height * 0.15;
@@ -19,6 +20,7 @@ export default function OperativeScreen({ navigation }: any) {
   const [menuVisible, setMenuVisible] = useState(false);
   const { user, logout } = useAuth();
   const { isTracking, startTracking, stopTracking, errorMsg, location } = useLocation();
+  const { pendingCount, isSyncing, lastError } = useOfflineSync();
 
   const handleAlertPress = () => {
     Alert.alert('Confirmacion de alerta', '¿Esta seguro de que desea enviar una alerta SOS?', [
@@ -83,7 +85,11 @@ export default function OperativeScreen({ navigation }: any) {
             ? `Lat ${location.coords.latitude.toFixed(4)} · Lng ${location.coords.longitude.toFixed(4)}`
             : 'Sin posicion registrada'}
         </Text>
+        <Text style={styles.syncText}>
+          Sincronizacion: {isSyncing ? 'Sincronizando...' : pendingCount > 0 ? `${pendingCount} pendiente(s)` : 'Al dia'}
+        </Text>
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {!errorMsg && lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
 
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -335,6 +341,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#94A3B8',
     fontSize: 13,
+  },
+  syncText: {
+    marginTop: 6,
+    color: '#93C5FD',
+    fontSize: 13,
+    fontWeight: '700',
   },
   errorText: {
     marginTop: 10,

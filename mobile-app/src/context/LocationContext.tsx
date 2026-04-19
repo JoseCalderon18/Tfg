@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Location from 'expo-location';
 import { useAuth } from './AuthContext';
-import { apiFetch } from '../services/api';
+import { useOfflineSync } from './OfflineSyncContext';
 
 /**
  * Interface que define el contexto de ubicación
@@ -35,6 +35,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
   const { token } = useAuth();
+  const { queueTrackingPoint } = useOfflineSync();
 
   useEffect(() => {
     return () => {
@@ -72,23 +73,26 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          try {
-            await apiFetch('/tracking/point/', {
-              method: 'POST',
-              token,
-              body: JSON.stringify({
-                latitude: newLocation.coords.latitude,
-                longitude: newLocation.coords.longitude,
-                accuracy_m: newLocation.coords.accuracy,
-                altitude: newLocation.coords.altitude,
-                speed: newLocation.coords.speed,
-                recorded_at: new Date(newLocation.timestamp).toISOString(),
-              }),
-            });
-            setErrorMsg(null);
-          } catch {
-            setErrorMsg('No se pudo enviar la ubicación al servidor.');
+          const result = await queueTrackingPoint({
+            latitude: newLocation.coords.latitude,
+            longitude: newLocation.coords.longitude,
+            accuracy_m: newLocation.coords.accuracy,
+            altitude: newLocation.coords.altitude,
+            speed: newLocation.coords.speed,
+            recorded_at: new Date(newLocation.timestamp).toISOString(),
+          });
+
+          if (!result.ok) {
+            setErrorMsg(result.error ?? 'No se pudo enviar la ubicacion al servidor.');
+            return;
           }
+
+          if (result.queued) {
+            setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
+            return;
+          }
+
+          setErrorMsg(null);
         }
       );
       setLocationSubscription(subscription);

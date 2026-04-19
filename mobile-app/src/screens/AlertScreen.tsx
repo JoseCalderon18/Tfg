@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { Picker } from '@react-native-picker/picker';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, parseJsonResponse } from '../services/api';
+import { useOfflineSync } from '../context/OfflineSyncContext';
 
 export default function AlertScreen({ navigation }: any) {
   // Estado del formulario de alertas en campo.
@@ -12,6 +12,7 @@ export default function AlertScreen({ navigation }: any) {
   const [description, setDescription] = useState('');
   const { location } = useLocation();
   const { token } = useAuth();
+  const { queueAlert } = useOfflineSync();
 
   const handleSendAlert = async () => {
     try {
@@ -26,25 +27,25 @@ export default function AlertScreen({ navigation }: any) {
         return;
       }
 
-      const response = await apiFetch('/alerts/', {
-        method: 'POST',
-        token,
-        body: JSON.stringify({
-          alert_type: alertType,
-          severity,
-          title: `Alerta ${alertType}`,
-          description,
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        }),
+      const result = await queueAlert({
+        alert_type: alertType,
+        severity,
+        title: `Alerta ${alertType}`,
+        description,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
 
-      if (!response.ok) {
-        const payload = await parseJsonResponse<{ detail?: string }>(response);
-        throw new Error(payload.detail ?? 'No se pudo registrar la alerta.');
+      if (!result.ok) {
+        throw new Error(result.error ?? 'No se pudo registrar la alerta.');
       }
 
-      Alert.alert('Success', 'Alert sent successfully');
+      Alert.alert(
+        result.queued ? 'Alerta en cola' : 'Alerta enviada',
+        result.queued
+          ? 'La alerta se guardo sin conexion y se enviara automaticamente cuando vuelva la red.'
+          : 'La alerta se envio correctamente.'
+      );
       navigation.goBack();
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send alert');

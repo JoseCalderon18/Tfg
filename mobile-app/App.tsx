@@ -8,6 +8,7 @@ import { StyleSheet, Text, View } from 'react-native';
 // Importamos los contextos para manejo de estado global
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
+import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
 
 // Importamos las pantallas de la aplicación
 import LoginScreen from './src/screens/LoginScreen';
@@ -143,7 +144,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <RootErrorBoundary>
         <AuthProvider>
-          <AppNavigator />
+          <OfflineSyncProvider>
+            <AppNavigator />
+          </OfflineSyncProvider>
         </AuthProvider>
       </RootErrorBoundary>
     </GestureHandlerRootView>

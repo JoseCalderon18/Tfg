@@ -1,10 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useOfflineSync } from '../context/OfflineSyncContext';
 import { getApiDebugUrls } from '../services/api';
 
 export default function SettingsScreen({ navigation }: any) {
   const urls = getApiDebugUrls();
+  const { pendingCount, isSyncing, lastSyncedAt, lastError, flushQueue } = useOfflineSync();
 
   return (
     <View style={styles.screen}>
@@ -14,6 +16,19 @@ export default function SettingsScreen({ navigation }: any) {
 
       <Text style={styles.title}>Configuracion operativa</Text>
       <Text style={styles.subtitle}>Referencia rapida para conexion y uso en terreno.</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Estado de sincronizacion</Text>
+        <Text style={styles.cardValue}>Pendientes: {pendingCount}</Text>
+        <Text style={styles.cardValue}>Estado: {isSyncing ? 'Sincronizando...' : 'En espera'}</Text>
+        <Text style={styles.cardValue}>
+          Ultima sincronizacion: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
+        </Text>
+        {lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
+        <TouchableOpacity style={styles.syncButton} onPress={() => void flushQueue()}>
+          <Text style={styles.syncButtonText}>Sincronizar ahora</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>URLs de API detectadas</Text>
@@ -86,5 +101,23 @@ const styles = StyleSheet.create({
     color: '#CBD5E1',
     fontSize: 14,
     lineHeight: 20,
+  },
+  errorText: {
+    color: '#FCA5A5',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  syncButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderRadius: 14,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  syncButtonText: {
+    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

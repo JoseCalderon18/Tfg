@@ -11,7 +11,7 @@ import {
 import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, parseJsonResponse } from '../services/api';
+import { useOfflineSync } from '../context/OfflineSyncContext';
 
 interface PointOfInterest {
   id: string;
@@ -124,6 +124,7 @@ const POINTS_OF_INTEREST: PointOfInterest[] = [
 
 export default function PointsOfInterestScreen({ navigation }: any) {
   const { token } = useAuth();
+  const { queuePointOfInterest } = useOfflineSync();
   const [savingPointId, setSavingPointId] = useState<string | null>(null);
   const isSaving = savingPointId !== null;
 
@@ -143,38 +144,26 @@ export default function PointsOfInterestScreen({ navigation }: any) {
 
       const currentLocation = await Location.getCurrentPositionAsync({});
 
-      const response = await apiFetch('/points-of-interest/', {
-        method: 'POST',
-        token,
-        body: JSON.stringify({
-          name: point.name,
-          poi_type: point.poiType,
-          description: point.description,
-          created_at: new Date().toISOString(),
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-        }),
+      const result = await queuePointOfInterest({
+        name: point.name,
+        poi_type: point.poiType,
+        description: point.description,
+        created_at: new Date().toISOString(),
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = 'No se pudo guardar el punto de interes.';
-
-        if (errorText) {
-          try {
-            const errorData = JSON.parse(errorText) as { detail?: string };
-            errorMessage = errorData.detail ?? errorMessage;
-          } catch {
-            errorMessage = errorText;
-          }
-        }
-
-        Alert.alert('Error', errorMessage);
+      if (!result.ok) {
+        Alert.alert('Error', result.error ?? 'No se pudo guardar el punto de interes.');
         return;
       }
 
-      await parseJsonResponse(response);
-      Alert.alert('Exito', `Punto de ${point.name} guardado correctamente.`);
+      Alert.alert(
+        result.queued ? 'Punto en cola' : 'Exito',
+        result.queued
+          ? `El punto de ${point.name} se guardo localmente y se sincronizara cuando vuelva la conexion.`
+          : `Punto de ${point.name} guardado correctamente.`
+      );
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Error guardando el punto.');
     } finally {
