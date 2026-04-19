@@ -32,6 +32,12 @@ function getExpoHostApiUrl() {
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? `${DEFAULT_API_HOST}/api`;
 
+type ApiAuthHandlers = {
+  refreshAccessToken: () => Promise<string | null>;
+};
+
+let apiAuthHandlers: ApiAuthHandlers | null = null;
+
 type ApiOptions = RequestInit & {
   token?: string | null;
   timeoutMs?: number;
@@ -45,6 +51,10 @@ export class ApiConnectionError extends Error {
     this.name = 'ApiConnectionError';
     this.attemptedUrls = attemptedUrls;
   }
+}
+
+export function setApiAuthHandlers(handlers: ApiAuthHandlers | null) {
+  apiAuthHandlers = handlers;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
@@ -88,34 +98,58 @@ export function getApiDebugUrls() {
 // Cliente base para llamadas autenticadas y publicas hacia Django.
 export async function apiFetch(path: string, options: ApiOptions = {}) {
   const { timeoutMs = 10000, ...requestOptions } = options;
-  const headers = new Headers(options.headers || {});
-  headers.set('Accept', 'application/json');
+  const buildFetchOptions = (tokenOverride?: string | null) => {
+    const headers = new Headers(options.headers || {});
+    headers.set('Accept', 'application/json');
 
-  if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
-  }
+    if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
 
-  if (options.token) {
-    headers.set('Authorization', `Bearer ${options.token}`);
-  }
+    if (tokenOverride) {
+      headers.set('Authorization', `Bearer ${tokenOverride}`);
+    }
 
-  const fetchOptions: RequestInit = {
-    ...requestOptions,
-    headers,
+    return {
+      ...requestOptions,
+      headers,
+    } satisfies RequestInit;
   };
 
-  const urls = getApiDebugUrls();
-  let lastError: unknown;
+  const runRequest = async (tokenOverride?: string | null) => {
+    const fetchOptions = buildFetchOptions(tokenOverride);
+    const urls = getApiDebugUrls();
+    const attemptedUrls: string[] = [];
 
-  for (const baseUrl of urls) {
-    try {
-      return await fetchWithTimeout(`${baseUrl}${path}`, fetchOptions, timeoutMs);
-    } catch (error) {
-      lastError = error;
+    for (const baseUrl of urls) {
+      const requestUrl = `${baseUrl}${path}`;
+      attemptedUrls.push(requestUrl);
+      try {
+        return await fetchWithTimeout(requestUrl, fetchOptions, timeoutMs);
+      } catch {
+        // probamos con la siguiente URL fallback
+      }
+    }
+
+    throw new ApiConnectionError('No se pudo conectar con la API.', attemptedUrls);
+  };
+
+  const initialToken = options.token ?? null;
+  const response = await runRequest(initialToken);
+
+  if (
+    response.status === 401 &&
+    initialToken &&
+    apiAuthHandlers &&
+    path !== '/auth/refresh/'
+  ) {
+    const nextToken = await apiAuthHandlers.refreshAccessToken();
+    if (nextToken && nextToken !== initialToken) {
+      return runRequest(nextToken);
     }
   }
 
-  throw new ApiConnectionError('No se pudo conectar con la API.', urls.map((url) => `${url}${path}`));
+  return response;
 }
 
 // Utilidad para parsear respuestas JSON con manejo uniforme de errores.

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { ApiConnectionError, apiFetch, parseJsonResponse } from '../services/api';
+
+import { ApiConnectionError, apiFetch, parseJsonResponse, setApiAuthHandlers } from '../services/api';
 
 /**
  * Interface que define la estructura de un Usuario
@@ -19,6 +20,7 @@ export interface User {
  * @property token - Token JWT de autenticacion
  * @property login - Funcion asincrona para iniciar sesion
  * @property logout - Funcion asincrona para cerrar sesion
+ * @property refreshAccessToken - Renueva el token de acceso con el refresh token
  * @property isLoading - Indica si esta cargando el estado inicial
  */
 interface AuthContextType {
@@ -26,10 +28,10 @@ interface AuthContextType {
   token: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
   isLoading: boolean;
 }
 
-// Creacion del contexto de autenticacion
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function clearStoredAuth() {
@@ -38,28 +40,61 @@ async function clearStoredAuth() {
   await SecureStore.deleteItemAsync('user');
 }
 
-/**
- * Provider que envuelve la aplicacion y proporciona el contexto de autenticacion
- * Maneja el estado de sesion del usuario y persistencia en almacenamiento seguro
- *
- * @param children - Componentes hijos que tendran acceso al contexto
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Estado global de autenticacion para la app movil
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
 
-  // Cargar autenticacion almacenada al iniciar
-  useEffect(() => {
-    void loadStoredAuth();
+  const clearAuthState = useCallback(async () => {
+    await clearStoredAuth();
+    setToken(null);
+    setUser(null);
   }, []);
 
-  /**
-   * Carga el token y usuario almacenados en SecureStore
-   * Se ejecuta automaticamente al montar el provider
-   */
-  const loadStoredAuth = async () => {
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    refreshPromiseRef.current = (async () => {
+      const storedRefreshToken = await SecureStore.getItemAsync('refreshToken');
+      if (!storedRefreshToken) {
+        await clearAuthState();
+        return null;
+      }
+
+      try {
+        const response = await apiFetch('/auth/refresh/', {
+          method: 'POST',
+          body: JSON.stringify({ refresh: storedRefreshToken }),
+        });
+
+        const payload = await parseJsonResponse<{ access?: string; refresh?: string }>(response);
+        if (!response.ok || !payload.access) {
+          await clearAuthState();
+          return null;
+        }
+
+        await SecureStore.setItemAsync('token', payload.access);
+        if (payload.refresh) {
+          await SecureStore.setItemAsync('refreshToken', payload.refresh);
+        }
+
+        setToken(payload.access);
+        return payload.access;
+      } catch {
+        await clearAuthState();
+        return null;
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    })();
+
+    return refreshPromiseRef.current;
+  }, [clearAuthState]);
+
+  const loadStoredAuth = useCallback(async () => {
     try {
       const storedToken = await SecureStore.getItemAsync('token');
       const storedUser = await SecureStore.getItemAsync('user');
@@ -71,39 +106,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const response = await apiFetch('/auth/me/', { token: storedToken, timeoutMs: 8000 });
+        let activeToken = storedToken;
+        let response = await apiFetch('/auth/me/', { token: activeToken, timeoutMs: 8000 });
+
+        if (response.status === 401) {
+          const refreshedToken = await refreshAccessToken();
+          if (!refreshedToken) {
+            return;
+          }
+
+          activeToken = refreshedToken;
+          response = await apiFetch('/auth/me/', { token: activeToken, timeoutMs: 8000 });
+        }
 
         if (!response.ok) {
-          await clearStoredAuth();
-          setToken(null);
-          setUser(null);
+          await clearAuthState();
           return;
         }
 
         const currentUser = await parseJsonResponse<User>(response);
-        setToken(storedToken);
+        setToken(activeToken);
         setUser(currentUser);
       } catch {
-        await clearStoredAuth();
-        setToken(null);
-        setUser(null);
+        await clearAuthState();
       }
     } catch (error) {
       console.error('Error loading auth:', error);
-      await clearStoredAuth();
-      setToken(null);
-      setUser(null);
+      await clearAuthState();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clearAuthState, refreshAccessToken]);
 
-  /**
-   * Inicia sesion con credenciales
-   *
-   * @param username - Nombre de usuario
-   * @param password - Contrasena
-   */
+  useEffect(() => {
+    void loadStoredAuth();
+  }, [loadStoredAuth]);
+
+  useEffect(() => {
+    setApiAuthHandlers({ refreshAccessToken });
+    return () => {
+      setApiAuthHandlers(null);
+    };
+  }, [refreshAccessToken]);
+
   const login = async (username: string, password: string) => {
     const normalizedUsername = username.trim();
 
@@ -158,32 +203,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(payload.user);
   };
 
-  /**
-   * Cierra la sesion del usuario
-   * Elimina los datos del almacenamiento seguro y limpia el estado
-   */
   const logout = async () => {
-    await clearStoredAuth();
-    setToken(null);
-    setUser(null);
+    await clearAuthState();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshAccessToken, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-/**
- * Hook personalizado para acceder al contexto de autenticacion
- *
- * @returns El contexto de autenticacion
- * @throws Error si se usa fuera de AuthProvider
- *
- * @example
- * const { user, login, logout } = useAuth();
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
