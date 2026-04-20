@@ -161,8 +161,11 @@ type TrackPointRow = {
 
 type UserRow = {
   id: string;
+  username?: string | null;
+  email?: string | null;
   role?: string | null;
   is_active?: boolean;
+  created_at?: string | null;
 };
 
 type WorkAreaApiRow = {
@@ -510,6 +513,37 @@ function poiVisual(poiType?: string | null) {
   }
 }
 
+function poiTypeLabel(poiType?: string | null) {
+  switch (poiType) {
+    case "HYDRANT":
+      return "Hidrante";
+    case "SETTLEMENT":
+      return "Asentamiento";
+    case "FIREBREAK":
+      return "Cortafuegos";
+    case "WATCHPOINT":
+      return "Punto de vigilancia";
+    case "BASE_STATION":
+      return "Estacion base";
+    case "EVAC_ROUTE":
+      return "Via de evacuacion";
+    case "COMMUNICATION_TOWER":
+      return "Torre de comunicaciones";
+    case "CHECKPOINT":
+      return "Punto de control";
+    case "OBSTACLE":
+      return "Obstaculo";
+    case "BRIDGE":
+      return "Puente";
+    case "SUPPLY_POINT":
+      return "Punto de suministro";
+    case "HELIPAD":
+      return "Helipuerto";
+    default:
+      return "Punto de interes";
+  }
+}
+
 function poiMarkerIcon(poiType?: string | null) {
   const visual = poiVisual(poiType);
 
@@ -583,6 +617,13 @@ function alertStatusLabel(status?: string | null) {
   return "En revisión";
 }
 
+function userRoleLabel(role?: string | null) {
+  if (role === "OPERATIVE") return "Operativo";
+  if (role === "COMMAND") return "Mando";
+  if (role === "ADMIN") return "Administrador";
+  return role || "Sin rol";
+}
+
 export default function DashboardPage() {
   // Estado principal del centro de control.
   const [loading, setLoading] = useState(true);
@@ -599,6 +640,13 @@ export default function DashboardPage() {
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incidentMembers, setIncidentMembers] = useState<IncidentMemberRow[]>([]);
   const [incidentPage, setIncidentPage] = useState(1);
+  const [alertPage, setAlertPage] = useState(1);
+  const [resourcePage, setResourcePage] = useState(1);
+  const [unitPage, setUnitPage] = useState(1);
+  const [incidentsExpanded, setIncidentsExpanded] = useState(false);
+  const [alertsExpanded, setAlertsExpanded] = useState(false);
+  const [recursosExpandidos, setRecursosExpandidos] = useState(false);
+  const [unitsExpanded, setUnitsExpanded] = useState(false);
   const [trackPoints, setTrackPoints] = useState<TrackPointRow[]>([]);
   const [showAllTracks, setShowAllTracks] = useState(true);
   const navigate = useNavigate();
@@ -681,6 +729,13 @@ export default function DashboardPage() {
     },
     [trackPoints, selectedIncidentId, showAllTracks]
   );
+
+  const visibleUnits = useMemo(() => {
+    const operatives = units.filter((unit) => unit.role === "OPERATIVE");
+    if (!selectedIncidentId) return operatives;
+    if (relatedUserIds.length === 0) return [];
+    return operatives.filter((unit) => relatedUserIds.includes(unit.id));
+  }, [units, selectedIncidentId, relatedUserIds]);
 
   const trackPointsByUser = useMemo(() => {
     const grouped: Record<string, TrackPointRow[]> = {};
@@ -766,11 +821,34 @@ export default function DashboardPage() {
     const start = (incidentPage - 1) * 5;
     return incidentsFiltered.slice(start, start + 5);
   }, [incidentsFiltered, incidentPage]);
+  const totalAlertPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleAlerts.length / 5)),
+    [visibleAlerts]
+  );
+  const paginatedAlerts = useMemo(() => {
+    const start = (alertPage - 1) * 5;
+    return visibleAlerts.slice(start, start + 5);
+  }, [visibleAlerts, alertPage]);
+  const totalResourcePages = useMemo(
+    () => Math.max(1, Math.ceil(visiblePointsOfInterest.length / 5)),
+    [visiblePointsOfInterest]
+  );
+  const paginatedResources = useMemo(() => {
+    const start = (resourcePage - 1) * 5;
+    return visiblePointsOfInterest.slice(start, start + 5);
+  }, [visiblePointsOfInterest, resourcePage]);
+  const totalUnitPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleUnits.length / 5)),
+    [visibleUnits]
+  );
+  const paginatedUnits = useMemo(() => {
+    const start = (unitPage - 1) * 5;
+    return visibleUnits.slice(start, start + 5);
+  }, [visibleUnits, unitPage]);
   const mappedAlerts = useMemo(
     () => visibleAlerts.map((alert) => ({ ...alert, parsedLocation: parsePointLocation(alert.location) })).filter((alert) => alert.parsedLocation),
     [visibleAlerts]
   );
-  const latestAlerts = useMemo(() => visibleAlerts.slice(0, 6), [visibleAlerts]);
 
   useEffect(() => {
     (async () => {
@@ -860,6 +938,24 @@ export default function DashboardPage() {
       setIncidentPage(totalIncidentPages);
     }
   }, [incidentPage, totalIncidentPages]);
+
+  useEffect(() => {
+    if (alertPage > totalAlertPages) {
+      setAlertPage(totalAlertPages);
+    }
+  }, [alertPage, totalAlertPages]);
+
+  useEffect(() => {
+    if (resourcePage > totalResourcePages) {
+      setResourcePage(totalResourcePages);
+    }
+  }, [resourcePage, totalResourcePages]);
+
+  useEffect(() => {
+    if (unitPage > totalUnitPages) {
+      setUnitPage(totalUnitPages);
+    }
+  }, [unitPage, totalUnitPages]);
 
   useEffect(() => {
     if (!selectedIncidentId) {
@@ -1370,11 +1466,28 @@ export default function DashboardPage() {
 
             <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIncidentsExpanded((current) => !current)}
+                  aria-expanded={incidentsExpanded}
+                  className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-info)]"
+                >
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Actividad reciente</p>
                     <h2 className="mt-1 text-lg font-bold">Incidentes destacados</h2>
                     <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Lista completa paginada. Al seleccionar un incidente, el mapa muestra solo sus elementos relacionados.</p>
                   </div>
+                  <span
+                    aria-hidden="true"
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-sm text-[color:var(--cm-text-muted)] transition-transform ${
+                      incidentsExpanded ? "rotate-180" : "rotate-0"
+                    }`}
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </button>
                 <div className="flex items-center gap-2">
                   {selectedIncident ? (
                     <button
@@ -1386,11 +1499,13 @@ export default function DashboardPage() {
                     </button>
                   ) : null}
                   <Link to="/incidents" className="rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
-                    Ver todo
+                    Ver incidentes
                   </Link>
                 </div>
               </div>
 
+              {incidentsExpanded ? (
+                <>
               <div className="mt-4 space-y-3">
                 {paginatedIncidents.length === 0 ? (
                   <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
@@ -1451,38 +1566,309 @@ export default function DashboardPage() {
                   Siguiente
                 </button>
               </div>
+                </>
+              ) : null}
 
               <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Pulso operativo</p>
-                    <h3 className="mt-1 text-base font-bold">Alertas recientes</h3>
-                    <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Flujo inmediato de avisos y estado de respuesta del despliegue.</p>
-                  </div>
-                  <Link to="/alerts" className="rounded-lg bg-[color:var(--cm-alert)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                  <button
+                    type="button"
+                    onClick={() => setAlertsExpanded((current) => !current)}
+                    aria-expanded={alertsExpanded}
+                    className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-alert)]"
+                  >
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Pulso operativo</p>
+                      <h3 className="mt-1 text-base font-bold">Alertas recientes</h3>
+                      <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Flujo inmediato de avisos y estado de respuesta del despliegue.</p>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-sm text-[color:var(--cm-text-muted)] transition-transform ${
+                        alertsExpanded ? "rotate-180" : "rotate-0"
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </button>
+                  <Link to="/alerts" className="rounded-lg bg-[color:var(--cm-primary)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
                     Ver alertas
                   </Link>
                 </div>
-                <div className="mt-3 space-y-2">
-                  {latestAlerts.length === 0 ? (
-                    <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
-                      No hay alertas recientes para mostrar.
-                    </div>
-                  ) : (
-                    latestAlerts.map((alert) => (
-                      <article key={alert.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-alert)]/50">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium">{alert.title || `Alerta ${alert.id}`}</p>
-                            <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{alert.created_at ? new Date(alert.created_at).toLocaleString() : "Fecha desconocida"}</p>
-                          </div>
-                          <span className={`${alertStatusBadge(alert.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
-                            {alertStatusLabel(alert.status)}
-                          </span>
+                {alertsExpanded ? (
+                  <>
+                    <div className="mt-3 space-y-2">
+                      {paginatedAlerts.length === 0 ? (
+                        <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                          No hay alertas recientes para mostrar.
                         </div>
-                      </article>
-                    ))
-                  )}
+                      ) : (
+                        paginatedAlerts.map((alert) => (
+                          <article key={alert.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-alert)]/50">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-medium">{alert.title || `Alerta ${alert.id}`}</p>
+                                <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{alert.created_at ? new Date(alert.created_at).toLocaleString() : "Fecha desconocida"}</p>
+                              </div>
+                              <span className={`${alertStatusBadge(alert.status)} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                                {alertStatusLabel(alert.status)}
+                              </span>
+                            </div>
+                          </article>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4 text-xs text-[color:var(--cm-text-muted)]">
+                      <button
+                        type="button"
+                        onClick={() => setAlertPage((page) => Math.max(1, page - 1))}
+                        disabled={alertPage === 1}
+                        className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Anterior
+                      </button>
+                      <span>Pagina {alertPage} de {totalAlertPages}</span>
+                      <button
+                        type="button"
+                        onClick={() => setAlertPage((page) => Math.min(totalAlertPages, page + 1))}
+                        disabled={alertPage === totalAlertPages}
+                        className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+                <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRecursosExpandidos((current) => !current)}
+                    aria-expanded={recursosExpandidos}
+                    className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-alert)]"
+                  >
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">INFORMACIÓN OPERATIVA</p>
+                      <h3 className="mt-1 text-base font-bold">Recursos operativos</h3>
+                      <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Recursos operativos en la zona, puntos de interes y avisos.</p>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-sm text-[color:var(--cm-text-muted)] transition-transform ${
+                        recursosExpandidos ? "rotate-180" : "rotate-0"
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </button>
+                  <Link to="/points" className="rounded-lg bg-[color:var(--cm-primary)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                    Ver recursos
+                  </Link>
+                </div>
+                {recursosExpandidos ? (
+                  <>
+                    <div className="mt-3 space-y-2">
+                      {paginatedResources.length === 0 ? (
+                        <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                          No hay puntos de interes para mostrar.
+                        </div>
+                      ) : (
+                        paginatedResources.map((point) => (
+                          <article key={point.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-info)]/50">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-medium">{point.name}</p>
+                                <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                  {poiTypeLabel(point.poiType)}
+                                  {point.incidentName ? ` · ${point.incidentName}` : ""}
+                                </p>
+                                <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                  {point.createdAt ? new Date(point.createdAt).toLocaleString() : "Fecha desconocida"}
+                                </p>
+                              </div>
+                              <span className={`${point.isActive ? "cm-badge-success" : "cm-badge-warning"} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                                {point.isActive ? "Activo" : "Inactivo"}
+                              </span>
+                            </div>
+                            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+                              {point.description}
+                            </p>
+                          </article>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4 text-xs text-[color:var(--cm-text-muted)]">
+                      <button
+                        type="button"
+                        onClick={() => setResourcePage((page) => Math.max(1, page - 1))}
+                        disabled={resourcePage === 1}
+                        className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Anterior
+                      </button>
+                      <span>Pagina {resourcePage} de {totalResourcePages}</span>
+                      <button
+                        type="button"
+                        onClick={() => setResourcePage((page) => Math.min(totalResourcePages, page + 1))}
+                        disabled={resourcePage === totalResourcePages}
+                        className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+
+                    <div className="hidden mt-5 border-t border-[color:var(--cm-border)] pt-5">
+                      <div className="mb-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Unidades</p>
+                        <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                          {selectedIncidentId
+                            ? "Operativos asociados al incidente seleccionado."
+                            : "Operativos disponibles en el sistema."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        {paginatedUnits.length === 0 ? (
+                          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                            No hay unidades para mostrar.
+                          </div>
+                        ) : (
+                          paginatedUnits.map((unit) => (
+                            <article key={unit.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-primary)]/50">
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium">{unit.username || unit.email || `Unidad ${unit.id}`}</p>
+                                  <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                    {userRoleLabel(unit.role)}
+                                    {unit.email ? ` · ${unit.email}` : ""}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                    {unit.created_at ? new Date(unit.created_at).toLocaleString() : "Fecha desconocida"}
+                                  </p>
+                                </div>
+                                <span className={`${unit.is_active ? "cm-badge-success" : "cm-badge-warning"} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                                  {unit.is_active ? "Activa" : "Inactiva"}
+                                </span>
+                              </div>
+                            </article>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4 text-xs text-[color:var(--cm-text-muted)]">
+                        <button
+                          type="button"
+                          onClick={() => setUnitPage((page) => Math.max(1, page - 1))}
+                          disabled={unitPage === 1}
+                          className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <span>Pagina {unitPage} de {totalUnitPages}</span>
+                        <button
+                          type="button"
+                          onClick={() => setUnitPage((page) => Math.min(totalUnitPages, page + 1))}
+                          disabled={unitPage === totalUnitPages}
+                          className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+                </div>
+
+                <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setUnitsExpanded((current) => !current)}
+                      aria-expanded={unitsExpanded}
+                      className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-primary)]"
+                    >
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">UNIDADES</p>
+                        <h3 className="mt-1 text-base font-bold">Unidades operativas</h3>
+                        <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                          {selectedIncidentId
+                            ? "Operativos asociados al incidente seleccionado."
+                            : "Operativos disponibles en el sistema."}
+                        </p>
+                      </div>
+                      <span
+                        aria-hidden="true"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-sm text-[color:var(--cm-text-muted)] transition-transform ${
+                          unitsExpanded ? "rotate-180" : "rotate-0"
+                        }`}
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    </button>
+                    <Link to="/viewunidades" className="rounded-lg bg-[color:var(--cm-primary)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">
+                      Ver unidades
+                    </Link>
+                  </div>
+
+                  {unitsExpanded ? (
+                    <>
+                      <div className="mt-3 space-y-2">
+                        {paginatedUnits.length === 0 ? (
+                          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
+                            No hay unidades para mostrar.
+                          </div>
+                        ) : (
+                          paginatedUnits.map((unit) => (
+                            <article key={unit.id} className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3 transition hover:border-[color:var(--cm-primary)]/50">
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium">{unit.username || unit.email || `Unidad ${unit.id}`}</p>
+                                  <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                    {userRoleLabel(unit.role)}
+                                    {unit.email ? ` · ${unit.email}` : ""}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+                                    {unit.created_at ? new Date(unit.created_at).toLocaleString() : "Fecha desconocida"}
+                                  </p>
+                                </div>
+                                <span className={`${unit.is_active ? "cm-badge-success" : "cm-badge-warning"} rounded-full px-2.5 py-1 text-[11px] font-semibold`}>
+                                  {unit.is_active ? "Activa" : "Inactiva"}
+                                </span>
+                              </div>
+                            </article>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[color:var(--cm-border)] pt-4 text-xs text-[color:var(--cm-text-muted)]">
+                        <button
+                          type="button"
+                          onClick={() => setUnitPage((page) => Math.max(1, page - 1))}
+                          disabled={unitPage === 1}
+                          className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <span>Pagina {unitPage} de {totalUnitPages}</span>
+                        <button
+                          type="button"
+                          onClick={() => setUnitPage((page) => Math.min(totalUnitPages, page + 1))}
+                          disabled={unitPage === totalUnitPages}
+                          className="rounded-lg border border-[color:var(--cm-border)] px-3 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </aside>
