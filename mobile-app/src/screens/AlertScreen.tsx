@@ -7,9 +7,9 @@ import { useOfflineSync } from '../context/OfflineSyncContext';
 
 export default function AlertScreen({ navigation }: any) {
   // Estado del formulario de alertas en campo.
-  const [alertType, setAlertType] = useState('SOS');
-  const [severity, setSeverity] = useState(3);
-  const [description, setDescription] = useState('');
+  const [tipoAlerta, setTipoAlerta] = useState('SOS');
+  const [severidad, setSeveridad] = useState(3);
+  const [descripcion, setDescripcion] = useState('');
   const { location } = useLocation();
   const { token } = useAuth();
   const { queueAlert } = useOfflineSync();
@@ -28,10 +28,10 @@ export default function AlertScreen({ navigation }: any) {
       }
 
       const result = await queueAlert({
-        alert_type: alertType,
-        severity,
-        title: `Alerta ${alertType}`,
-        description,
+        alert_type: tipoAlerta,
+        severity: severidad,
+        title: `Alerta ${tipoAlerta}`,
+        description: descripcion,
         lat: location.coords.latitude,
         lng: location.coords.longitude,
       });
@@ -58,7 +58,7 @@ export default function AlertScreen({ navigation }: any) {
 
       <Text style={styles.label}>Tipo de alerta</Text>
       <View style={styles.pickerContainer}>
-        <Picker selectedValue={alertType} onValueChange={setAlertType}>
+        <Picker selectedValue={tipoAlerta} onValueChange={setTipoAlerta}>
           <Picker.Item label="Emergencia SOS" value="SOS" />
           <Picker.Item label="Hombre caído" value="MAN_DOWN" />
           <Picker.Item label="Perdido" value="LOST" />
@@ -68,7 +68,7 @@ export default function AlertScreen({ navigation }: any) {
 
       <Text style={styles.label}>Nivel de alerta (1-5)</Text>
       <View style={styles.pickerContainer}>
-        <Picker selectedValue={severity} onValueChange={setSeverity}>
+        <Picker selectedValue={severidad} onValueChange={setSeveridad}>
           <Picker.Item label="1 - Critico" value={1} />
           <Picker.Item label="2 - Alto" value={2} />
           <Picker.Item label="3 - Medio" value={3} />
@@ -81,8 +81,8 @@ export default function AlertScreen({ navigation }: any) {
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Describe la situación..."
-        value={description}
-        onChangeText={setDescription}
+        value={descripcion}
+        onChangeText={setDescripcion}
         multiline
         numberOfLines={4}
       />
