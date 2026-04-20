@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,46 +8,130 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  Vibration,
 } from 'react-native';
+
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 
 const { height } = Dimensions.get('window');
 const ALTURA_MENU_INFERIOR = height * 0.15;
+const SOS_COUNTDOWN_SECONDS = 4;
 
 export default function OperativeScreen({ navigation }: any) {
   const [menuVisible, setMenuVisible] = useState(false);
-  const { user, logout } = useAuth();
+  const [sosModalVisible, setSosModalVisible] = useState(false);
+  const [sosCountdown, setSosCountdown] = useState(SOS_COUNTDOWN_SECONDS);
+  const [isSendingSos, setIsSendingSos] = useState(false);
+  const { user, token, logout } = useAuth();
   const { isTracking, startTracking, stopTracking, errorMsg, location } = useLocation();
-  const { pendingCount, isSyncing, lastError } = useOfflineSync();
+  const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
+  const sosCancelledRef = useRef(false);
 
   const handleAlertPress = () => {
-    Alert.alert('Confirmacion de alerta', '¿Esta seguro de que desea enviar una alerta SOS?', [
-      {
-        text: 'Cancelar',
-        style: 'cancel',
-      },
-      {
-        text: 'Enviar SOS',
-        onPress: () => navigation.navigate('Alert'),
-        style: 'destructive',
-      },
-    ]);
+    navigation.navigate('Alert');
   };
+
+  const closeSosModal = () => {
+    sosCancelledRef.current = true;
+    Vibration.cancel();
+    setSosModalVisible(false);
+    setSosCountdown(SOS_COUNTDOWN_SECONDS);
+    setIsSendingSos(false);
+  };
+
+  const sendSosAlert = async () => {
+    try {
+      if (!token) {
+        Alert.alert('Error', 'No hay sesion activa.');
+        return;
+      }
+
+      if (!location) {
+        Alert.alert('Error', 'Activa el GPS antes de enviar un SOS.');
+        return;
+      }
+
+      setIsSendingSos(true);
+      const result = await queueAlert({
+        incident: null,
+        alert_type: 'SOS',
+        severity: 1,
+        title: 'SOS operativo',
+        description: 'SOS enviado desde el boton principal del operativo.',
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+
+      if (!result.ok) {
+        throw new Error(result.error ?? 'No se pudo registrar la alerta SOS.');
+      }
+
+      Alert.alert(
+        result.queued ? 'SOS en cola' : 'SOS enviado',
+        result.queued
+          ? 'El SOS se ha guardado sin conexion y se enviara automaticamente al incidente asignado cuando vuelva la red.'
+          : 'El SOS se ha enviado correctamente al incidente asignado.'
+      );
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo enviar la alerta SOS.');
+    } finally {
+      Vibration.cancel();
+      setSosModalVisible(false);
+      setSosCountdown(SOS_COUNTDOWN_SECONDS);
+      setIsSendingSos(false);
+    }
+  };
+
+  const handleSosPress = () => {
+    if (isSendingSos) {
+      return;
+    }
+
+    sosCancelledRef.current = false;
+    setSosCountdown(SOS_COUNTDOWN_SECONDS);
+    setSosModalVisible(true);
+    Vibration.vibrate([0, 500, 250], true);
+  };
+
+  useEffect(() => {
+    if (!sosModalVisible || isSendingSos) {
+      return;
+    }
+
+    if (sosCountdown <= 0) {
+      if (!sosCancelledRef.current) {
+        void sendSosAlert();
+      }
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setSosCountdown((current) => current - 1);
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [isSendingSos, sosCountdown, sosModalVisible]);
+
+  useEffect(() => {
+    return () => {
+      Vibration.cancel();
+    };
+  }, []);
 
   const handleMenuOption = (option: string) => {
     setMenuVisible(false);
 
     switch (option) {
       case 'companions':
-        Alert.alert('Compañeros', 'Pantalla de compañeros (proximamente)');
+        Alert.alert('Companeros', 'Pantalla de companeros (proximamente)');
         break;
       case 'weather':
         Alert.alert('Meteorologia', 'Informacion meteorologica (proximamente)');
         break;
       case 'stopShift':
-        Alert.alert('Parar jornada', '¿Desea finalizar su jornada?', [
+        Alert.alert('Parar jornada', 'Desea finalizar su jornada?', [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Finalizar', onPress: () => navigation.navigate('StopJourney') },
         ]);
@@ -56,10 +140,12 @@ export default function OperativeScreen({ navigation }: any) {
         Alert.alert('Iniciar descanso', 'Se iniciara su descanso');
         break;
       case 'logout':
-        Alert.alert('Cerrar sesion', '¿Desea cerrar sesion?', [
+        Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Cerrar sesion', onPress: logout, style: 'destructive' },
         ]);
+        break;
+      default:
         break;
     }
   };
@@ -131,21 +217,44 @@ export default function OperativeScreen({ navigation }: any) {
       </View>
 
       <View style={styles.bottomMenu}>
+        <TouchableOpacity style={styles.sideButton} onPress={handleAlertPress}>
+          <Text style={styles.sideButtonText}>🚨{'\n'}ALERTA</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.centerButton} onPress={handleSosPress} disabled={isSendingSos}>
+          <Text style={styles.centerButtonText}>{`🆘\nSOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
           <Text style={styles.sideButtonText}>📍{'\n'}MARCAR{'\n'}PUNTO</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.centerButton} onPress={handleAlertPress}>
-          <Text style={styles.centerButtonText}>🚨{'\n'}ALERTA</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.sideButton}
-          onPress={() => Alert.alert('Llamada', 'Funcion de llamada (proximamente)')}
-        >
-          <Text style={styles.sideButtonText}>☎️{'\n'}LLAMAR</Text>
-        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={sosModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSosModal}
+      >
+        <View style={styles.sosModalOverlay}>
+          <View style={styles.sosModalCard}>
+            <Text style={styles.sosModalEyebrow}>Alerta critica</Text>
+            <Text style={styles.sosModalTitle}>SOS en {sosCountdown}</Text>
+            <Text style={styles.sosModalText}>
+              El movil esta vibrando. Si no cancelas, se enviara un SOS al incidente asignado.
+            </Text>
+            <TouchableOpacity
+              style={[styles.sosCancelButton, isSendingSos ? styles.sosCancelButtonDisabled : null]}
+              onPress={closeSosModal}
+              disabled={isSendingSos}
+            >
+              <Text style={styles.sosCancelButtonText}>
+                {isSendingSos ? 'Enviando SOS...' : 'Cancelar'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={menuVisible}
@@ -163,44 +272,63 @@ export default function OperativeScreen({ navigation }: any) {
 
             <ScrollView style={styles.menuOptions}>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('companions')}>
-                <Text style={styles.menuOptionText}>👥 Compañeros</Text>
+                <Text style={styles.menuOptionText}>👥 Companeros</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
-                <Text style={styles.menuOptionText}>🌤️ Meteorologia</Text>
+                <Text style={styles.menuOptionText}>⛅ Meteorologia</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuOption} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('StartJourney');
-              }}>
-                <Text style={styles.menuOptionText}>▶️ Iniciar Jornada</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('StartBreak');
-              }}>
-                <Text style={styles.menuOptionText}>⏸️ Iniciar descanso</Text>
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('StartJourney');
+                }}
+              >
+                <Text style={styles.menuOptionText}>▶ Iniciar jornada</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuOption} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('StopJourney');
-              }}>
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('StartBreak');
+                }}
+              >
+                <Text style={styles.menuOptionText}>⏸ Iniciar descanso</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('StopJourney');
+                }}
+              >
                 <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('Profile');
-              }}>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Profile');
+                }}
+              >
                 <Text style={styles.menuOptionText}>👤 Perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuOption} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('Settings');
-              }}>
-                <Text style={styles.menuOptionText}>⚙️ Configuración</Text>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Settings');
+                }}
+              >
+                <Text style={styles.menuOptionText}>⚙ Configuracion</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.menuOption, styles.logoutOption]}
                 onPress={() => handleMenuOption('logout')}
@@ -416,11 +544,11 @@ const styles = StyleSheet.create({
     height: '110%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#E74C3C',
+    backgroundColor: '#B91C1C',
     borderRadius: 15,
     marginHorizontal: 5,
     elevation: 8,
-    shadowColor: '#E74C3C',
+    shadowColor: '#B91C1C',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 5,
@@ -431,6 +559,59 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 16,
+  },
+  sosModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.74)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  sosModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#7F1D1D',
+    padding: 24,
+    alignItems: 'center',
+  },
+  sosModalEyebrow: {
+    color: '#FECACA',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  sosModalTitle: {
+    marginTop: 10,
+    color: '#FFFFFF',
+    fontSize: 34,
+    fontWeight: '800',
+  },
+  sosModalText: {
+    marginTop: 12,
+    color: '#FEE2E2',
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  sosCancelButton: {
+    marginTop: 22,
+    width: '100%',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  sosCancelButtonDisabled: {
+    opacity: 0.7,
+  },
+  sosCancelButtonText: {
+    color: '#991B1B',
+    fontSize: 16,
+    fontWeight: '800',
   },
   modalOverlay: {
     flex: 1,

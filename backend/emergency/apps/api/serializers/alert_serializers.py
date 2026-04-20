@@ -23,15 +23,36 @@ class AlertSerializer(serializers.ModelSerializer):
 
 class AlertCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear alertas"""
-    latitude = serializers.FloatField(write_only=True)
-    longitude = serializers.FloatField(write_only=True)
+    latitude = serializers.FloatField(write_only=True, required=False)
+    longitude = serializers.FloatField(write_only=True, required=False)
+    lat = serializers.FloatField(write_only=True, required=False)
+    lng = serializers.FloatField(write_only=True, required=False)
 
     class Meta:
         model = Alert
         fields = [
             'incident', 'alert_type', 'severity',
-            'title', 'description', 'latitude', 'longitude'
+            'title', 'description', 'latitude', 'longitude', 'lat', 'lng'
         ]
+
+    def validate(self, attrs):
+        latitude = attrs.pop('latitude', None)
+        longitude = attrs.pop('longitude', None)
+        lat = attrs.pop('lat', None)
+        lng = attrs.pop('lng', None)
+
+        resolved_lat = latitude if latitude is not None else lat
+        resolved_lng = longitude if longitude is not None else lng
+
+        if resolved_lat is None or resolved_lng is None:
+            raise serializers.ValidationError(
+                {'location': 'Debes proporcionar latitude/longitude o lat/lng.'}
+            )
+
+        attrs['latitude'] = resolved_lat
+        attrs['longitude'] = resolved_lng
+
+        return attrs
 
     def create(self, validated_data):
         from django.contrib.gis.geos import Point

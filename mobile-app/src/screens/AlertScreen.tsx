@@ -32,8 +32,8 @@ export default function AlertScreen({ navigation }: any) {
         severity,
         title: `Alerta ${alertType}`,
         description,
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
       });
 
       if (!result.ok) {
@@ -54,33 +54,33 @@ export default function AlertScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Send Alert</Text>
+      <Text style={styles.title}>Enviar alerta</Text>
 
-      <Text style={styles.label}>Alert Type</Text>
+      <Text style={styles.label}>Tipo de alerta</Text>
       <View style={styles.pickerContainer}>
         <Picker selectedValue={alertType} onValueChange={setAlertType}>
-          <Picker.Item label="SOS Emergency" value="SOS" />
-          <Picker.Item label="Man Down" value="MAN_DOWN" />
-          <Picker.Item label="Lost" value="LOST" />
-          <Picker.Item label="Other" value="OTHER" />
+          <Picker.Item label="Emergencia SOS" value="SOS" />
+          <Picker.Item label="Hombre caído" value="MAN_DOWN" />
+          <Picker.Item label="Perdido" value="LOST" />
+          <Picker.Item label="Otro" value="OTHER" />
         </Picker>
       </View>
 
-      <Text style={styles.label}>Severity (1-5)</Text>
+      <Text style={styles.label}>Nivel de alerta (1-5)</Text>
       <View style={styles.pickerContainer}>
         <Picker selectedValue={severity} onValueChange={setSeverity}>
-          <Picker.Item label="1 - Critical" value={1} />
-          <Picker.Item label="2 - High" value={2} />
-          <Picker.Item label="3 - Medium" value={3} />
-          <Picker.Item label="4 - Low" value={4} />
-          <Picker.Item label="5 - Info" value={5} />
+          <Picker.Item label="1 - Critico" value={1} />
+          <Picker.Item label="2 - Alto" value={2} />
+          <Picker.Item label="3 - Medio" value={3} />
+          <Picker.Item label="4 - Bajo" value={4} />
+          <Picker.Item label="5 - Información" value={5} />
         </Picker>
       </View>
 
-      <Text style={styles.label}>Description</Text>
+      <Text style={styles.label}>Descripcion</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholder="Describe the situation..."
+        placeholder="Describe la situación..."
         value={description}
         onChangeText={setDescription}
         multiline
@@ -88,7 +88,7 @@ export default function AlertScreen({ navigation }: any) {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSendAlert}>
-        <Text style={styles.buttonText}>Send Alert</Text>
+        <Text style={styles.buttonText}>Enviar alerta</Text>
       </TouchableOpacity>
     </View>
   );
