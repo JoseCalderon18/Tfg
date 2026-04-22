@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import { STATUS_COLOR, getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 
 type FilaAlerta = {
   id: string;
@@ -23,10 +24,7 @@ function obtenerBadgeAlerta(type?: string | null) {
 }
 
 function obtenerBadgeEstado(status?: string | null) {
-  if (status === "OPEN") return "cm-badge-danger";
-  if (status === "ACK") return "cm-badge-alert";
-  if (status === "CLOSED") return "cm-badge-success";
-  return "cm-badge-warning";
+  return getAlertStatusBadge(status);
 }
 
 function obtenerEtiquetaSeveridad(severity?: number | null) {
@@ -202,17 +200,17 @@ export default function AlertsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="cm-badge-danger rounded-full px-3 py-1">Abierta</span>
-            <span className="cm-badge-alert rounded-full px-3 py-1">Evaluación</span>
-            <span className="cm-badge-success rounded-full px-3 py-1">Cerrada</span>
+            <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
+            <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
+            <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.abiertas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-alert)]">{indicadores.reconocidas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Criticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.criticas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.cerradas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Criticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
@@ -265,8 +263,10 @@ export default function AlertsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
-                  <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
-                    {obtenerEtiquetaSeveridad(alerta.severity)}
+                  <td className="px-4 py-3.5 whitespace-nowrap">
+                    <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
+                      {obtenerEtiquetaSeveridad(alerta.severity)}
+                    </span>
                   </td>
                   <td className="px-4 py-3.5">
                     <span className={`${obtenerBadgeEstado(alerta.status)} rounded-full px-2.5 py-1 text-xs`}>

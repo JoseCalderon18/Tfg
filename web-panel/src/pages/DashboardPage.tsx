@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import { Circle, Polygon } from "react-leaflet";
 import { apiFetch } from "../utils/api";
+import { STATUS_COLOR, getAlertStatusBadge, getIncidentMarkerColor, getIncidentStatusBadge } from "../utils/statusColors";
 import "leaflet/dist/leaflet.css";
 
 import L, { type LatLngTuple } from "leaflet";
@@ -440,9 +441,7 @@ function parsePointLocation(location: unknown): [number, number] | null {
 }
 
 function incidentStatusBadge(status: string) {
-  if (status === "OPEN") return "cm-badge-danger";
-  if (status === "TRIAGE") return "cm-badge-warning";
-  return "cm-badge-success";
+  return getIncidentStatusBadge(status);
 }
 
 function incidentStatusLabel(status: string) {
@@ -461,9 +460,7 @@ function incidentTypeLabel(type: string) {
 }
 
 function incidentMarkerColor(status: string) {
-  if (status === "OPEN") return "#DC2626";
-  if (status === "TRIAGE") return "#EAB308";
-  return "#16A34A";
+  return getIncidentMarkerColor(status);
 }
 
 function markerIcon(color: string) {
@@ -605,9 +602,7 @@ function getUserColor(userId: string): string {
 }
 
 function alertStatusBadge(status?: string | null) {
-  if (status === "OPEN") return "cm-badge-danger";
-  if (status === "ACK") return "cm-badge-alert";
-  return "cm-badge-success";
+  return getAlertStatusBadge(status);
 }
 
 function alertStatusLabel(status?: string | null) {
@@ -1073,7 +1068,7 @@ export default function DashboardPage() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidentes abiertos</p>
-              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-danger)]">{kpis.abiertas}</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-success)]">{kpis.abiertas}</p>
             </article>
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">En evaluación</p>
@@ -1081,11 +1076,11 @@ export default function DashboardPage() {
             </article>
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerrados</p>
-              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-success)]">{kpis.cerradas}</p>
+              <p className="mt-2 text-3xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{kpis.cerradas}</p>
             </article>
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Alertas críticas</p>
-              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-alert)]">{kpis.criticas}</p>
+              <p className="mt-2 text-3xl font-bold text-[color:var(--cm-danger)]">{kpis.criticas}</p>
             </article>
             <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Operativos activos</p>
@@ -1117,13 +1112,13 @@ export default function DashboardPage() {
                     <button type="button" onClick={() => setStatusFilter("ALL")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "ALL" ? "cm-badge-info" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
                       Todas
                     </button>
-                    <button type="button" onClick={() => setStatusFilter("OPEN")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "OPEN" ? "cm-badge-danger" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                    <button type="button" onClick={() => setStatusFilter("OPEN")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "OPEN" ? "cm-badge-success" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
                       Abiertas
                     </button>
                     <button type="button" onClick={() => setStatusFilter("TRIAGE")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "TRIAGE" ? "cm-badge-warning" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
                       Revisión
                     </button>
-                    <button type="button" onClick={() => setStatusFilter("CLOSED")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "CLOSED" ? "cm-badge-success" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
+                    <button type="button" onClick={() => setStatusFilter("CLOSED")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "CLOSED" ? "cm-badge-neutral" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
                       Cerradas
                     </button>
                   </div>
@@ -1134,10 +1129,11 @@ export default function DashboardPage() {
             <div className="absolute right-3 top-3 z-[500] rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)]/85 p-3 backdrop-blur-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Leyenda</p>
               <div className="mt-2 flex flex-col gap-2 text-xs text-[color:var(--cm-text)]">
-                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-danger)]" /> Incidente crítico</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-success)]" /> Incidente abierto</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-warning)]" /> Incidente en revisión</div>
-                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-success)]" /> Incidente resuelto</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: STATUS_COLOR.cerrado }} /> Incidente cerrado</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-danger)]" /> Nivel crítico</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Area de trabajo</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interes</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-green-600" /> Inicio de jornada</div>
@@ -1513,11 +1509,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   paginatedIncidents.map((incident) => {
-                    const statusClass = incident.status === "OPEN"
-                      ? "cm-badge-danger"
-                      : incident.status === "TRIAGE"
-                      ? "cm-badge-warning"
-                      : "cm-badge-success";
+                    const statusClass = getIncidentStatusBadge(incident.status);
 
                     return (
                       <button

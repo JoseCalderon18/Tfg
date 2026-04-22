@@ -6,6 +6,7 @@ import { apiFetch } from "../utils/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
+import { getIncidentStatusBadge } from "../utils/statusColors";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -329,11 +330,11 @@ function obtenerEtiquetaEstadoAlerta(estado: string) {
 function obtenerClasesEstadoAlerta(estado: string) {
   switch (estado) {
     case "OPEN":
-      return "bg-red-500/15 text-red-200 ring-red-500/30";
+      return "bg-emerald-500/15 text-emerald-200 ring-emerald-500/30";
     case "ACK":
       return "bg-amber-500/15 text-amber-200 ring-amber-500/30";
     case "CLOSED":
-      return "bg-emerald-500/15 text-emerald-200 ring-emerald-500/30";
+      return "bg-slate-400/15 text-slate-200 ring-slate-400/30";
     default:
       return "bg-slate-500/15 text-slate-200 ring-slate-500/30";
   }
@@ -929,15 +930,7 @@ export default function IncidentsPage() {
                           : "Otro"}
                       </td>
                       <td className="px-4 py-3.5">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
-                            incident.status === "CLOSED"
-                              ? "cm-badge-success"
-                              : incident.status === "TRIAGE"
-                              ? "cm-badge-warning"
-                              : "cm-badge-danger"
-                          }`}
-                        >
+                        <span className={`rounded-full px-2.5 py-1 text-xs ring-1 ${getIncidentStatusBadge(incident.status)}`}>
                           {incident.status === "OPEN"
                         ? "Abierto"
                         : incident.status === "CLOSED"

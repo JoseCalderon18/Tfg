@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
+import { getAlertStatusBadge } from "../utils/statusColors";
 
 type UsuarioResumen = {
   id?: string;
@@ -176,10 +177,7 @@ function aResumenUsuario(
 }
 
 function obtenerBadgeEstado(status?: string | null) {
-  if (status === "OPEN") return "cm-badge-danger";
-  if (status === "ACK") return "cm-badge-alert";
-  if (status === "CLOSED") return "cm-badge-success";
-  return "cm-badge-warning";
+  return getAlertStatusBadge(status);
 }
 
 function obtenerBadgeAlerta(type?: string | null) {
