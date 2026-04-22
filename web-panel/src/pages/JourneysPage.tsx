@@ -147,6 +147,8 @@ export default function JourneysPage() {
   const [jornada, setJornada] = useState<JourneyRow[]>([]);
   const [usuariosPorIDProfile, setUsuariosPorIDProfile] = useState<Record<string, UsuarioUnidad>>({});
   const [jornadaSeleccionadaID, setJornadaSeleccionadaID] = useState<number | null>(null);
+  const [jornadaPendienteEliminarID, setJornadaPendienteEliminarID] = useState<number | null>(null);
+  const [jornadaEliminandoID, setJornadaEliminandoID] = useState<number | null>(null);
   const [pagina, setPagina] = useState(1);
   const TAMAÑO_PAGINA = 10;
 
@@ -253,6 +255,38 @@ export default function JourneysPage() {
   }
 
   const selectedUser = JornadaSeleccionada?.user_id ? usuariosPorIDProfile[JornadaSeleccionada.user_id] : undefined;
+  const jornadaPendienteEliminar =
+    jornadaPendienteEliminarID != null
+      ? jornada.find((item) => item.id === jornadaPendienteEliminarID) ?? null
+      : null;
+
+  async function confirmarEliminarJornada() {
+    if (!jornadaPendienteEliminar || jornadaEliminandoID != null) return;
+
+    setError("");
+    setJornadaEliminandoID(jornadaPendienteEliminar.id);
+    try {
+      const response = await apiFetch(`/journeys/${jornadaPendienteEliminar.id}/`, { method: "DELETE" });
+      if (!response.ok) {
+        let detail = "No se pudo borrar la jornada.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") detail = data.detail;
+          else if (typeof data.error === "string") detail = data.error;
+        } catch {
+          // Mantenemos el mensaje por defecto si la respuesta no es JSON.
+        }
+        setError(detail);
+        return;
+      }
+
+      setJornada((current) => current.filter((item) => item.id !== jornadaPendienteEliminar.id));
+      setJornadaSeleccionadaID((current) => (current === jornadaPendienteEliminar.id ? null : current));
+      setJornadaPendienteEliminarID(null);
+    } finally {
+      setJornadaEliminandoID(null);
+    }
+  }
 
   return (
     <div className="cm-shell min-h-screen">
@@ -362,6 +396,7 @@ export default function JourneysPage() {
                           <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{formatDate(journey.start_date)}</td>
                           <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{formatDate(journey.end_date)}</td>
                           <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-3">
                             <button
                               type="button"
                               disabled={!journey.account_user_id}
@@ -373,6 +408,17 @@ export default function JourneysPage() {
                             >
                               Ver unidad
                             </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setJornadaPendienteEliminarID(journey.id);
+                              }}
+                              className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-3 py-1.5 text-xs font-medium text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Borrar
+                            </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -493,6 +539,45 @@ export default function JourneysPage() {
           </aside>
         </div>
       </div>
+
+      {jornadaPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="journey-delete-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Borrar jornada</p>
+            <h2 id="journey-delete-title" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta jornada?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente la jornada #{jornadaPendienteEliminar.id}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Esta accion no se puede deshacer.</p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setJornadaPendienteEliminarID(null)}
+                disabled={jornadaEliminandoID != null}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEliminarJornada()}
+                disabled={jornadaEliminandoID != null}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {jornadaEliminandoID === jornadaPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
