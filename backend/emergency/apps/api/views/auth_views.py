@@ -338,6 +338,7 @@ class PanelMeView(APIView):
             {
                 "authenticated": True,
                 "id": str(request.user.id),
+                "profile_id": str(profile.id) if profile else None,
                 "username": getattr(request.user, "username", ""),
                 "email": getattr(request.user, "email", ""),
                 "role": getattr(profile, "role", None),
@@ -381,12 +382,13 @@ class PanelUsersListView(APIView):
         users = (
             User.objects.select_related("profile")
             .order_by("username")
-            .values("id", "username", "email", "is_active", "created_at", "profile__role")
+            .values("id", "username", "email", "is_active", "created_at", "profile__role", "profile__id")
         )
 
         data = [
             {
                 "id": str(usuario["id"]),
+                "profile_id": str(usuario["profile__id"]) if usuario["profile__id"] else "",
                 "username": usuario["username"],
                 "email": usuario["email"],
                 "is_active": usuario["is_active"],

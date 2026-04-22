@@ -3,6 +3,7 @@ import { apiFetch } from "../utils/api";
 
 interface User {
   id: string;
+  profile_id?: string;
   username: string;
   email: string;
   role: string;
@@ -10,6 +11,7 @@ interface User {
 
 interface PanelMeResponse {
   id?: string;
+  profile_id?: string | null;
   username?: string;
   email?: string;
   role?: string;
@@ -74,6 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       user: {
         id: me.id ?? "",
+        profile_id: me.profile_id ?? "",
         username: me.username ?? "",
         email: me.email ?? "",
         role: me.role ?? (me.is_superuser ? "SUPERUSER" : ""),
@@ -111,6 +114,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isCheckingAuth: false,
         user: {
           id: me.id ?? "",
+          profile_id: me.profile_id ?? "",
           username: me.username ?? "",
           email: me.email ?? "",
           role: me.role ?? (me.is_superuser ? "SUPERUSER" : ""),

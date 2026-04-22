@@ -15,6 +15,7 @@ from emergency.apps.api.views.auth_views import (
     PanelUsersListView,
     JWTLoginView,
 )
+from emergency.apps.api.views.chat_views import PanelChatsView, PanelChatMessagesView, PanelChatMembersView
 
 from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views
 
@@ -57,6 +58,9 @@ urlpatterns = [
     path("auth/panel/login/", PanelLoginView.as_view()),
     path("auth/panel/logout/", PanelLogoutView.as_view()),
     path("auth/panel/me/", PanelMeView.as_view()),
+    path("auth/panel/chats/", PanelChatsView.as_view()),
+    path("auth/panel/chats/<int:chat_pk>/members/", PanelChatMembersView.as_view()),
+    path("auth/panel/chats/<str:chat_id>/messages/", PanelChatMessagesView.as_view()),
     path("auth/panel/users/", PanelUsersListView.as_view()),
     path("auth/panel/users/form-options/", PanelUserFormOptionsView.as_view()),
     path("auth/panel/users/<uuid:user_id>/", PanelUserDetailView.as_view()),

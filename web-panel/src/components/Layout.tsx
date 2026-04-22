@@ -29,7 +29,7 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
     label: "Operaciones",
     items: [
       { label: "Incidentes", to: "/incidents" },
-      { label: "Chat" },
+      { label: "Chat", to: "/chats" },
       { label: "Jornadas", to: "/journeys" },
       { label: "Alertas", to: "/alerts" },
     ],
