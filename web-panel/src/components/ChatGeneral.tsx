@@ -84,7 +84,7 @@ function getChatRef(chat: ChatRow | null) {
   return chat?.chat_ref?.trim() || null;
 }
 
-function roleLabel(role?: string) {
+function role(role?: string) {
   if (role === "SUPERVISOR") return "Supervisor";
   if (role === "OPERATIVE") return "Operativo";
   if (role === "ADMIN") return "Administrador";
@@ -94,25 +94,26 @@ function roleLabel(role?: string) {
 export default function ChatGeneral() {
   const { user } = useAuthStore();
   const currentProfileId = user?.profile_id ?? "";
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [creatingChat, setCreatingChat] = useState(false);
-  const [savingMembers, setSavingMembers] = useState(false);
-  const [accessPanelOpen, setAccessPanelOpen] = useState(true);
+  const [cargandoChats, setCargandoChats] = useState(true);
+  const [cargandoMensajes, setCargandoMensajes] = useState(false);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
+  const [enviandoMensaje, setEnviandoMensaje] = useState(false);
+  const [creandoChat, setCreandoChat] = useState(false);
+  const [guardandoMensajes, setGuardandoMensajes] = useState(false);
+  const [accediendoPanel, setAccediendoPanel] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [messagesByChat, setMessagesByChat] = useState<Record<string, MessageRow[]>>({});
+  const [nombreChat, setNombreChat] = useState("");
+  const [mensajesByChat, setMensajesByChat] = useState<Record<string, MessageRow[]>>({});
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [MimebrosSeleccionados, setMiembrosSeleccionados] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
     void (async () => {
-      setLoadingChats(true);
+      setCargandoChats(true);
       setErrorMessage("");
       try {
         const response = await apiFetch("/auth/panel/chats/");
@@ -127,20 +128,20 @@ export default function ChatGeneral() {
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "No se pudieron cargar los chats.");
       } finally {
-        setLoadingChats(false);
+        setCargandoChats(false);
       }
     })();
   }, []);
 
   useEffect(() => {
     void (async () => {
-      setLoadingUsers(true);
+      setCargandoUsuarios(true);
       try {
         const response = await apiFetch("/auth/panel/users/");
         if (!response.ok) return;
         setUsers(normalizeUsers(await response.json()));
       } finally {
-        setLoadingUsers(false);
+        setCargandoUsuarios(false);
       }
     })();
   }, []);
@@ -151,7 +152,7 @@ export default function ChatGeneral() {
   );
 
   useEffect(() => {
-    setSelectedMembers(selectedChat?.members ?? []);
+    setMiembrosSeleccionados(selectedChat?.members ?? []);
   }, [selectedChat]);
 
   useEffect(() => {
@@ -161,11 +162,11 @@ export default function ChatGeneral() {
       const targetChat = chats.find((chat) => encodeChatId(chat.id) === selectedChatId) ?? null;
       const chatRef = getChatRef(targetChat);
       if (!chatRef) {
-        setMessagesByChat((current) => ({ ...current, [selectedChatId]: [] }));
+        setMensajesByChat((current) => ({ ...current, [selectedChatId]: [] }));
         return;
       }
 
-      setLoadingMessages(true);
+      setCargandoMensajes(true);
       setErrorMessage("");
       try {
         const response = await apiFetch(`/auth/panel/chats/${encodeURIComponent(chatRef)}/messages/`);
@@ -175,16 +176,16 @@ export default function ChatGeneral() {
         }
 
         const nextMessages = normalizeMessages(await response.json());
-        setMessagesByChat((current) => ({ ...current, [selectedChatId]: nextMessages }));
+        setMensajesByChat((current) => ({ ...current, [selectedChatId]: nextMessages }));
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "No se pudieron cargar los mensajes.");
       } finally {
-        setLoadingMessages(false);
+        setCargandoMensajes(false);
       }
     })();
   }, [selectedChatId, chats]);
 
-  const selectedMessages = selectedChatId ? messagesByChat[selectedChatId] ?? [] : [];
+  const selectedMessages = selectedChatId ? mensajesByChat[selectedChatId] ?? [] : [];
 
   const availableUsers = useMemo(
     () =>
@@ -204,17 +205,22 @@ export default function ChatGeneral() {
   }, [availableUsers, memberSearch]);
 
   async function handleCreateChat() {
-    setCreatingChat(true);
+    setCreandoChat(true);
     setErrorMessage("");
 
     try {
+      const nombreChatLimpio = nombreChat.trim();
+      if (!nombreChatLimpio) {
+        throw new Error("Indica un nombre para el chat.");
+      }
+
       const response = await apiFetch("/auth/panel/chats/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `Chat ${new Date().toLocaleString("es-ES")}`,
+          name: nombreChatLimpio,
         }),
       });
 
@@ -230,17 +236,18 @@ export default function ChatGeneral() {
 
       setChats((current) => [createdChat, ...current]);
       setSelectedChatId(encodeChatId(createdChat.id));
+      setNombreChat("");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo crear el chat.");
     } finally {
-      setCreatingChat(false);
+      setCreandoChat(false);
     }
   }
 
   async function handleSaveMembers() {
     if (!selectedChat) return;
 
-    setSavingMembers(true);
+    setGuardandoMensajes(true);
     setErrorMessage("");
     try {
       const response = await apiFetch(`/auth/panel/chats/${encodeURIComponent(encodeChatId(selectedChat.id))}/members/`, {
@@ -249,7 +256,7 @@ export default function ChatGeneral() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          profile_ids: selectedMembers,
+          profile_ids: MimebrosSeleccionados,
         }),
       });
 
@@ -266,16 +273,16 @@ export default function ChatGeneral() {
       setChats((current) =>
         current.map((chat) => (encodeChatId(chat.id) === encodeChatId(updatedChat.id) ? updatedChat : chat))
       );
-      setSelectedMembers(updatedChat.members ?? []);
+      setMiembrosSeleccionados(updatedChat.members ?? []);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudieron guardar los miembros del chat.");
     } finally {
-      setSavingMembers(false);
+      setGuardandoMensajes(false);
     }
   }
 
   function toggleMember(profileId: string) {
-    setSelectedMembers((current) =>
+    setMiembrosSeleccionados((current) =>
       current.includes(profileId) ? current.filter((item) => item !== profileId) : [...current, profileId]
     );
   }
@@ -287,7 +294,7 @@ export default function ChatGeneral() {
     const chatRef = getChatRef(selectedChat);
     if (!trimmedDraft || !selectedChat || !currentProfileId || !chatRef) return;
 
-    setSendingMessage(true);
+    setEnviandoMensaje(true);
     setErrorMessage("");
     try {
       const response = await apiFetch(`/auth/panel/chats/${encodeURIComponent(chatRef)}/messages/`, {
@@ -307,7 +314,7 @@ export default function ChatGeneral() {
 
       const createdMessage = normalizeMessages([await response.json()])[0];
       if (createdMessage && selectedChatId) {
-        setMessagesByChat((current) => ({
+        setMensajesByChat((current) => ({
           ...current,
           [selectedChatId]: [...(current[selectedChatId] ?? []), createdMessage],
         }));
@@ -317,7 +324,7 @@ export default function ChatGeneral() {
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo enviar el mensaje.");
     } finally {
-      setSendingMessage(false);
+      setEnviandoMensaje(false);
     }
   }
 
@@ -350,26 +357,33 @@ export default function ChatGeneral() {
             </div>
 
             <div className="mt-4 space-y-3">
-              {loadingChats ? (
+              {cargandoChats ? (
                 <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                   Cargando chats...
                 </div>
               ) : null}
 
-              {!loadingChats && chats.length === 0 ? (
+              {!cargandoChats && chats.length === 0 ? (
                 <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                   No hay chats disponibles para tu perfil.
                 </div>
               ) : null}
 
-              <div className="flex items-center justify-end">
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Indique el nombre del chat"
+                  value={nombreChat}
+                  onChange={(e) => setNombreChat(e.target.value)}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-2 text-sm text-[color:var(--cm-text)] placeholder:text-[color:var(--cm-text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--cm-primary)]"
+                />
                 <button
                   type="button"
                   onClick={() => void handleCreateChat()}
-                  disabled={creatingChat}
-                  className="rounded-xl bg-[color:var(--cm-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={creandoChat}
+                  className="self-end rounded-xl bg-[color:var(--cm-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {creatingChat ? "Creando..." : "Crear chat"}
+                  {creandoChat ? "Creando..." : "Crear chat"}
                 </button>
               </div>
 
@@ -429,13 +443,13 @@ export default function ChatGeneral() {
                 </div>
               ) : null}
 
-              {selectedChat && getChatRef(selectedChat) && loadingMessages ? (
+              {selectedChat && getChatRef(selectedChat) && cargandoMensajes ? (
                 <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                   Cargando mensajes...
                 </div>
               ) : null}
 
-              {selectedChat && getChatRef(selectedChat) && !loadingMessages && selectedMessages.length === 0 ? (
+              {selectedChat && getChatRef(selectedChat) && !cargandoMensajes && selectedMessages.length === 0 ? (
                 <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                   Este chat todavia no tiene mensajes.
                 </div>
@@ -478,7 +492,7 @@ export default function ChatGeneral() {
                     onChange={(event) => setDraft(event.target.value)}
                     rows={4}
                     placeholder="Escribe un mensaje..."
-                    disabled={!selectedChat || !getChatRef(selectedChat) || sendingMessage}
+                    disabled={!selectedChat || !getChatRef(selectedChat) || enviandoMensaje    }
                     className="w-full resize-none bg-transparent text-sm text-[color:var(--cm-text)] outline-none placeholder:text-[color:var(--cm-text-muted)] disabled:opacity-60"
                   />
 
@@ -488,10 +502,10 @@ export default function ChatGeneral() {
                     </p>
                     <button
                       type="submit"
-                      disabled={!selectedChat || !getChatRef(selectedChat) || !draft.trim() || sendingMessage}
+                      disabled={!selectedChat || !getChatRef(selectedChat) || !draft.trim() || enviandoMensaje}
                       className="rounded-xl bg-[color:var(--cm-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {sendingMessage ? "Enviando..." : "Enviar"}
+                      {enviandoMensaje ? "Enviando..." : "Enviar"}
                     </button>
                   </div>
                 </form>
@@ -502,7 +516,7 @@ export default function ChatGeneral() {
           <aside className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
             <button
               type="button"
-              onClick={() => setAccessPanelOpen((current) => !current)}
+              onClick={() => setAccediendoPanel((current) => !current)}
               className="flex w-full items-start justify-between gap-3 text-left"
             >
               <div>
@@ -514,7 +528,7 @@ export default function ChatGeneral() {
               </div>
               <span
                 className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-sm text-[color:var(--cm-text-muted)] transition-transform ${
-                  accessPanelOpen ? "rotate-180" : ""
+                  accediendoPanel ? "rotate-180" : ""
                 }`}
               >
                 ▾
@@ -528,7 +542,7 @@ export default function ChatGeneral() {
               </div>
             ) : null}
 
-            {accessPanelOpen ? (
+            {accediendoPanel ? (
               selectedChat ? (
                 <div className="mt-4 space-y-4">
                   <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3">
@@ -544,23 +558,23 @@ export default function ChatGeneral() {
                   <button
                     type="button"
                     onClick={() => void handleSaveMembers()}
-                    disabled={savingMembers}
+                    disabled={guardandoMensajes}
                     className="w-full rounded-xl bg-[color:var(--cm-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {savingMembers ? "Guardando..." : "Guardar miembros"}
+                    {guardandoMensajes ? "Guardando..." : "Guardar miembros"}
                   </button>
 
                   <div className="max-h-[34rem] space-y-2 overflow-auto pr-1">
-                    {loadingUsers ? (
+                    {cargandoMensajes ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                         Cargando usuarios...
                       </div>
                     ) : null}
 
-                    {!loadingUsers &&
+                    {!cargandoMensajes &&
                       filteredUsers.map((current) => {
                         const profileId = current.profile_id?.trim() || "";
-                        const checked = selectedMembers.includes(profileId);
+                        const checked = MimebrosSeleccionados.includes(profileId);
 
                         return (
                           <label
@@ -575,14 +589,14 @@ export default function ChatGeneral() {
                             />
                             <div className="min-w-0">
                               <p className="font-semibold text-[color:var(--cm-text)]">{current.username || current.email || current.id}</p>
-                              <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{roleLabel(current.role)}</p>
+                              <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{role(current.role)}</p>
                               <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">{current.email || "Sin correo"}</p>
                             </div>
                           </label>
                         );
                       })}
 
-                    {!loadingUsers && filteredUsers.length === 0 ? (
+                    {!cargandoMensajes && filteredUsers.length === 0 ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                         No hay usuarios que coincidan con la busqueda.
                       </div>
