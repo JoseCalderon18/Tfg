@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
                                 db_constraint=False,
                                 on_delete=django.db.models.deletion.CASCADE,
                                 related_name="journeys",
-                                to="core.profile",
+                                to="core.perfil",
                             ),
                         ),
                     ],

@@ -11,7 +11,33 @@ export interface User {
   profile_id?: string;
   username: string;
   email: string;
-  role: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  is_active?: boolean;
+  created_at?: string;
+  role?: string | null;
+  emergency_contact?: string;
+  emergency_phone?: string;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  location_address?: string;
+  medical_notes?: string[];
+  organization_id?: string;
+  organization_name?: string;
+  dni?: string;
+  avatar?: string;
+  language?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  birth_date?: string;
+  specialties?: string[];
+  operative_schedule?: string;
+  operative_status?: string;
+  blood_type?: string;
+  device_id?: string;
+  assigned_supervisor_id?: string;
 }
 
 /**
@@ -28,6 +54,7 @@ interface AuthContextType {
   token: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (nextUser: User) => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
   isLoading: boolean;
 }
@@ -207,8 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearAuthState();
   };
 
+  const updateUser = useCallback(async (nextUser: User) => {
+    await SecureStore.setItemAsync('user', JSON.stringify(nextUser));
+    setUser(nextUser);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, refreshAccessToken, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, refreshAccessToken, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

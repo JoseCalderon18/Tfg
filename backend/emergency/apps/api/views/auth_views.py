@@ -79,6 +79,54 @@ def _construir_url_avatar(request, perfil):
     return request.build_absolute_uri(url_avatar)
 
 
+def _serializar_usuario_mobile(user, request):
+    profile = getattr(user, "profile", None)
+    direccion_legible = ""
+
+    if profile and getattr(profile, "location", None):
+        try:
+            direccion_legible = obtener_direccion_legible(
+                profile.location.y,
+                profile.location.x,
+            )
+        except Exception:
+            direccion_legible = ""
+
+    return {
+        "id": str(user.id),
+        "profile_id": str(profile.id) if profile else "",
+        "username": user.username,
+        "email": user.email,
+        "first_name": getattr(user, "first_name", ""),
+        "last_name": getattr(user, "last_name", ""),
+        "phone": user.phone or "",
+        "is_active": user.is_active,
+        "created_at": user.created_at,
+        "role": getattr(profile, "role", None),
+        "emergency_contact": getattr(profile, "emergency_contact", "") or "",
+        "emergency_phone": getattr(profile, "emergency_phone", "") or "",
+        "location_lat": getattr(profile.location, "y", None) if getattr(profile, "location", None) else None,
+        "location_lng": getattr(profile.location, "x", None) if getattr(profile, "location", None) else None,
+        "location_address": direccion_legible,
+        "medical_notes": getattr(profile, "medical_notes", []) or [],
+        "organization_id": str(getattr(profile, "organization_id", "") or ""),
+        "organization_name": getattr(getattr(profile, "organization", None), "name", "") if profile else "",
+        "dni": getattr(profile, "dni", "") or "",
+        "avatar": _construir_url_avatar(request, profile) if profile else "",
+        "language": getattr(profile, "language", "") or "",
+        "city": getattr(profile, "city", "") or "",
+        "province": getattr(profile, "province", "") or "",
+        "country": getattr(profile, "country", "") or "",
+        "birth_date": profile.birth_date.isoformat() if getattr(profile, "birth_date", None) else "",
+        "specialties": getattr(profile, "specialties", []) or [],
+        "operative_schedule": getattr(profile, "operative_schedule", "") or "",
+        "operative_status": getattr(profile, "operative_status", "DISPONIBLE") or "DISPONIBLE",
+        "blood_type": getattr(profile, "blood_type", "") or "",
+        "device_id": str(getattr(profile, "device_id", "") or ""),
+        "assigned_supervisor_id": str(getattr(profile, "assigned_supervisor_id", "") or ""),
+    }
+
+
 def _generar_codigo_numerico():
     return f"{secrets.randbelow(1000000):06d}"
 
@@ -107,8 +155,149 @@ class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(_serializar_usuario_mobile(request.user, request))
+
+    @transaction.atomic
+    def patch(self, request):
+        user = request.user
+        payload = request.data
+
+        if "username" in payload:
+            username = str(payload.get("username", "")).strip()
+            if not username:
+                return Response({"username": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+            exists = User.objects.exclude(id=user.id).filter(username=username).exists()
+            if exists:
+                return Response({"username": ["Este username ya existe."]}, status=status.HTTP_400_BAD_REQUEST)
+            user.username = username
+
+        if "email" in payload:
+            email = str(payload.get("email", "")).strip()
+            if not email:
+                return Response({"email": ["Este campo es obligatorio."]}, status=status.HTTP_400_BAD_REQUEST)
+            exists = User.objects.exclude(id=user.id).filter(email=email).exists()
+            if exists:
+                return Response({"email": ["Este email ya existe."]}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = email
+
+        if "first_name" in payload:
+            user.first_name = str(payload.get("first_name", "")).strip()
+
+        if "last_name" in payload:
+            user.last_name = str(payload.get("last_name", "")).strip()
+
+        if "phone" in payload:
+            user.phone = str(payload.get("phone", "")).strip()
+
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            profile = Profile.objects.create(user=user)
+
+        profile_updated_fields = []
+
+        if "emergency_contact" in payload:
+            profile.emergency_contact = str(payload.get("emergency_contact", "")).strip()
+            profile_updated_fields.append("emergency_contact")
+
+        if "emergency_phone" in payload:
+            profile.emergency_phone = str(payload.get("emergency_phone", "")).strip()
+            profile_updated_fields.append("emergency_phone")
+
+        if "location_lat" in payload or "location_lng" in payload:
+            raw_lat = payload.get("location_lat")
+            raw_lng = payload.get("location_lng")
+
+            if raw_lat in ("", None) or raw_lng in ("", None):
+                profile.location = None
+            else:
+                try:
+                    lat = float(raw_lat)
+                    lng = float(raw_lng)
+                except (TypeError, ValueError):
+                    return Response({"location": ["Coordenadas no validas."]}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                    return Response(
+                        {"location": ["Latitud o longitud fuera de rango."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                profile.location = Point(lng, lat, srid=4326)
+
+            profile_updated_fields.append("location")
+
+        if "medical_notes" in payload:
+            profile.medical_notes = _normalizar_lista(payload.get("medical_notes"))
+            profile_updated_fields.append("medical_notes")
+
+        if "organization_id" in payload:
+            organization_id = str(payload.get("organization_id", "")).strip()
+            if organization_id:
+                organization = Organizacion.objects.filter(id=organization_id).first()
+                if organization is None:
+                    return Response(
+                        {"organization_id": ["Organizacion no valida."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                profile.organization = organization
+            else:
+                profile.organization = None
+            profile_updated_fields.append("organization")
+
+        if "dni" in payload:
+            profile.dni = str(payload.get("dni", "")).strip()
+            profile_updated_fields.append("dni")
+
+        if "language" in payload:
+            profile.language = str(payload.get("language", "")).strip()
+            profile_updated_fields.append("language")
+
+        if "city" in payload:
+            profile.city = str(payload.get("city", "")).strip()
+            profile_updated_fields.append("city")
+
+        if "province" in payload:
+            profile.province = str(payload.get("province", "")).strip()
+            profile_updated_fields.append("province")
+
+        if "country" in payload:
+            profile.country = str(payload.get("country", "")).strip()
+            profile_updated_fields.append("country")
+
+        if "birth_date" in payload:
+            birth_date = str(payload.get("birth_date", "")).strip()
+            profile.birth_date = birth_date or None
+            profile_updated_fields.append("birth_date")
+
+        if "specialties" in payload:
+            profile.specialties = _normalizar_lista(payload.get("specialties"))
+            profile_updated_fields.append("specialties")
+
+        if "operative_schedule" in payload:
+            profile.operative_schedule = str(payload.get("operative_schedule", "")).strip()
+            profile_updated_fields.append("operative_schedule")
+
+        if "operative_status" in payload:
+            operative_status = str(payload.get("operative_status", "")).strip()
+            status_choices = {choice[0] for choice in Profile.OPERATIVE_STATUSES}
+            if operative_status not in status_choices:
+                return Response(
+                    {"operative_status": ["Estado operativo no valido."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile.operative_status = operative_status
+            profile_updated_fields.append("operative_status")
+
+        if "blood_type" in payload:
+            profile.blood_type = str(payload.get("blood_type", "")).strip()
+            profile_updated_fields.append("blood_type")
+
+        user.save()
+        if profile_updated_fields:
+            profile.save(update_fields=[*dict.fromkeys(profile_updated_fields), "updated_at"])
+
+        user.refresh_from_db()
+        return Response(_serializar_usuario_mobile(user, request), status=status.HTTP_200_OK)
 
 
 class ProfileView(APIView):
@@ -494,6 +683,7 @@ class PanelUserDetailView(APIView):
             "birth_date": profile.birth_date.isoformat() if getattr(profile, "birth_date", None) else "",
             "specialties": getattr(profile, "specialties", []) or [],
             "operative_schedule": getattr(profile, "operative_schedule", ""),
+            "operative_status": getattr(profile, "operative_status", "DISPONIBLE") or "DISPONIBLE",
             "blood_type": getattr(profile, "blood_type", ""),
             "device_id": str(getattr(profile, "device_id", "") or ""),
             "assigned_supervisor_id": str(getattr(profile, "assigned_supervisor_id", "") or ""),
@@ -655,6 +845,17 @@ class PanelUserDetailView(APIView):
         if "operative_schedule" in payload:
             profile.operative_schedule = str(payload.get("operative_schedule", "")).strip()
             profile_updated_fields.append("operative_schedule")
+
+        if "operative_status" in payload:
+            operative_status = str(payload.get("operative_status", "")).strip()
+            status_choices = {choice[0] for choice in Profile.OPERATIVE_STATUSES}
+            if operative_status not in status_choices:
+                return Response(
+                    {"operative_status": ["Estado operativo no valido."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile.operative_status = operative_status
+            profile_updated_fields.append("operative_status")
 
         if "blood_type" in payload:
             profile.blood_type = str(payload.get("blood_type", "")).strip()

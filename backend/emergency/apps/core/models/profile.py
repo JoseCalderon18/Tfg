@@ -20,6 +20,12 @@ class Perfil(models.Model):
         ("SUPERVISOR", "Supervisor"),
         ("OPERATIVE", "Operativo"),
     ]
+    OPERATIVE_STATUSES = [
+        ("DISPONIBLE", "Disponible"),
+        ("EN_INCIDENTE", "En incidente"),
+        ("DESCONECTADA", "Desconectada"),
+        ("NO_DISPONIBLE", "No disponible"),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
@@ -118,6 +124,12 @@ class Perfil(models.Model):
         blank=True,
         null=True,
         help_text="Horario operativo del usuario",
+    )
+    operative_status = models.CharField(
+        max_length=20,
+        choices=OPERATIVE_STATUSES,
+        default="DISPONIBLE",
+        help_text="Estado operativo actual del usuario",
     )
     blood_type = models.CharField(
         max_length=5,

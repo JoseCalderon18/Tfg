@@ -34,4 +34,7 @@ class TrackPointCreateSerializer(serializers.ModelSerializer):
         latitude = validated_data.pop('latitude')
         longitude = validated_data.pop('longitude')
         location = Point(longitude, latitude, srid=4326)
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
+            validated_data['user'] = request.user
         return TrackPoint.objects.create(location=location, **validated_data)

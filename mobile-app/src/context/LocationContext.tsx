@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Location from 'expo-location';
-import { useAuth } from './AuthContext';
+import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 
 /**
  * Interface que define el contexto de ubicación
@@ -34,7 +35,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [isTracking, setIsTracking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
-  const { token } = useAuth();
+  const { token, updateUser } = useAuth();
   const { queueTrackingPoint } = useOfflineSync();
 
   useEffect(() => {
@@ -44,6 +45,55 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       }
     };
   }, [locationSubscription]);
+
+  const syncProfileLocation = async (nextLocation: Location.LocationObject) => {
+    if (!token) {
+      return;
+    }
+
+    const response = await apiFetch('/auth/me/', {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({
+        location_lat: nextLocation.coords.latitude,
+        location_lng: nextLocation.coords.longitude,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('No se pudo guardar la ubicacion actual en el perfil.');
+    }
+
+    const updatedUser = await parseJsonResponse<User>(response);
+    await updateUser(updatedUser);
+  };
+
+  const sendTrackingPoint = async (nextLocation: Location.LocationObject) => {
+    if (!token) {
+      return;
+    }
+
+    const result = await queueTrackingPoint({
+      latitude: nextLocation.coords.latitude,
+      longitude: nextLocation.coords.longitude,
+      accuracy_m: nextLocation.coords.accuracy,
+      altitude: nextLocation.coords.altitude,
+      speed: nextLocation.coords.speed,
+      recorded_at: new Date(nextLocation.timestamp).toISOString(),
+    });
+
+    if (!result.ok) {
+      setErrorMsg(result.error ?? 'No se pudo enviar la ubicacion al servidor.');
+      return;
+    }
+
+    if (result.queued) {
+      setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
+      return;
+    }
+
+    setErrorMsg(null);
+  };
 
   /**
    * Inicia el seguimiento continuo de la ubicación
@@ -60,6 +110,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setLocation(currentLocation);
+      await syncProfileLocation(currentLocation);
+      await sendTrackingPoint(currentLocation);
+
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,  // Alta precisión
@@ -68,31 +125,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         },
         async (newLocation) => {
           setLocation(newLocation);
-
-          if (!token) {
-            return;
-          }
-
-          const result = await queueTrackingPoint({
-            latitude: newLocation.coords.latitude,
-            longitude: newLocation.coords.longitude,
-            accuracy_m: newLocation.coords.accuracy,
-            altitude: newLocation.coords.altitude,
-            speed: newLocation.coords.speed,
-            recorded_at: new Date(newLocation.timestamp).toISOString(),
-          });
-
-          if (!result.ok) {
-            setErrorMsg(result.error ?? 'No se pudo enviar la ubicacion al servidor.');
-            return;
-          }
-
-          if (result.queued) {
-            setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
-            return;
-          }
-
-          setErrorMsg(null);
+          await sendTrackingPoint(newLocation);
         }
       );
       setLocationSubscription(subscription);
