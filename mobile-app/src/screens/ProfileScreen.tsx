@@ -53,8 +53,6 @@ type OrganizationOption = {
   name: string;
 };
 
-type OrganizationsResponse = OrganizationOption[] | { results?: OrganizationOption[] };
-
 type FieldProps = {
   label: string;
   value: string;
@@ -298,7 +296,6 @@ export default function ProfileScreen({ navigation }: any) {
   const { user, token, logout, updateUser } = useAuth();
   const [form, setForm] = useState<ProfileForm>(() => userToForm(user));
   const [currentUser, setCurrentUser] = useState<User | null>(user);
-  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -316,14 +313,6 @@ export default function ProfileScreen({ navigation }: any) {
 
     return PROVINCE_OPTIONS_BY_COUNTRY[form.country] ?? [{ value: '', label: 'Sin provincias configuradas' }];
   }, [form.country]);
-
-  const organizationOptions = useMemo(
-    () => [
-      { value: '', label: 'Sin organizacion' },
-      ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
-    ],
-    [organizations]
-  );
 
   const pickAvatar = async () => {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -358,20 +347,10 @@ export default function ProfileScreen({ navigation }: any) {
     setSuccess('');
 
     try {
-      const [response, organizationsResponse] = await Promise.all([
-        apiFetch('/auth/me/', { token }),
-        apiFetch('/organizations/', { token }),
-      ]);
+      const response = await apiFetch('/auth/me/', { token });
       if (!response.ok) {
         setError('No se pudo cargar el perfil.');
         return;
-      }
-
-      if (organizationsResponse.ok) {
-        const organizationsPayload = await parseJsonResponse<OrganizationsResponse>(organizationsResponse);
-        setOrganizations(
-          Array.isArray(organizationsPayload) ? organizationsPayload : organizationsPayload.results ?? []
-        );
       }
 
       const payload = await parseJsonResponse<User>(response);
@@ -426,7 +405,6 @@ export default function ProfileScreen({ navigation }: any) {
           phone: form.phone.trim(),
           emergency_contact: form.emergency_contact.trim(),
           emergency_phone: form.emergency_phone.trim(),
-          organization_id: form.organization_id,
           dni: form.dni.trim(),
           language: form.language.trim(),
           city: form.city.trim(),
@@ -640,12 +618,12 @@ export default function ProfileScreen({ navigation }: any) {
 
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Asignacion</Text>
-                <SelectField
-                  label="Organizacion"
-                  value={form.organization_id}
-                  onValueChange={(value) => updateField('organization_id', value)}
-                  options={organizationOptions}
-                />
+                <View style={styles.readOnlyBox}>
+                  <Text style={styles.readOnlyLabel}>Organizacion</Text>
+                  <Text style={styles.readOnlyValue}>
+                    {currentUser?.organization_name || 'Sin organizacion'}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.card}>
@@ -936,12 +914,6 @@ const styles = StyleSheet.create({
   paddingHorizontal: 14,
   paddingVertical: 12,
   gap: 10,
-},
-avatarImage: {
-  width: 96,
-  height: 96,
-  borderRadius: 16,
-  backgroundColor: '#E2E8F0',
 },
 avatarUrl: {
   color: '#64748B',
