@@ -229,7 +229,7 @@ export default function OperativeScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
-          <Text style={styles.sideButtonText}>📍{'\n'}MARCAR{'\n'}PUNTO</Text>
+          <Text style={styles.sideButtonText}>📍{'\n'}PUNTOS DE{'\n'}INTERES</Text>
         </TouchableOpacity>
       </View>
 

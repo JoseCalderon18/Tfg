@@ -1,6 +1,7 @@
 from django.contrib.gis.geos import Point
 from rest_framework import serializers
 
+from emergency.apps.core.location_utils import obtener_direccion_legible
 from emergency.apps.core.models import PointOfInterest
 
 
@@ -10,6 +11,17 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
     incident_name = serializers.CharField(source="incident.name", read_only=True)
     latitude = serializers.FloatField(source="location.y", read_only=True)
     longitude = serializers.FloatField(source="location.x", read_only=True)
+    location_address = serializers.SerializerMethodField()
+
+    def get_location_address(self, obj):
+        location = getattr(obj, "location", None)
+        if not location:
+            return ""
+
+        try:
+            return obtener_direccion_legible(location.y, location.x)
+        except Exception:
+            return ""
 
     class Meta:
         model = PointOfInterest
@@ -27,6 +39,7 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
             "updated_at",
             "latitude",
             "longitude",
+            "location_address",
             "location",
         ]
         read_only_fields = [
@@ -38,6 +51,7 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
             "incident_name",
             "latitude",
             "longitude",
+            "location_address",
             "location",
         ]
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 
 interface PointOfInterest {
   id: string;
@@ -20,6 +21,24 @@ interface PointOfInterest {
   description: string;
   poiType: string;
 }
+
+type SavedPointOfInterest = {
+  id: string;
+  name: string;
+  poi_type?: string | null;
+  description?: string | null;
+  incident_name?: string | null;
+  created_by_username?: string | null;
+  created_at?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_address?: string | null;
+  is_active?: boolean;
+};
+
+type PointOfInterestListResponse = SavedPointOfInterest[] | { results?: SavedPointOfInterest[] };
+
+type Section = 'add' | 'view';
 
 const POINTS_OF_INTEREST: PointOfInterest[] = [
   {
@@ -122,11 +141,213 @@ const POINTS_OF_INTEREST: PointOfInterest[] = [
   }
 ];
 
+function normalizeSavedPoints(payload: PointOfInterestListResponse) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  return payload.results ?? [];
+}
+
+function getPointCatalogInfo(poiType?: string | null) {
+  return POINTS_OF_INTEREST.find((point) => point.poiType === poiType);
+}
+
+function formatPointDate(value?: string | null) {
+  if (!value) {
+    return 'Sin fecha';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Sin fecha';
+  }
+
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+async function readErrorMessage(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return 'No se pudieron cargar los puntos de interes.';
+  }
+
+  try {
+    const payload = JSON.parse(text) as { detail?: string; error?: string };
+    return payload.detail ?? payload.error ?? 'No se pudieron cargar los puntos de interes.';
+  } catch {
+    return 'El servidor no devolvio una respuesta valida.';
+  }
+}
+
+async function reverseGeocode(latitude: number, longitude: number) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=es`
+    );
+
+    if (!response.ok) {
+      return '';
+    }
+
+    const data = (await response.json()) as {
+      display_name?: string;
+      address?: {
+        road?: string;
+        pedestrian?: string;
+        house_number?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        municipality?: string;
+        country?: string;
+      };
+    };
+
+    const address = data.address;
+    if (!address) {
+      return data.display_name ?? '';
+    }
+
+    const street = [address.road || address.pedestrian || '', address.house_number || '']
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const city = address.city || address.town || address.village || address.municipality || '';
+    const parts = [street, city, address.country || ''].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(', ') : data.display_name ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export default function PointsOfInterestScreen({ navigation }: any) {
   const { token } = useAuth();
   const { queuePointOfInterest } = useOfflineSync();
+  const [activeSection, setActiveSection] = useState<Section>('add');
+  const [savedPoints, setSavedPoints] = useState<SavedPointOfInterest[]>([]);
+  const [loadingSavedPoints, setLoadingSavedPoints] = useState(false);
+  const [savedPointsError, setSavedPointsError] = useState<string | null>(null);
+  const [readablePointLocations, setReadablePointLocations] = useState<Record<string, string>>({});
+  const [resolvingPointLocationIds, setResolvingPointLocationIds] = useState<Record<string, boolean>>({});
   const [savingPointId, setSavingPointId] = useState<string | null>(null);
   const isSaving = savingPointId !== null;
+
+  const loadSavedPoints = useCallback(async () => {
+    if (!token) {
+      setSavedPoints([]);
+      setSavedPointsError('Debes iniciar sesion para ver los puntos de interes.');
+      return;
+    }
+
+    setLoadingSavedPoints(true);
+    setSavedPointsError(null);
+
+    try {
+      const response = await apiFetch('/points-of-interest/', { token, timeoutMs: 12000 });
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      const payload = await parseJsonResponse<PointOfInterestListResponse>(response);
+      setSavedPoints(normalizeSavedPoints(payload));
+    } catch (error) {
+      setSavedPoints([]);
+      setSavedPointsError(error instanceof Error ? error.message : 'No se pudieron cargar los puntos de interes.');
+    } finally {
+      setLoadingSavedPoints(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeSection === 'view') {
+      void loadSavedPoints();
+    }
+  }, [activeSection, loadSavedPoints]);
+
+  useEffect(() => {
+    if (activeSection !== 'view') {
+      return;
+    }
+
+    const pointsToResolve = savedPoints.filter((point) => {
+      if (point.location_address) {
+        return false;
+      }
+
+      if (readablePointLocations[point.id]) {
+        return false;
+      }
+
+      return point.latitude != null && point.longitude != null;
+    });
+
+    if (pointsToResolve.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    setResolvingPointLocationIds((current) => {
+      const next = { ...current };
+      pointsToResolve.forEach((point) => {
+        next[point.id] = true;
+      });
+      return next;
+    });
+
+    pointsToResolve.forEach((point) => {
+      if (point.latitude == null || point.longitude == null) {
+        return;
+      }
+
+      void reverseGeocode(point.latitude, point.longitude).then((address) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (address) {
+          setReadablePointLocations((current) => ({
+            ...current,
+            [point.id]: address,
+          }));
+        }
+
+        setResolvingPointLocationIds((current) => ({
+          ...current,
+          [point.id]: false,
+        }));
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSection, readablePointLocations, savedPoints]);
+
+  const getReadablePointLocation = (point: SavedPointOfInterest) => {
+    if (point.location_address) {
+      return point.location_address;
+    }
+
+    if (readablePointLocations[point.id]) {
+      return readablePointLocations[point.id];
+    }
+
+    if (resolvingPointLocationIds[point.id]) {
+      return 'Buscando direccion...';
+    }
+
+    return 'Sin direccion detectada';
+  };
 
   const savePointOfInterest = async (point: PointOfInterest) => {
     if (!token) {
@@ -164,6 +385,10 @@ export default function PointsOfInterestScreen({ navigation }: any) {
           ? `El punto de ${point.name} se guardo localmente y se sincronizara cuando vuelva la conexion.`
           : `Punto de ${point.name} guardado correctamente.`
       );
+
+      if (!result.queued) {
+        void loadSavedPoints();
+      }
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Error guardando el punto.');
     } finally {
@@ -214,6 +439,88 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     </TouchableOpacity>
   );
 
+  const renderSavedPointCard = ({ item }: { item: SavedPointOfInterest }) => {
+    const catalogInfo = getPointCatalogInfo(item.poi_type);
+
+    return (
+      <View style={[styles.card, styles.savedCard]}>
+        <View style={styles.cardContent}>
+          <Text style={styles.emoji}>{catalogInfo?.emoji ?? '-'}</Text>
+          <View style={styles.cardText}>
+            <View style={styles.savedHeaderRow}>
+              <Text style={styles.cardName}>{item.name || catalogInfo?.name || 'Punto de interes'}</Text>
+              <View style={[styles.statusPill, item.is_active === false ? styles.inactivePill : null]}>
+                <Text style={styles.statusPillText}>{item.is_active === false ? 'Inactivo' : 'Activo'}</Text>
+              </View>
+            </View>
+            <Text style={styles.cardDescription}>
+              {item.description || catalogInfo?.description || 'Sin descripcion'}
+            </Text>
+            <Text style={styles.savedMeta}>{catalogInfo?.name ?? item.poi_type ?? 'Tipo sin definir'}</Text>
+            <Text style={styles.savedMeta}>{getReadablePointLocation(item)}</Text>
+            <Text style={styles.savedMeta}>
+              {item.incident_name ? `Incidente: ${item.incident_name}` : 'Sin incidente asociado'}
+            </Text>
+            <Text style={styles.savedMeta}>
+              {`Creado por ${item.created_by_username || 'usuario'} · ${formatPointDate(item.created_at)}`}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderSectionHeader = () => (
+    <View style={styles.sectionHeader}>
+      <TouchableOpacity
+        style={[styles.sectionButton, activeSection === 'add' ? styles.sectionButtonActive : null]}
+        onPress={() => setActiveSection('add')}
+      >
+        <Text style={[styles.sectionButtonText, activeSection === 'add' ? styles.sectionButtonTextActive : null]}>
+          Anadir
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.sectionButton, activeSection === 'view' ? styles.sectionButtonActive : null]}
+        onPress={() => setActiveSection('view')}
+      >
+        <Text style={[styles.sectionButtonText, activeSection === 'view' ? styles.sectionButtonTextActive : null]}>
+          Ver puntos
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderSavedEmpty = () => {
+    if (loadingSavedPoints) {
+      return (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color="#FF6B6B" />
+          <Text style={styles.emptyStateText}>Cargando puntos de interes...</Text>
+        </View>
+      );
+    }
+
+    if (savedPointsError) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateTitle}>No se pudieron cargar</Text>
+          <Text style={styles.emptyStateText}>{savedPointsError}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadSavedPoints()}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateTitle}>Sin puntos guardados</Text>
+        <Text style={styles.emptyStateText}>Todavia no hay puntos de interes registrados.</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -227,17 +534,34 @@ export default function PointsOfInterestScreen({ navigation }: any) {
         <View style={{ width: 60 }} />
       </View>
 
-      <FlatList
-        data={POINTS_OF_INTEREST}
-        renderItem={renderPointCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        scrollEnabled
-      />
+      {activeSection === 'add' ? (
+        <FlatList
+          data={POINTS_OF_INTEREST}
+          renderItem={renderPointCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListHeaderComponent={renderSectionHeader}
+          scrollEnabled
+        />
+      ) : (
+        <FlatList
+          data={savedPoints}
+          renderItem={renderSavedPointCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListHeaderComponent={renderSectionHeader}
+          ListEmptyComponent={renderSavedEmpty}
+          refreshing={loadingSavedPoints}
+          onRefresh={loadSavedPoints}
+          scrollEnabled
+        />
+      )}
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Selecciona un punto y usa "Marcar como punto" para guardarlo en la base de datos.
+          {activeSection === 'add'
+            ? 'Selecciona un punto y usa "Marcar como punto" para guardarlo en la base de datos.'
+            : 'Desliza hacia abajo para actualizar los puntos de interes guardados.'}
         </Text>
       </View>
 
@@ -292,6 +616,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  sectionButton: {
+    flex: 1,
+    borderRadius: 9,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  sectionButtonActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  sectionButtonText: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  sectionButtonTextActive: {
+    color: '#FFFFFF',
+  },
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -305,9 +653,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     overflow: 'hidden',
   },
+  savedCard: {
+    borderLeftColor: '#2563EB',
+  },
   cardContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 16,
     paddingHorizontal: 15,
   },
@@ -329,10 +680,69 @@ const styles = StyleSheet.create({
     color: '#7F8C8D',
     lineHeight: 18,
   },
+  savedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  statusPill: {
+    borderRadius: 999,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  inactivePill: {
+    backgroundColor: '#64748B',
+  },
+  statusPillText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  savedMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#475569',
+  },
   arrow: {
     fontSize: 28,
     color: '#BDC3C7',
     marginLeft: 10,
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyStateTitle: {
+    color: '#1E293B',
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    marginTop: 8,
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    borderRadius: 10,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   footer: {
     backgroundColor: '#2C3E50',
