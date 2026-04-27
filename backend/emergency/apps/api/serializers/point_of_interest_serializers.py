@@ -77,3 +77,16 @@ class PointOfInterestCreateSerializer(serializers.ModelSerializer):
         validated_data["location"] = Point(longitude, latitude, srid=4326)
         validated_data["created_by"] = self.context["request"].user
         return PointOfInterest.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        latitude = validated_data.pop("latitude", None)
+        longitude = validated_data.pop("longitude", None)
+
+        if latitude is not None and longitude is not None:
+            instance.location = Point(longitude, latitude, srid=4326)
+
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+
+        instance.save()
+        return instance

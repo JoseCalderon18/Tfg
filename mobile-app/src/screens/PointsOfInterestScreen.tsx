@@ -335,20 +335,24 @@ export default function PointsOfInterestScreen({ navigation }: any) {
   }, [activeSection, readablePointLocations, savedPoints]);
 
   const getReadablePointLocation = (point: GuardarPuntoInteres) => {
-    if (point.location_address) {
-      return point.location_address;
-    }
+  if (point.location_address) {
+    return point.location_address;
+  }
 
-    if (readablePointLocations[point.id]) {
-      return readablePointLocations[point.id];
-    }
+  if (readablePointLocations[point.id]) {
+    return readablePointLocations[point.id];
+  }
 
-    if (resolvingPointLocationIds[point.id]) {
-      return 'Buscando direccion...';
-    }
+  if (resolvingPointLocationIds[point.id]) {
+    return 'Buscando direccion...';
+  }
 
-    return 'Sin direccion detectada';
-  };
+  if (point.latitude != null && point.longitude != null) {
+    return `Lat: ${point.latitude}, Lng: ${point.longitude}`;
+  }
+
+  return 'Sin direccion detectada';
+};
 
   const savePointOfInterest = async (point: PuntosDeInteres) => {
     if (!token) {
@@ -397,6 +401,101 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     }
   };
 
+  const updatePointLocation = async (point: GuardarPuntoInteres) => {
+    if (!token) {
+      Alert.alert('Sesion requerida', 'Debes iniciar sesion para actualizar la ubicacion.');
+      return;
+    }
+
+    setSavingPointId(point.id);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Se necesita acceso a la ubicacion.');
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
+
+      const latitude = currentLocation.coords.latitude;
+      const longitude = currentLocation.coords.longitude;
+
+      const response = await apiFetch(`/points-of-interest/${point.id}/`, {
+        token,
+        method: 'PATCH',
+        timeoutMs: 12000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude,
+          longitude,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
+      }
+
+      const updatedPoint = await parseJsonResponse<GuardarPuntoInteres>(response);
+
+      setSavedPoints((current) =>
+        current.map((savedPoint) => (savedPoint.id === point.id ? updatedPoint : savedPoint))
+      );
+
+      setReadablePointLocations((current) => {
+        const next = { ...current };
+        delete next[point.id];
+        return next;
+      });
+
+      setResolvingPointLocationIds((current) => ({
+        ...current,
+        [point.id]: false,
+      }));
+
+      Alert.alert(
+        'Ubicacion actualizada',
+        updatedPoint.location_address || 'La ubicacion se ha actualizado correctamente.'
+      );
+
+      await loadSavedPoints();
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'No se pudo actualizar la ubicacion.'
+      );
+    } finally {
+      setSavingPointId(null);
+    }
+  };
+
+const handleSavedPointPress = (point: GuardarPuntoInteres) => {
+  const catalogInfo = getPointCatalogInfo(point.poi_type);
+
+  Alert.alert(
+    `${catalogInfo?.emoji ?? '📍'} ${point.name || catalogInfo?.name || 'Punto de interes'}`,
+    getReadablePointLocation(point),
+    [
+      {
+        text: 'Actualizar ubicacion',
+        onPress: () => {
+          void updatePointLocation(point);
+        },
+      },
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+    ]
+  );
+};
+  
+
   const handleSelectPoint = (point: PuntosDeInteres) => {
     Alert.alert(
       `${point.emoji} ${point.name}`,
@@ -444,29 +543,57 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     const catalogInfo = getPointCatalogInfo(item.poi_type);
 
     return (
-      <View style={[styles.card, styles.savedCard]}>
+        <View style={[styles.card, styles.savedCard]}>
         <View style={styles.cardContent}>
-          <Text style={styles.emoji}>{catalogInfo?.emoji ?? '-'}</Text>
-          <View style={styles.cardText}>
-            <View style={styles.savedHeaderRow}>
-              <Text style={styles.cardName}>{item.name || catalogInfo?.name || 'Punto de interes'}</Text>
-              <View style={[styles.statusPill, item.is_active === false ? styles.inactivePill : null]}>
-                <Text style={styles.statusPillText}>{item.is_active === false ? 'Inactivo' : 'Activo'}</Text>
-              </View>
+        <Text style={styles.emoji}>{catalogInfo?.emoji ?? '-'}</Text>
+        <View style={styles.cardText}>
+          <View style={styles.savedHeaderRow}>
+            <Text style={styles.cardName}>
+              {item.name || catalogInfo?.name || 'Punto de interes'}
+            </Text>
+            <View
+              style={[
+                styles.statusPill,
+                item.is_active === false ? styles.inactivePill : null,
+              ]}
+            >
+              <Text style={styles.statusPillText}>
+                {item.is_active === false ? 'Inactivo' : 'Activo'}
+              </Text>
             </View>
-            <Text style={styles.cardDescription}>
-              {item.description || catalogInfo?.description || 'Sin descripcion'}
-            </Text>
-            <Text style={styles.savedMeta}>{catalogInfo?.name ?? item.poi_type ?? 'Tipo sin definir'}</Text>
-            <Text style={styles.savedMeta}>{getReadablePointLocation(item)}</Text>
-            <Text style={styles.savedMeta}>
-              {item.incident_name ? `Incidente: ${item.incident_name}` : 'Sin incidente asociado'}
-            </Text>
-            <Text style={styles.savedMeta}>
-              {`Creado por ${item.created_by_username || 'usuario'} · ${formatPointDate(item.created_at)}`}
-            </Text>
           </View>
+          <Text style={styles.cardDescription}>
+            {item.description || catalogInfo?.description || 'Sin descripcion'}
+          </Text>
+          <Text style={styles.savedMeta}>
+            {catalogInfo?.name ?? item.poi_type ?? 'Tipo sin definir'}
+          </Text>
+
+          <Text style={styles.savedMeta}>
+            {getReadablePointLocation(item)}
+          </Text>
+
+          <Text style={styles.savedMeta}>
+            {item.incident_name
+              ? `Incidente: ${item.incident_name}`
+              : 'Sin incidente asociado'}
+          </Text>
+
+          <Text style={styles.savedMeta}>
+            {`Creado por ${item.created_by_username || 'usuario'} · ${formatPointDate(item.created_at)}`}
+          </Text>
+          <TouchableOpacity
+            style={styles.updateButton}
+            onPress={() => handleSavedPointPress(item)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.updateButtonText}>
+              Editar ubicación
+            </Text>
+          </TouchableOpacity>
+
         </View>
+      </View>
       </View>
     );
   };
@@ -785,5 +912,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     textAlign: 'center',
+  },
+    updateButton: {
+    marginTop: 10,
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+
+  updateButtonText: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

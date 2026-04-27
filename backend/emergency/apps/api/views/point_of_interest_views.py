@@ -15,7 +15,7 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def get_serializer_class(self):
-        if self.action == "create":
+        if self.action in {"create", "update", "partial_update"}:
             return PointOfInterestCreateSerializer
         return PointOfInterestSerializer
 
