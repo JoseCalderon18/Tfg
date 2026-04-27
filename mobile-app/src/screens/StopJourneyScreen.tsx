@@ -271,12 +271,7 @@ export default function StopJourneyScreen({ navigation }: any) {
           (item) =>
             !item.end_date &&
             (item.account_user_id === user.id || item.user_id === user.profile_id || item.user_id === user.id)
-        ) ??
-        journeys.find(
-          (item) =>
-            item.account_user_id === user.id || item.user_id === user.profile_id || item.user_id === user.id
-        ) ??
-        null;
+        ) ?? null;
 
       setJourney(activeJourney);
 
@@ -304,7 +299,7 @@ export default function StopJourneyScreen({ navigation }: any) {
       }
 
       if (!activeJourney) {
-        setScreenError('No se ha encontrado una jornada activa para este operativo.');
+        setScreenError('No hay jornadas iniciadas.');
       }
     } catch (error) {
       setJourney(null);
@@ -341,10 +336,16 @@ export default function StopJourneyScreen({ navigation }: any) {
 
   const mapRegion = useMemo(() => buildRegion(routeCoordinates), [routeCoordinates]);
   const canRenderMap = routeCoordinates.length > 0;
+  const canStopJourney = Boolean(journey && !journey.end_date);
 
   const stopJourney = async () => {
     if (!token || !user) {
       Alert.alert('Sesion requerida', 'No hay una sesion activa para finalizar la jornada');
+      return;
+    }
+
+    if (!canStopJourney) {
+      Alert.alert('Sin jornada iniciada', 'No hay jornadas iniciadas.');
       return;
     }
 
@@ -410,6 +411,13 @@ export default function StopJourneyScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {!screenLoading && !canStopJourney ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No hay jornadas iniciadas</Text>
+            <Text style={styles.emptyText}>Inicia una jornada antes de intentar finalizarla.</Text>
+          </View>
+        ) : (
+          <>
         <View style={styles.dateCard}>
           <Text style={styles.dateEyebrow}>Inicio de jornada</Text>
           <Text style={styles.dateValue}>{formatDate(journey?.start_date)}</Text>
@@ -501,8 +509,8 @@ export default function StopJourneyScreen({ navigation }: any) {
 
         <TouchableOpacity
           onPress={stopJourney}
-          disabled={loading}
-          style={[styles.finishButton, loading && styles.finishButtonDisabled]}
+          disabled={loading || screenLoading || !canStopJourney}
+          style={[styles.finishButton, (loading || screenLoading || !canStopJourney) && styles.finishButtonDisabled]}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
@@ -510,6 +518,8 @@ export default function StopJourneyScreen({ navigation }: any) {
             <Text style={styles.finishButtonText}>Finalizar jornada</Text>
           )}
         </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -581,6 +591,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  emptyCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  emptyTitle: {
+    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptyText: {
+    color: '#64748B',
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
   },
   mapCard: {
     flex: 1,
