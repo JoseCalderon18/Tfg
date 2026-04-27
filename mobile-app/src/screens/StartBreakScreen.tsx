@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { colors } from '../theme';
 
 type JourneyApi = {
   id: number;
@@ -147,13 +148,13 @@ export default function StartBreakScreen({ navigation }: any) {
           value={breakNotes}
           onChangeText={setBreakNotes}
           placeholder="Ej. parada para hidratacion o reorganizacion del equipo"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           multiline
           style={styles.input}
         />
 
         <TouchableOpacity style={styles.primaryButton} onPress={registerBreak} disabled={loading}>
-          {loading ? <ActivityIndicator color="#F8FAFC" /> : <Text style={styles.primaryButtonText}>Guardar descanso</Text>}
+          {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryButtonText}>Guardar descanso</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -163,7 +164,7 @@ export default function StartBreakScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
     padding: 20,
     justifyContent: 'center',
   },
@@ -172,23 +173,23 @@ const styles = StyleSheet.create({
     top: 48,
     right: 20,
     borderRadius: 999,
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.surfaceMuted,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   backButtonText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontWeight: '700',
   },
   card: {
     borderRadius: 24,
-    backgroundColor: '#111827',
+    backgroundColor: colors.surface,
     padding: 22,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   eyebrow: {
-    color: '#38BDF8',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -196,47 +197,47 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 10,
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 28,
     fontWeight: '800',
   },
   subtitle: {
     marginTop: 10,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
   infoRow: {
     marginTop: 18,
     borderRadius: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.surfaceMuted,
     padding: 14,
   },
   infoLabel: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   infoValue: {
     marginTop: 6,
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
   inputLabel: {
     marginTop: 18,
     marginBottom: 8,
-    color: '#E2E8F0',
+    color: colors.text,
     fontWeight: '700',
   },
   input: {
     minHeight: 110,
     borderRadius: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#334155',
-    color: '#F8FAFC',
+    borderColor: colors.borderStrong,
+    color: colors.text,
     paddingHorizontal: 14,
     paddingVertical: 12,
     textAlignVertical: 'top',
@@ -244,12 +245,12 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 20,
     borderRadius: 16,
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.primary,
     paddingVertical: 15,
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#111827',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '800',
   },

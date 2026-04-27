@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../services/api';
+import { colors } from '../theme';
 
 export default function StartJourneyScreen({ navigation }: any) {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -90,7 +91,7 @@ export default function StartJourneyScreen({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
+    <View style={{ flex: 1, padding: 20, justifyContent: 'center', backgroundColor: colors.background }}>
       <TouchableOpacity
         onPress={() => navigation.goBack()}
         style={{
@@ -98,16 +99,16 @@ export default function StartJourneyScreen({ navigation }: any) {
           top: 40,
           right: 20,
           zIndex: 10,
-          backgroundColor: '#E5E7EB',
+          backgroundColor: colors.surfaceMuted,
           paddingHorizontal: 16,
           paddingVertical: 10,
           borderRadius: 999,
         }}
       >
-        <Text style={{ color: '#0F172A', fontWeight: '700' }}>Volver</Text>
+        <Text style={{ color: colors.text, fontWeight: '700' }}>Volver</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 30 }}>Iniciar jornada</Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 30, color: colors.text }}>Iniciar jornada</Text>
 
       <View
         style={{
@@ -118,10 +119,10 @@ export default function StartJourneyScreen({ navigation }: any) {
           marginBottom: 20,
         }}
       >
-        <Text style={{ width: 112, fontWeight: '600', color: '#475569' }}>
+        <Text style={{ width: 112, fontWeight: '600', color: colors.textSoft }}>
           Usuario actual
         </Text>
-        <Text style={{ flex: 1, color: '#475569' }}>
+        <Text style={{ flex: 1, color: colors.textSoft }}>
           {user?.username ?? 'Sin sesion'}
         </Text>
       </View>
@@ -135,7 +136,7 @@ export default function StartJourneyScreen({ navigation }: any) {
           marginBottom: 20,
         }}
       >
-        <Text style={{ width: 56, color: '#475569', fontWeight: '600', paddingTop: 12 }}>
+        <Text style={{ width: 56, color: colors.textSoft, fontWeight: '600', paddingTop: 12 }}>
           Notas
         </Text>
         <TextInput
@@ -148,9 +149,10 @@ export default function StartJourneyScreen({ navigation }: any) {
             minHeight: 48,
             maxHeight: 120,
             borderWidth: 1,
-            borderColor: '#CBD5E1',
+            borderColor: colors.borderStrong,
             borderRadius: 8,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.surface,
+            color: colors.text,
             paddingHorizontal: 12,
             paddingVertical: 10,
             textAlignVertical: 'top',
@@ -162,13 +164,13 @@ export default function StartJourneyScreen({ navigation }: any) {
         onPress={getCurrentLocation}
         disabled={loading}
         style={{
-          backgroundColor: '#007AFF',
+          backgroundColor: colors.primary,
           padding: 15,
           borderRadius: 8,
           marginBottom: 20,
         }}
       >
-        <Text style={{ color: 'white', textAlign: 'center', fontWeight: '600' }}>
+        <Text style={{ color: colors.white, textAlign: 'center', fontWeight: '600' }}>
           {location ? 'Ubicacion obtenida' : 'Obtener ubicacion actual'}
         </Text>
       </TouchableOpacity>
@@ -177,15 +179,15 @@ export default function StartJourneyScreen({ navigation }: any) {
         onPress={startJourney}
         disabled={!location || loading}
         style={{
-          backgroundColor: location ? '#34C759' : '#CCCCCC',
+          backgroundColor: location ? colors.success : colors.borderStrong,
           padding: 15,
           borderRadius: 8,
         }}
       >
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={{ color: 'white', textAlign: 'center', fontWeight: '600' }}>Confirmar inicio</Text>
+          <Text style={{ color: colors.white, textAlign: 'center', fontWeight: '600' }}>Confirmar inicio</Text>
         )}
       </TouchableOpacity>
     </View>

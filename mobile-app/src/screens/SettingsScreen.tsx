@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { getApiDebugUrls } from '../services/api';
+import { colors } from '../theme';
 
 export default function SettingsScreen({ navigation }: any) {
   const urls = getApiDebugUrls();
@@ -50,60 +51,60 @@ export default function SettingsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
     padding: 20,
   },
   backButton: {
     alignSelf: 'flex-end',
     marginTop: 24,
     borderRadius: 999,
-    backgroundColor: '#1F2937',
+    backgroundColor: colors.surfaceMuted,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   backButtonText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontWeight: '700',
   },
   title: {
     marginTop: 28,
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 30,
     fontWeight: '800',
   },
   subtitle: {
     marginTop: 8,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 14,
   },
   card: {
     marginTop: 20,
     borderRadius: 22,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     padding: 18,
     gap: 10,
   },
   cardTitle: {
-    color: '#93C5FD',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   cardValue: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 14,
     lineHeight: 20,
   },
   tip: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 14,
     lineHeight: 20,
   },
   errorText: {
-    color: '#FCA5A5',
+    color: colors.danger,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -111,12 +112,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignSelf: 'flex-start',
     borderRadius: 14,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   syncButtonText: {
-    color: '#F8FAFC',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '700',
   },

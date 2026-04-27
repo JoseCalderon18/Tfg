@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { colors } from '../theme';
 
 const { height } = Dimensions.get('window');
 const ALTURA_MENU_INFERIOR = height * 0.15;
@@ -352,10 +353,10 @@ export default function OperativeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surface,
     paddingTop: 15,
     paddingBottom: 15,
     paddingHorizontal: 15,
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -373,13 +374,13 @@ const styles = StyleSheet.create({
   },
   hamburgerText: {
     fontSize: 28,
-    color: '#FFFFFF',
+    color: colors.text,
     fontWeight: 'bold',
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -390,14 +391,14 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: colors.text,
     opacity: 0.9,
     textAlign: 'right',
     lineHeight: 16,
   },
   userRole: {
     fontSize: 12,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontWeight: '600',
     textAlign: 'right',
     lineHeight: 16,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
     marginBottom: ALTURA_MENU_INFERIOR,
     paddingHorizontal: 20,
     paddingTop: 28,
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
   mapTitle: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: colors.text,
   },
   tarjetaResumen: {
     width: '100%',
@@ -422,18 +423,18 @@ const styles = StyleSheet.create({
     marginTop: 18,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#0F172A',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: 20,
   },
   resumenTitulo: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 22,
     fontWeight: '700',
   },
   resumenTexto: {
     marginTop: 12,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -452,39 +453,39 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   puntoIncidente: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
   puntoAlerta: {
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.danger,
   },
   puntoUsuario: {
-    backgroundColor: '#06B6D4',
+    backgroundColor: colors.primary,
   },
   textoLeyenda: {
-    color: '#E2E8F0',
+    color: colors.textSoft,
     fontSize: 13,
     fontWeight: '600',
   },
   statusText: {
     marginTop: 18,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: '700',
   },
   statusSubtext: {
     marginTop: 6,
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 13,
   },
   syncText: {
     marginTop: 6,
-    color: '#93C5FD',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
   },
   errorText: {
     marginTop: 10,
-    color: '#FCA5A5',
+    color: colors.danger,
   },
   quickActions: {
     flexDirection: 'row',
@@ -497,24 +498,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   startQuickAction: {
-    backgroundColor: '#16A34A',
+    backgroundColor: colors.success,
   },
   stopQuickAction: {
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.danger,
   },
   mapQuickAction: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
   botonAmpliar: {
     marginTop: 14,
   },
   quickActionText: {
-    color: '#F8FAFC',
+    color: colors.white,
     fontWeight: '700',
   },
   bottomMenu: {
     height: ALTURA_MENU_INFERIOR,
-    backgroundColor: '#2C3E50',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -534,12 +535,12 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#34495E',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     marginHorizontal: 5,
   },
   sideButtonText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 11,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -550,17 +551,17 @@ const styles = StyleSheet.create({
     height: '110%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#B91C1C',
+    backgroundColor: colors.danger,
     borderRadius: 15,
     marginHorizontal: 5,
     elevation: 8,
-    shadowColor: '#B91C1C',
+    shadowColor: colors.danger,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 5,
   },
   centerButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 13,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -568,7 +569,7 @@ const styles = StyleSheet.create({
   },
   sosModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.74)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -578,13 +579,13 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
-    backgroundColor: '#7F1D1D',
+    borderColor: colors.danger,
+    backgroundColor: colors.surface,
     padding: 24,
     alignItems: 'center',
   },
   sosModalEyebrow: {
-    color: '#FECACA',
+    color: colors.danger,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -592,13 +593,13 @@ const styles = StyleSheet.create({
   },
   sosModalTitle: {
     marginTop: 10,
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 34,
     fontWeight: '800',
   },
   sosModalText: {
     marginTop: 12,
-    color: '#FEE2E2',
+    color: colors.textSoft,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -607,7 +608,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
     width: '100%',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -615,20 +616,20 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   sosCancelButtonText: {
-    color: '#991B1B',
+    color: colors.danger,
     fontSize: 16,
     fontWeight: '800',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
   },
   drawerMenu: {
     width: '75%',
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     paddingTop: 20,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 2, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -642,12 +643,12 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: colors.text,
   },
   drawerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: colors.text,
     paddingHorizontal: 20,
     marginBottom: 20,
   },
@@ -658,19 +659,20 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     marginVertical: 5,
-    backgroundColor: '#ECF0F1',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: colors.primary,
   },
   menuOptionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2C3E50',
+    color: colors.text,
   },
   logoutOption: {
     marginTop: 20,
-    borderLeftColor: '#E74C3C',
-    backgroundColor: '#FADBD8',
+    borderLeftColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
 });
+

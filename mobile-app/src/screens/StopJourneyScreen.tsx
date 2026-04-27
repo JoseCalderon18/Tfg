@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 8,
-    backgroundColor: '#0F172ACC',
+    backgroundColor: '#FFFFFFE6',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   legendText: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 12,
     fontWeight: '700',
   },

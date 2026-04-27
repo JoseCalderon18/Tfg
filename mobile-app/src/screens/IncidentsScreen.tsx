@@ -11,6 +11,7 @@ import {
 
 import { useAuth, type User } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { colors } from '../theme';
 
 type Incident = {
   id: string;
@@ -390,7 +391,7 @@ export default function IncidentsScreen({ navigation }: any) {
     if (isLoading) {
       return (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color="#38BDF8" size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.loadingText}>Cargando incidentes...</Text>
         </View>
       );
@@ -481,7 +482,7 @@ export default function IncidentsScreen({ navigation }: any) {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadIncidents(true)}
-            tintColor="#38BDF8"
+            tintColor={colors.primary}
           />
         }
       >
@@ -494,27 +495,27 @@ export default function IncidentsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 18,
     paddingHorizontal: 18,
     paddingBottom: 18,
-    backgroundColor: '#111827',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
   backButton: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   backButtonText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -522,13 +523,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 24,
     fontWeight: '800',
   },
   subtitle: {
     marginTop: 4,
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -551,18 +552,18 @@ const styles = StyleSheet.create({
     marginTop: 26,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#111827',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: 18,
   },
   emptyTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '800',
   },
   emptyText: {
     marginTop: 8,
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -570,20 +571,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 16,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 11,
   },
   retryButtonText: {
-    color: '#F8FAFC',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
   },
   incidentCard: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#111827',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: 16,
   },
   cardHeader: {
@@ -597,13 +598,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   incidentName: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '800',
   },
   incidentOrganization: {
     marginTop: 5,
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -613,57 +614,57 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   defaultBadge: {
-    backgroundColor: '#0E7490',
+    backgroundColor: colors.primary,
   },
   openBadge: {
-    backgroundColor: '#16A34A',
+    backgroundColor: colors.success,
   },
   triageBadge: {
-    backgroundColor: '#EAB308',
+    backgroundColor: colors.warning,
   },
   inactiveBadge: {
-    backgroundColor: '#475569',
+    backgroundColor: colors.textMuted,
   },
   statusBadgeText: {
-    color: '#F8FAFC',
+    color: colors.white,
     fontSize: 12,
     fontWeight: '800',
   },
   metaRow: {
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
+    borderTopColor: colors.border,
     paddingTop: 10,
     marginTop: 10,
   },
   metaLabel: {
-    color: '#64748B',
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   metaValue: {
     marginTop: 4,
-    color: '#E2E8F0',
+    color: colors.text,
     fontSize: 14,
     lineHeight: 20,
   },
   description: {
     marginTop: 12,
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 14,
     lineHeight: 21,
   },
   openIncidentButton: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
+    borderTopColor: colors.border,
     paddingTop: 14,
   },
   openIncidentButtonText: {
     alignSelf: 'flex-start',
     borderRadius: 10,
-    backgroundColor: '#2563EB',
-    color: '#F8FAFC',
+    backgroundColor: colors.primary,
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
     overflow: 'hidden',

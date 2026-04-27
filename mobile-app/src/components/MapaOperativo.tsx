@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { colors } from '../theme';
 
 type PuntoGeografico = {
   coordinates?: [number, number];
@@ -59,7 +60,7 @@ function crearMarcadores(
         titulo: incidente.name,
         latitud: coordenadas[1],
         longitud: coordenadas[0],
-        color: '#2563EB',
+        color: colors.primary,
         tipo: 'incidente' as const,
       };
     })
@@ -77,7 +78,7 @@ function crearMarcadores(
         titulo: alerta.title,
         latitud: coordenadas[1],
         longitud: coordenadas[0],
-        color: '#DC2626',
+        color: colors.danger,
         tipo: 'alerta' as const,
       };
     })
@@ -91,7 +92,7 @@ function crearMarcadores(
             titulo: 'Tu posicion',
             latitud: latitudUsuario,
             longitud: longitudUsuario,
-            color: '#06B6D4',
+            color: colors.primary,
             tipo: 'usuario' as const,
           },
         ]
@@ -321,7 +322,7 @@ export default function MapaOperativo({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   mapa: {
     ...StyleSheet.absoluteFillObject,
@@ -332,20 +333,20 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 24,
     zIndex: 5,
-    backgroundColor: '#0F172AE6',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   estadoMapaTitulo: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontWeight: '700',
     marginBottom: 4,
   },
   estadoMapaTexto: {
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 12,
   },
   cabecera: {
@@ -354,20 +355,20 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 2,
-    backgroundColor: '#0F172AE6',
+    backgroundColor: colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   tituloCabecera: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontWeight: '700',
     marginBottom: 4,
   },
   textoCabecera: {
-    color: '#CBD5E1',
+    color: colors.textMuted,
     fontSize: 12,
   },
   resumenSuperior: {
@@ -382,33 +383,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   resumenTexto: {
-    color: '#E2E8F0',
+    color: colors.textSoft,
     fontSize: 12,
     fontWeight: '700',
-    backgroundColor: '#0F172AE6',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   etiquetaMapa: {
-    color: '#E2E8F0',
+    color: colors.textSoft,
     fontSize: 11,
     fontWeight: '700',
-    backgroundColor: '#0F172AE6',
+    backgroundColor: colors.surface,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   errorTexto: {
-    color: '#FCA5A5',
+    color: colors.danger,
     fontSize: 12,
     marginTop: 6,
   },
   errorTextoCompacto: {
-    color: '#FCA5A5',
+    color: colors.danger,
     fontSize: 11,
     marginTop: 6,
-    backgroundColor: '#0F172AE6',
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0B1324D9',
+    backgroundColor: colors.surface,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 5,
@@ -439,17 +440,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   puntoIncidente: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
   puntoAlerta: {
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.danger,
   },
   puntoUsuario: {
-    backgroundColor: '#06B6D4',
+    backgroundColor: colors.primary,
   },
   textoLeyenda: {
-    color: '#E2E8F0',
+    color: colors.textSoft,
     fontSize: 10,
     fontWeight: '700',
   },
 });
+

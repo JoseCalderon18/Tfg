@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from './src/theme';
 
 // Importamos los contextos para manejo de estado global
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -164,28 +165,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   loadingText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '600',
   },
   errorTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 12,
   },
   errorMessage: {
-    color: '#FCA5A5',
+    color: colors.danger,
     fontSize: 15,
     lineHeight: 22,
   },

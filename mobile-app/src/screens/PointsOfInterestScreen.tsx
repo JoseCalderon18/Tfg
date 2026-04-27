@@ -13,8 +13,9 @@ import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { colors } from '../theme';
 
-interface PointOfInterest {
+interface PuntosDeInteres {
   id: string;
   name: string;
   emoji: string;
@@ -22,7 +23,7 @@ interface PointOfInterest {
   poiType: string;
 }
 
-type SavedPointOfInterest = {
+type GuardarPuntoInteres = {
   id: string;
   name: string;
   poi_type?: string | null;
@@ -36,11 +37,11 @@ type SavedPointOfInterest = {
   is_active?: boolean;
 };
 
-type PointOfInterestListResponse = SavedPointOfInterest[] | { results?: SavedPointOfInterest[] };
+type PointOfInterestListResponse = GuardarPuntoInteres[] | { results?: GuardarPuntoInteres[] };
 
 type Section = 'add' | 'view';
 
-const POINTS_OF_INTEREST: PointOfInterest[] = [
+const PUNTOS_DE_INTERES: PuntosDeInteres[] = [
   {
     id: '1',
     name: 'Hidratación',
@@ -150,7 +151,7 @@ function normalizeSavedPoints(payload: PointOfInterestListResponse) {
 }
 
 function getPointCatalogInfo(poiType?: string | null) {
-  return POINTS_OF_INTEREST.find((point) => point.poiType === poiType);
+  return PUNTOS_DE_INTERES.find((point) => point.poiType === poiType);
 }
 
 function formatPointDate(value?: string | null) {
@@ -233,7 +234,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
   const { token } = useAuth();
   const { queuePointOfInterest } = useOfflineSync();
   const [activeSection, setActiveSection] = useState<Section>('add');
-  const [savedPoints, setSavedPoints] = useState<SavedPointOfInterest[]>([]);
+  const [savedPoints, setSavedPoints] = useState<GuardarPuntoInteres[]>([]);
   const [loadingSavedPoints, setLoadingSavedPoints] = useState(false);
   const [savedPointsError, setSavedPointsError] = useState<string | null>(null);
   const [readablePointLocations, setReadablePointLocations] = useState<Record<string, string>>({});
@@ -333,7 +334,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     };
   }, [activeSection, readablePointLocations, savedPoints]);
 
-  const getReadablePointLocation = (point: SavedPointOfInterest) => {
+  const getReadablePointLocation = (point: GuardarPuntoInteres) => {
     if (point.location_address) {
       return point.location_address;
     }
@@ -349,7 +350,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     return 'Sin direccion detectada';
   };
 
-  const savePointOfInterest = async (point: PointOfInterest) => {
+  const savePointOfInterest = async (point: PuntosDeInteres) => {
     if (!token) {
       Alert.alert('Sesion requerida', 'Debes iniciar sesion para guardar un punto de interes.');
       return;
@@ -396,7 +397,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     }
   };
 
-  const handleSelectPoint = (point: PointOfInterest) => {
+  const handleSelectPoint = (point: PuntosDeInteres) => {
     Alert.alert(
       `${point.emoji} ${point.name}`,
       point.description,
@@ -421,7 +422,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     );
   };
 
-  const renderPointCard = ({ item }: { item: PointOfInterest }) => (
+  const renderPointCard = ({ item }: { item: PuntosDeInteres }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => handleSelectPoint(item)}
@@ -439,7 +440,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     </TouchableOpacity>
   );
 
-  const renderSavedPointCard = ({ item }: { item: SavedPointOfInterest }) => {
+  const renderSavedPointCard = ({ item }: { item: GuardarPuntoInteres }) => {
     const catalogInfo = getPointCatalogInfo(item.poi_type);
 
     return (
@@ -495,7 +496,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     if (loadingSavedPoints) {
       return (
         <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color="#FF6B6B" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.emptyStateText}>Cargando puntos de interes...</Text>
         </View>
       );
@@ -536,7 +537,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
 
       {activeSection === 'add' ? (
         <FlatList
-          data={POINTS_OF_INTEREST}
+          data={PUNTOS_DE_INTERES}
           renderItem={renderPointCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
@@ -568,7 +569,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
       {isSaving ? (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#FF6B6B" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Añadiendo punto de interes...</Text>
           </View>
         </View>
@@ -580,10 +581,10 @@ export default function PointsOfInterestScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: colors.surface,
     paddingTop: 15,
     paddingBottom: 15,
     paddingHorizontal: 15,
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -603,12 +604,12 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'white',
+    color: colors.primary,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -618,7 +619,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
@@ -630,31 +631,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionButtonActive: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: colors.primary,
   },
   sectionButtonText: {
-    color: '#475569',
+    color: colors.textSoft,
     fontSize: 14,
     fontWeight: '800',
   },
   sectionButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 5,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: colors.primary,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     overflow: 'hidden',
   },
   savedCard: {
-    borderLeftColor: '#2563EB',
+    borderLeftColor: colors.primary,
   },
   cardContent: {
     flexDirection: 'row',
@@ -672,12 +673,12 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: colors.text,
     marginBottom: 4,
   },
   cardDescription: {
     fontSize: 13,
-    color: '#7F8C8D',
+    color: colors.textMuted,
     lineHeight: 18,
   },
   savedHeaderRow: {
@@ -687,15 +688,15 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     borderRadius: 999,
-    backgroundColor: '#16A34A',
+    backgroundColor: colors.success,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   inactivePill: {
-    backgroundColor: '#64748B',
+    backgroundColor: colors.textMuted,
   },
   statusPillText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 10,
     fontWeight: '800',
   },
@@ -703,31 +704,31 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 12,
     lineHeight: 17,
-    color: '#475569',
+    color: colors.textSoft,
   },
   arrow: {
     fontSize: 28,
-    color: '#BDC3C7',
+    color: colors.borderStrong,
     marginLeft: 10,
   },
   emptyState: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   emptyStateTitle: {
-    color: '#1E293B',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '800',
     textAlign: 'center',
   },
   emptyStateText: {
     marginTop: 8,
-    color: '#64748B',
+    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
@@ -735,17 +736,17 @@ const styles = StyleSheet.create({
   retryButton: {
     marginTop: 16,
     borderRadius: 10,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
   },
   footer: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: colors.surface,
     paddingVertical: 15,
     paddingHorizontal: 15,
     flexDirection: 'row',
@@ -754,12 +755,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: 'white',
+    color: colors.textSoft,
     textAlign: 'center',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -768,13 +769,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     paddingHorizontal: 24,
     paddingVertical: 22,
     alignItems: 'center',
     gap: 14,
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
     shadowRadius: 8,
@@ -782,7 +783,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: colors.text,
     textAlign: 'center',
   },
 });

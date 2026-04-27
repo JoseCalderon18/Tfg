@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
+import { colors } from '../theme';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -48,12 +49,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 30,
+    color: colors.text,
   },
   section: {
     marginBottom: 30,
@@ -61,6 +63,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     marginBottom: 10,
+    color: colors.textSoft,
   },
   button: {
     padding: 15,
@@ -69,22 +72,22 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   startButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: colors.success,
   },
   stopButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: colors.danger,
   },
   alertButton: {
-    backgroundColor: '#FF9500',
+    backgroundColor: colors.warning,
   },
   mapButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
   },
   logoutButton: {
-    backgroundColor: '#8E8E93',
+    backgroundColor: colors.textMuted,
   },
   buttonText: {
-    color: 'white',
+    color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
