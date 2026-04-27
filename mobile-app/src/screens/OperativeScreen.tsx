@@ -130,6 +130,9 @@ export default function OperativeScreen({ navigation }: any) {
       case 'weather':
         Alert.alert('Meteorologia', 'Informacion meteorologica (proximamente)');
         break;
+      case 'incidents':
+        navigation.navigate('Incidents');
+        break;
       case 'stopShift':
         Alert.alert('Parar jornada', 'Desea finalizar su jornada?', [
           { text: 'Cancelar', style: 'cancel' },
@@ -277,6 +280,9 @@ export default function OperativeScreen({ navigation }: any) {
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
                 <Text style={styles.menuOptionText}>⛅ Meteorologia</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
+                <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer básico de usuario"""
     profile_id = serializers.UUIDField(source='profile.id', read_only=True)
     role = serializers.CharField(source='profile.role', read_only=True)
+    organization_id = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source='profile.organization.name', read_only=True)
     specialties = serializers.ListField(source='profile.specialties', child=serializers.CharField(), read_only=True)
     dni = serializers.CharField(source='profile.dni', read_only=True)
@@ -21,8 +22,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                  'profile_id', 'role', 'organization_name', 'phone', 'is_active', 'created_at', 'specialties', 'dni']
+                  'profile_id', 'role', 'organization_id', 'organization_name',
+                  'phone', 'is_active', 'created_at', 'specialties', 'dni']
         read_only_fields = ['id', 'created_at']
+
+    def get_organization_id(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return str(getattr(profile, 'organization_id', '') or '')
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

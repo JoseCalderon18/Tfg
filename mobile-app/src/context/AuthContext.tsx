@@ -219,15 +219,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(payload.error ?? 'No se pudo iniciar sesion.');
     }
 
-    await SecureStore.setItemAsync('token', payload.access);
-    await SecureStore.setItemAsync('user', JSON.stringify(payload.user));
-
     if (payload.refresh) {
       await SecureStore.setItemAsync('refreshToken', payload.refresh);
     }
 
+    let currentUser = payload.user;
+    try {
+      const currentUserResponse = await apiFetch('/auth/me/', { token: payload.access, timeoutMs: 8000 });
+      if (currentUserResponse.ok) {
+        currentUser = await parseJsonResponse<User>(currentUserResponse);
+      }
+    } catch {
+      // El login ya trae usuario; si el refresco falla, mantenemos ese payload.
+    }
+
+    await SecureStore.setItemAsync('token', payload.access);
+    await SecureStore.setItemAsync('user', JSON.stringify(currentUser));
+
     setToken(payload.access);
-    setUser(payload.user);
+    setUser(currentUser);
   };
 
   const logout = async () => {

@@ -21,6 +21,7 @@ import StopJourneyScreen from './src/screens/StopJourneyScreen';
 import StartBreakScreen from './src/screens/StartBreakScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import IncidentsScreen from './src/screens/IncidentsScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
@@ -102,6 +103,11 @@ function OperativeNavigator() {
         <Stack.Screen name="StopJourney" 
               component={StopJourneyScreen}
               options={{headerShown: false}} />
+        <Stack.Screen
+          name="Incidents"
+          component={IncidentsScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
