@@ -104,6 +104,29 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'NO_DISPONIBLE', label: 'No disponible' },
 ];
 
+const PROFILE_FORM_FIELDS: Array<[keyof ProfileForm, string]> = [
+  ['username', 'username'],
+  ['email', 'email'],
+  ['first_name', 'first_name'],
+  ['last_name', 'last_name'],
+  ['phone', 'phone'],
+  ['emergency_contact', 'emergency_contact'],
+  ['emergency_phone', 'emergency_phone'],
+  ['dni', 'dni'],
+  ['language', 'language'],
+  ['city', 'city'],
+  ['province', 'province'],
+  ['country', 'country'],
+  ['birth_date', 'birth_date'],
+  ['blood_type', 'blood_type'],
+  ['operative_schedule', 'operative_schedule'],
+  ['operative_status', 'operative_status'],
+  ['location_lat', 'location_lat'],
+  ['location_lng', 'location_lng'],
+  ['medical_notes', 'medical_notes'],
+  ['specialties', 'specialties'],
+];
+
 const PROVINCE_OPTIONS_BY_COUNTRY: Record<string, SelectOption[]> = {
   Espana: [
     { value: '', label: 'Selecciona una provincia' },
@@ -222,6 +245,44 @@ function parseErrorMessage(text: string) {
   } catch {
     return text;
   }
+}
+
+function getAvatarFileName(asset: ImagePicker.ImagePickerAsset) {
+  if (asset.fileName) {
+    return asset.fileName;
+  }
+
+  const uriName = asset.uri.split('/').pop();
+  return uriName && uriName.includes('.') ? uriName : 'avatar.jpg';
+}
+
+function getAvatarMimeType(asset: ImagePicker.ImagePickerAsset) {
+  if (asset.mimeType) {
+    return asset.mimeType;
+  }
+
+  const fileName = getAvatarFileName(asset).toLowerCase();
+  if (fileName.endsWith('.png')) return 'image/png';
+  if (fileName.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function buildProfileFormData(form: ProfileForm, avatarAsset: ImagePicker.ImagePickerAsset | null) {
+  const data = new FormData();
+
+  PROFILE_FORM_FIELDS.forEach(([field, apiField]) => {
+    data.append(apiField, form[field].trim());
+  });
+
+  if (avatarAsset) {
+    data.append('avatar', {
+      uri: avatarAsset.uri,
+      name: getAvatarFileName(avatarAsset),
+      type: getAvatarMimeType(avatarAsset),
+    } as unknown as Blob);
+  }
+
+  return data;
 }
 
 function InfoPill({ label, value }: { label: string; value: string }) {
@@ -397,28 +458,7 @@ export default function ProfileScreen({ navigation }: any) {
       const response = await apiFetch('/auth/me/', {
         method: 'PATCH',
         token,
-        body: JSON.stringify({
-          username: form.username.trim(),
-          email: form.email.trim(),
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
-          phone: form.phone.trim(),
-          emergency_contact: form.emergency_contact.trim(),
-          emergency_phone: form.emergency_phone.trim(),
-          dni: form.dni.trim(),
-          language: form.language.trim(),
-          city: form.city.trim(),
-          province: form.province.trim(),
-          country: form.country.trim(),
-          birth_date: form.birth_date.trim(),
-          blood_type: form.blood_type.trim(),
-          operative_schedule: form.operative_schedule.trim(),
-          operative_status: form.operative_status,
-          location_lat: form.location_lat.trim(),
-          location_lng: form.location_lng.trim(),
-          medical_notes: form.medical_notes,
-          specialties: form.specialties,
-        }),
+        body: buildProfileFormData(form, avatarAsset),
       });
 
       if (!response.ok) {
@@ -429,6 +469,7 @@ export default function ProfileScreen({ navigation }: any) {
       const payload = await parseJsonResponse<User>(response);
       setCurrentUser(payload);
       setForm(userToForm(payload));
+      setAvatarAsset(null);
       await updateUser(payload);
       setSuccess('Perfil actualizado correctamente.');
     } catch (saveError) {

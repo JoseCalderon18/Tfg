@@ -153,6 +153,7 @@ class RegisterView(generics.CreateAPIView):
 
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         return Response(_serializar_usuario_mobile(request.user, request))
@@ -247,6 +248,12 @@ class CurrentUserView(APIView):
         if "dni" in payload:
             profile.dni = str(payload.get("dni", "")).strip()
             profile_updated_fields.append("dni")
+
+        if "avatar" in payload:
+            archivo_avatar = payload.get("avatar")
+            if archivo_avatar:
+                profile.avatar = archivo_avatar
+                profile_updated_fields.append("avatar")
 
         if "language" in payload:
             profile.language = str(payload.get("language", "")).strip()
