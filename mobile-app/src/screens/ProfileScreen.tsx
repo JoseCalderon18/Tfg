@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker'; 
 import {
   ActivityIndicator,
   Alert,
@@ -7,6 +8,7 @@ import {
   Platform,
   SafeAreaView,
   ScrollView,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -77,6 +79,12 @@ const LANGUAGE_OPTIONS: SelectOption[] = [
   { value: 'eus', label: 'Euskera' },
   { value: 'gall', label: 'Gallego' },
 ];
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  SUPERVISOR: 'Supervisor',
+  OPERATIVE: 'Operativo'
+};
 
 const COUNTRY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Selecciona un pais' },
@@ -295,6 +303,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [avatarAsset, setAvatarAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   const updateField = (field: keyof ProfileForm, value: string) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -315,6 +324,27 @@ export default function ProfileScreen({ navigation }: any) {
     ],
     [organizations]
   );
+
+  const pickAvatar = async () => {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert('Permiso requerido', 'Necesitas permitir acceso a la galeria.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+
+    if (!result.canceled) {
+      setAvatarAsset(result.assets[0]);
+    }
+  };
+
 
   const loadProfile = useCallback(async () => {
     if (!token) {
@@ -460,7 +490,7 @@ export default function ProfileScreen({ navigation }: any) {
           ) : (
             <>
               <View style={styles.infoGrid}>
-                <InfoPill label="Rol" value={currentUser?.role ?? ''} />
+              <InfoPill label="Rol" value={ROLE_LABELS[currentUser?.role ?? '']} />
                 <InfoPill label="Activo" value={currentUser?.is_active ? 'Si' : 'No'} />
                 <InfoPill label="Organizacion" value={currentUser?.organization_name ?? ''} />
                 <InfoPill
@@ -630,7 +660,24 @@ export default function ProfileScreen({ navigation }: any) {
 
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Datos del sistema</Text>
-                <InfoPill label="Avatar" value={currentUser?.avatar ?? ''} />
+                <View style={styles.avatarRow}>
+                  {avatarAsset?.uri || currentUser?.avatar ? (
+                    <Image
+                      source={{ uri: avatarAsset?.uri ?? currentUser?.avatar }}
+                      style={styles.avatarImage}
+                    />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Text style={styles.avatarPlaceholderText}>Sin avatar</Text>
+                    </View>
+                  )}
+
+                  <TouchableOpacity style={styles.avatarButton} onPress={pickAvatar}>
+                    <Text style={styles.avatarButtonText}>Cambiar imagen</Text>
+                  </TouchableOpacity>
+                </View>
+
+
               </View>
 
               <TouchableOpacity
@@ -881,4 +928,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  avatarBlock: {
+  borderRadius: 14,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+  paddingHorizontal: 14,
+  paddingVertical: 12,
+  gap: 10,
+},
+avatarImage: {
+  width: 96,
+  height: 96,
+  borderRadius: 16,
+  backgroundColor: '#E2E8F0',
+},
+avatarUrl: {
+  color: '#64748B',
+  fontSize: 12,
+  lineHeight: 18,
+},
+avatarRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 14,
+},
+avatarImage: {
+  width: 96,
+  height: 96,
+  borderRadius: 16,
+  backgroundColor: '#E2E8F0',
+},
+avatarPlaceholder: {
+  width: 96,
+  height: 96,
+  borderRadius: 16,
+  backgroundColor: '#E2E8F0',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+avatarPlaceholderText: {
+  color: '#64748B',
+  fontSize: 12,
+  fontWeight: '700',
+},
+avatarButton: {
+  flex: 1,
+  borderRadius: 14,
+  backgroundColor: '#2563EB',
+  paddingVertical: 13,
+  paddingHorizontal: 14,
+  alignItems: 'center',
+},
+avatarButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '800',
+},
+
 });
