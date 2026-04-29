@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ApiConnectionError, apiFetch, parseJsonResponse, setApiAuthHandlers } from '../services/api';
 
@@ -61,10 +61,74 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type SecureStoreModule = {
+  getItemAsync: (key: string) => Promise<string | null>;
+  setItemAsync: (key: string, value: string) => Promise<void>;
+  deleteItemAsync: (key: string) => Promise<void>;
+};
+
+let secureStoreModule: SecureStoreModule | null | undefined;
+
+function getSecureStore(): SecureStoreModule | null {
+  if (secureStoreModule !== undefined) {
+    return secureStoreModule;
+  }
+
+  try {
+    secureStoreModule = require('expo-secure-store') as SecureStoreModule;
+  } catch (error) {
+    console.warn('SecureStore unavailable, falling back to AsyncStorage:', error);
+    secureStoreModule = null;
+  }
+
+  return secureStoreModule;
+}
+
+async function readAuthItem(key: string): Promise<string | null> {
+  const secureStore = getSecureStore();
+  if (secureStore) {
+    try {
+      return await secureStore.getItemAsync(key);
+    } catch (error) {
+      console.warn(`SecureStore get failed for ${key}, using AsyncStorage fallback:`, error);
+    }
+  }
+
+  return AsyncStorage.getItem(key);
+}
+
+async function writeAuthItem(key: string, value: string): Promise<void> {
+  const secureStore = getSecureStore();
+  if (secureStore) {
+    try {
+      await secureStore.setItemAsync(key, value);
+      return;
+    } catch (error) {
+      console.warn(`SecureStore set failed for ${key}, using AsyncStorage fallback:`, error);
+    }
+  }
+
+  await AsyncStorage.setItem(key, value);
+}
+
+async function removeAuthItem(key: string): Promise<void> {
+  const secureStore = getSecureStore();
+  if (secureStore) {
+    try {
+      await secureStore.deleteItemAsync(key);
+      return;
+    } catch (error) {
+      console.warn(`SecureStore delete failed for ${key}, using AsyncStorage fallback:`, error);
+    }
+  }
+
+  await AsyncStorage.removeItem(key);
+}
+
 async function clearStoredAuth() {
-  await SecureStore.deleteItemAsync('token');
-  await SecureStore.deleteItemAsync('refreshToken');
-  await SecureStore.deleteItemAsync('user');
+  await removeAuthItem('token');
+  await removeAuthItem('refreshToken');
+  await removeAuthItem('user');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     refreshPromiseRef.current = (async () => {
-      const storedRefreshToken = await SecureStore.getItemAsync('refreshToken');
+      const storedRefreshToken = await readAuthItem('refreshToken');
       if (!storedRefreshToken) {
         await clearAuthState();
         return null;
@@ -103,9 +167,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return null;
         }
 
-        await SecureStore.setItemAsync('token', payload.access);
+        await writeAuthItem('token', payload.access);
         if (payload.refresh) {
-          await SecureStore.setItemAsync('refreshToken', payload.refresh);
+          await writeAuthItem('refreshToken', payload.refresh);
         }
 
         setToken(payload.access);
@@ -123,8 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadStoredAuth = useCallback(async () => {
     try {
-      const storedToken = await SecureStore.getItemAsync('token');
-      const storedUser = await SecureStore.getItemAsync('user');
+      const storedToken = await readAuthItem('token');
+      const storedUser = await readAuthItem('user');
 
       if (!storedToken || !storedUser) {
         setToken(null);
@@ -220,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (payload.refresh) {
-      await SecureStore.setItemAsync('refreshToken', payload.refresh);
+      await writeAuthItem('refreshToken', payload.refresh);
     }
 
     let currentUser = payload.user;
@@ -233,8 +297,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // El login ya trae usuario; si el refresco falla, mantenemos ese payload.
     }
 
-    await SecureStore.setItemAsync('token', payload.access);
-    await SecureStore.setItemAsync('user', JSON.stringify(currentUser));
+    await writeAuthItem('token', payload.access);
+    await writeAuthItem('user', JSON.stringify(currentUser));
 
     setToken(payload.access);
     setUser(currentUser);
@@ -245,7 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = useCallback(async (nextUser: User) => {
-    await SecureStore.setItemAsync('user', JSON.stringify(nextUser));
+    await writeAuthItem('user', JSON.stringify(nextUser));
     setUser(nextUser);
   }, []);
 
