@@ -598,7 +598,7 @@ export default function ChatGeneral() {
 
                     {!cargandoMensajes && filteredUsers.length === 0 ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
-                        No hay usuarios que coincidan con la busqueda.
+                    No hay usuarios que coincidan con la búsqueda.
                       </div>
                     ) : null}
                   </div>

@@ -151,7 +151,7 @@ export default function NewOrganizationPage() {
       <div className="relative z-10 mx-auto max-w-4xl px-6 py-10">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm text-slate-400">Administracion · Organizaciones</p>
+        <p className="text-sm text-slate-400">Administración · Organizaciones</p>
             <h1 className="text-3xl font-bold tracking-tight">Crear nueva organizacion</h1>
             <p className="mt-2 text-slate-300">Completa los datos basicos para registrar una organizacion en el sistema.</p>
           </div>

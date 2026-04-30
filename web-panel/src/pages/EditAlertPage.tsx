@@ -67,7 +67,7 @@ const STATUS_OPTIONS = [
 ];
 
 const SEVERITY_OPTIONS = [
-  { value: 1, label: "Critica" },
+  { value: 1, label: "Crítica" },
   { value: 2, label: "Alta" },
   { value: 3, label: "Media" },
   { value: 4, label: "Baja" },

@@ -20,7 +20,7 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
     label: "Centro de mando",
     items: [
       { label: "Inicio", to: "/" },
-      { label: "Meteorologia", to: "/weather" },
+      { label: "Meteorología", to: "/weather" },
       { label: "Rayos", to: "/lightning" },
     ],
   },
@@ -46,17 +46,17 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
     id: "terrain",
     label: "Terreno",
     items: [
-      { label: "Areas de trabajo", to: "/workarea" },
-      { label: "Puntos de interes", to: "/points" },
+      { label: "Áreas de trabajo", to: "/workarea" },
+      { label: "Puntos de interés", to: "/points" },
     ],
   },
   {
     id: "administration",
-    label: "Administracion",
+    label: "Administración",
     items: [
       { label: "Ajustes" },
       { label: "Usuarios", to: "/viewusers" },
-      { label: "Auditoria" },
+      { label: "Auditoría" },
       { label: "Reportes" },
     ],
   },
@@ -165,7 +165,7 @@ export default function Layout() {
                           <div className="flex items-center justify-between gap-3">
                             <span>{item.label}</span>
                             <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]">
-                              Proximamente
+                              Próximamente
                             </span>
                           </div>
                         </div>

@@ -464,7 +464,7 @@ export default function WorkAreasPage() {
                 {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
               </p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-                Esta accion no se puede deshacer.
+                Esta acción no se puede deshacer.
               </p>
 
               <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -595,7 +595,7 @@ export default function WorkAreasPage() {
               {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-              Esta accion no se puede deshacer.
+              Esta acción no se puede deshacer.
             </p>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

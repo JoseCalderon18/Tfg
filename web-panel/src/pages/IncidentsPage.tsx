@@ -340,7 +340,7 @@ function obtenerClasesEstadoAlerta(estado: string) {
   }
 }
 function obtenerTextoSeveridadAlerta(severidad: number) {
-  if (severidad <= 1) return "Critica";
+  if (severidad <= 1) return "Crítica";
   if (severidad === 2) return "Muy alta";
   if (severidad === 3) return "Alta";
   if (severidad === 4) return "Media";
@@ -376,7 +376,7 @@ function obtenerEtiquetaEstado(tipo: string){
     case "CLOSED":
       return "Cerrado";
     case "TRIAGE":
-      return "Evaluacion";
+      return "Evaluación";
     default:
       return "Desconocido";
   }
@@ -935,7 +935,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : incident.status === "CLOSED"
                         ? "Cerrado"
-                        : "Evaluacion"}
+                        : "Evaluación"}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
@@ -991,7 +991,7 @@ export default function IncidentsPage() {
             {incidentesFiltrados.length > 0 && (
               <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[color:var(--cm-text-muted)]">
-                  Pagina {paginaActual} de {totalPaginas} · Mostrando {incidentesPaginados.length} de {incidentesFiltrados.length} incidentes
+                  Página {paginaActual} de {totalPaginas} · Mostrando {incidentesPaginados.length} de {incidentesFiltrados.length} incidentes
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -1063,7 +1063,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : incidenteSeleccionado.status === "CLOSED"
                         ? "Cerrado"
-                        : "Evaluacion"}
+                        : "Evaluación"}
                     </p>
                   </div>
 
@@ -1252,7 +1252,7 @@ export default function IncidentsPage() {
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-300">
                     Vas a eliminar <span className="font-semibold text-white">{incidentePendienteEliminar.name}</span>.
-                    Esta accion es permanente y el incidente dejara de estar disponible en el panel.
+              Esta acción es permanente y el incidente dejará de estar disponible en el panel.
                   </p>
                 </div>
               </div>
@@ -1275,7 +1275,7 @@ export default function IncidentsPage() {
                         ? "Abierto"
                         : incidentePendienteEliminar.status === "CLOSED"
                         ? "Cerrado"
-                        : "Evaluacion"}
+                        : "Evaluación"}
                   </div>
                 </div>
               </div>

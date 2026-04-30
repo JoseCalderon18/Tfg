@@ -223,7 +223,7 @@ export default function ViewOrganizationsPage() {
       <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administracion</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administración</p>
             <h1 className="text-2xl font-bold">Organizaciones</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -368,7 +368,7 @@ export default function ViewOrganizationsPage() {
         {filteredOrganizations.length > 0 && (
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-400">
-              Pagina {paginaActual} de {totalPaginas} · Mostrando {organizacionesPaginadas.length} de {filteredOrganizations.length} organizaciones
+              Página {paginaActual} de {totalPaginas} · Mostrando {organizacionesPaginadas.length} de {filteredOrganizations.length} organizaciones
             </p>
 
             <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function ViewOrganizationsPage() {
               {organizacionPendienteEliminar.name ? ` "${organizacionPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-              Esta accion no se puede deshacer.
+              Esta acción no se puede deshacer.
             </p>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
