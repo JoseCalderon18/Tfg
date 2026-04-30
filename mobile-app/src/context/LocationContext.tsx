@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import * as TaskManager from 'expo-task-manager';
+import { Alert } from 'react-native';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
 
 const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
 
@@ -75,6 +77,14 @@ interface LocationContextType {
   errorMsg: string | null;
   isCheckingWorkarea: boolean;
   geofenceStatus: GeofenceStatus;
+  // Live calorie/distance info while tracking
+  routeDistanceKm: number;
+  routeDurationHours: number;
+  estimatedKcal: number;
+  foodSuggestions: Array<{ name: string; kcal: number; portion?: string }>;
+  shiftHoursLimit: number;
+  isOverShift: boolean;
+  fatigueWarningMessage: string | null;
 }
 
 type GeofenceStatus = {
@@ -83,6 +93,28 @@ type GeofenceStatus = {
   message: string | null;
   alertId?: string | null;
 };
+
+const FATIGUE_ALERT_MESSAGES = [
+  'Has superado el horario de jornada. Tu cuerpo pide agua, pausa y un poco de compasion. Seguir ahora es una mala idea.',
+  'Ya vas fuera de horas. Tu energia esta haciendo horas extra sin pedir permiso y eso es peligroso.',
+  'Aviso de cansancio: vas por encima de la jornada. Baja el ritmo antes de que tu cerebro empiece a negociar con una siesta.',
+  'Te has pasado de turno. Tu reloj sigue trabajando, pero tus piernas ya estan en modo descanso.',
+  'Zona roja de fatiga: llevar mas horas no te hace mas duro, solo mas cansado y mas expuesto a errores.',
+];
+
+function extractShiftHours(schedule?: string) {
+  if (!schedule) {
+    return 8;
+  }
+
+  const match = schedule.match(/(\d+(?:[.,]\d+)?)/);
+  if (!match) {
+    return 8;
+  }
+
+  const value = Number(match[1].replace(',', '.'));
+  return Number.isFinite(value) && value > 0 ? value : 8;
+}
 
 // Creación del contexto de ubicación
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -106,8 +138,67 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     alertId: null,
   });
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
-  const { token, updateUser } = useAuth();
-  const { queueTrackingPoint } = useOfflineSync();
+  const [routePoints, setRoutePoints] = useState<Array<{ latitude: number; longitude: number }>>([]);
+  const [routeStartTime, setRouteStartTime] = useState<number | null>(null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number>(0);
+  const [routeDurationHours, setRouteDurationHours] = useState<number>(0);
+  const [estimatedKcal, setEstimatedKcal] = useState<number>(0);
+  const [foodSuggestions, setFoodSuggestions] = useState<Array<{ name: string; kcal: number; portion?: string }>>([]);
+  const { token, updateUser, user } = useAuth();
+  const { queueTrackingPoint, queueAlert } = useOfflineSync();
+  const fatigueAlertSentRef = useRef(false);
+
+  const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
+  const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
+  const fatigueWarningMessage = isOverShift
+    ? `Has superado el limite de ${shiftHoursLimit} h de jornada. Ojo: el cansancio ya no es una broma, es un riesgo.`
+    : null;
+
+  useEffect(() => {
+    if (!isTracking || fatigueAlertSentRef.current) {
+      return;
+    }
+
+    if (!location) {
+      return;
+    }
+
+    if (routeDurationHours < shiftHoursLimit) {
+      return;
+    }
+
+    fatigueAlertSentRef.current = true;
+    const overHours = Math.max(0, routeDurationHours - shiftHoursLimit);
+    const message = FATIGUE_ALERT_MESSAGES[Math.min(FATIGUE_ALERT_MESSAGES.length - 1, Math.floor(overHours * 2))];
+
+    const sendFatigueAlert = async () => {
+      try {
+        if (!token) {
+          return;
+        }
+
+        const result = await queueAlert({
+          alert_type: 'OTHER',
+          severity: 2,
+          title: 'Demasiadas horas de jornada',
+          description: message,
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+
+        if (result.ok) {
+          Alert.alert(
+            'Jornada demasiado larga',
+            `${message}\n\n${result.queued ? 'Se ha guardado para enviarse cuando vuelva la conexion.' : 'La alerta se ha enviado correctamente.'}`
+          );
+        }
+      } catch {
+        fatigueAlertSentRef.current = false;
+      }
+    };
+
+    void sendFatigueAlert();
+  }, [isTracking, location, queueAlert, routeDurationHours, shiftHoursLimit, token]);
 
   useEffect(() => {
     return () => {
@@ -266,6 +357,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
    */
   const startTracking = async () => {
     try {
+      fatigueAlertSentRef.current = false;
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
@@ -277,6 +369,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         accuracy: Location.Accuracy.High,
       });
       setLocation(currentLocation);
+      // initialize route tracking
+      setRoutePoints([{ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }]);
+      setRouteStartTime(Date.now());
+      setRouteDistanceKm(0);
+      setRouteDurationHours(0);
+      setEstimatedKcal(0);
+      setFoodSuggestions([]);
       await syncProfileLocation(currentLocation);
       await sendTrackingPoint(currentLocation);
       await checkWorkareaPosition(currentLocation);
@@ -292,6 +391,26 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           setLocation(newLocation);
           await sendTrackingPoint(newLocation);
           await checkWorkareaPosition(newLocation);
+
+          // Update route points and live metrics
+          setRoutePoints((prev) => {
+            const next = prev.concat({ latitude: newLocation.coords.latitude, longitude: newLocation.coords.longitude });
+            const dist = computeRouteDistanceKm(next);
+            setRouteDistanceKm(dist);
+
+            const start = routeStartTime ?? Date.now();
+            const durationMs = Date.now() - start;
+            const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
+            setRouteDurationHours(durationH);
+
+            // Use authenticated user's weight if available
+            const userWeight = (user as any)?.weightKg ?? (user as any)?.weight_kg ?? 75;
+            const kcal = estimateCalories({ distanceKm: dist, durationHours: durationH, weightKg: userWeight });
+            setEstimatedKcal(kcal);
+            setFoodSuggestions(suggestFoodsForCalories(kcal));
+
+            return next;
+          });
         }
       );
       setLocationSubscription(subscription);
@@ -313,6 +432,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setLocationSubscription(null);
     }
     void stopBackgroundWorkareaDetection();
+    fatigueAlertSentRef.current = false;
+    setRoutePoints([]);
+    setRouteStartTime(null);
+    setRouteDistanceKm(0);
+    setRouteDurationHours(0);
+    setEstimatedKcal(0);
+    setFoodSuggestions([]);
     setIsTracking(false);
   };
 
@@ -327,6 +453,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         errorMsg,
         isCheckingWorkarea,
         geofenceStatus,
+        routeDistanceKm,
+        routeDurationHours,
+        estimatedKcal,
+        foodSuggestions,
+        shiftHoursLimit,
+        isOverShift,
+        fatigueWarningMessage,
       }}
     >
       {children}

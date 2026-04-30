@@ -2,11 +2,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
+import JourneyLivePanel from '../components/JourneyLivePanel';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout } = useAuth();
-  const { isTracking, startTracking, stopTracking } = useLocation();
+  const {
+    isTracking,
+    startTracking,
+    stopTracking,
+  } = useLocation();
 
   return (
     <View style={styles.container}>
@@ -22,6 +27,7 @@ export default function HomeScreen({ navigation }: any) {
             {isTracking ? 'Stop Tracking' : 'Start Tracking'}
           </Text>
         </TouchableOpacity>
+        <JourneyLivePanel />
       </View>
 
       <TouchableOpacity
@@ -108,34 +114,6 @@ const styles = StyleSheet.create({
   trackingInactive: {
     borderColor: colors.danger,
     backgroundColor: '#fef2f2',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.lg,
-  },
-  iconText: {
-    fontSize: 28,
-  },
-  cardText: {
-    flex: 1,
-  },
-  cardTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  cardDescription: {
-    ...typography.small,
-    color: colors.textMuted,
   },
   statusDot: {
     width: 12,

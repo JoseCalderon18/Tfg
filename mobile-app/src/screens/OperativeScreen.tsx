@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
+import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { colors } from '../theme';
@@ -33,6 +34,8 @@ export default function OperativeScreen({ navigation }: any) {
     errorMsg,
     geofenceStatus,
     location,
+    routeDistanceKm,
+    routeDurationHours,
   } = useLocation();
   const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
   const sosCancelledRef = useRef(false);
@@ -210,6 +213,8 @@ export default function OperativeScreen({ navigation }: any) {
             <Text style={styles.quickActionText}>Abrir mapa</Text>
           </TouchableOpacity>
         </View>
+
+        <JourneyLivePanel />
 
         <View style={styles.tarjetaResumen}>
           <Text style={styles.resumenTitulo}>Mapa operativo</Text>
