@@ -23,6 +23,8 @@ import StartBreakScreen from './src/screens/StartBreakScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
+import ChatScreen from './src/screens/ChatScreen';
+import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
@@ -74,52 +76,60 @@ function LoginNavigator() {
 function OperativeNavigator() {
   return (
     <LocationProvider>
-      <Stack.Navigator initialRouteName="Operative">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen
-          name="Map"
-          getComponent={() => require('./src/screens/MapScreen').default}
-        />
-        <Stack.Screen name="Alert" component={AlertScreen} />
-        <Stack.Screen
-          name="Operative"
-          component={OperativeScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="PointsOfInterest"
-          component={PointsOfInterestScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="StartJourney"
-          component={StartJourneyScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="StartBreak"
-          component={StartBreakScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="StopJourney" 
-              component={StopJourneyScreen}
-              options={{headerShown: false}} />
-        <Stack.Screen
-          name="Incidents"
-          component={IncidentsScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
+      <>
+        <Stack.Navigator initialRouteName="Operative">
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen
+            name="Map"
+            getComponent={() => require('./src/screens/MapScreen').default}
+          />
+          <Stack.Screen name="Alert" component={AlertScreen} />
+          <Stack.Screen
+            name="Operative"
+            component={OperativeScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="PointsOfInterest"
+            component={PointsOfInterestScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="StartJourney"
+            component={StartJourneyScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="StartBreak"
+            component={StartBreakScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="StopJourney" 
+                component={StopJourneyScreen}
+                options={{headerShown: false}} />
+          <Stack.Screen
+            name="Incidents"
+            component={IncidentsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+        <GeofenceLockScreen />
+      </>
     </LocationProvider>
   );
 }

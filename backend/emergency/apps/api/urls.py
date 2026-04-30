@@ -15,7 +15,13 @@ from emergency.apps.api.views.auth_views import (
     PanelUsersListView,
     JWTLoginView,
 )
-from emergency.apps.api.views.chat_views import PanelChatsView, PanelChatMessagesView, PanelChatMembersView
+from emergency.apps.api.views.chat_views import (
+    MobileChatMessagesView,
+    MobileChatsView,
+    PanelChatMembersView,
+    PanelChatMessagesView,
+    PanelChatsView,
+)
 
 from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views
 
@@ -51,6 +57,12 @@ urlpatterns = [
         "tracking/incident/<uuid:incident_id>/",
         tracking_views.IncidentTrackingView.as_view(),
         name="tracking_incident",
+    ),
+    path("mobile/chats/", MobileChatsView.as_view(), name="mobile_chats"),
+    path(
+        "mobile/chats/<str:chat_kind>/<str:chat_id>/messages/",
+        MobileChatMessagesView.as_view(),
+        name="mobile_chat_messages",
     ),
 
     path("", include(router.urls)),
