@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView, SafeAreaView } from 'react-native';
 
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { getApiDebugUrls } from '../services/api';
-import { colors } from '../theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function SettingsScreen({ navigation }: any) {
   const urls = getApiDebugUrls();
@@ -70,39 +70,66 @@ const styles = StyleSheet.create({
     marginTop: 28,
     color: colors.text,
     fontSize: 30,
-    fontWeight: '800',
-  },
-  subtitle: {
-    marginTop: 8,
-    color: colors.textMuted,
-    fontSize: 14,
-  },
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView style={styles.screen} showsVerticalScrollIndicator={false}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Configuración operativa</Text>
+              <Text style={styles.subtitle}>Referencia rápida para conexión y uso en terreno</Text>
+            </View>
   card: {
-    marginTop: 20,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
+            {/* Sync Status Card */}
+            <View style={[styles.card, styles.syncCard]}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>📡 Estado de sincronización</Text>
+                <View style={[styles.statusIndicator, isSyncing ? styles.syncingStatus : styles.syncedStatus]} />
+              </View>
+              <Text style={styles.cardValue}>Elementos en cola: {pendingCount}</Text>
+              <Text style={styles.cardValue}>Estado: <Text style={{ fontWeight: '600' }}>{isSyncing ? 'Sincronizando...' : 'En espera'}</Text></Text>
     borderColor: colors.border,
-    padding: 18,
+                Última sincronización:{'\n'}
+                {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
     gap: 10,
-  },
-  cardTitle: {
-    color: colors.primary,
+              {lastError && <Text style={styles.errorText}>❌ Error: {lastError}</Text>}
+              <TouchableOpacity style={styles.syncButton} onPress={() => void flushQueue()} activeOpacity={0.85}>
+                <Text style={styles.syncButtonText}>🔄 Sincronizar ahora</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* API URLs Card */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>🔗 URLs de API detectadas</Text>
+              <View style={styles.urlContainer}>
+                {urls.length > 0 ? (
+                  urls.map((url) => (
+                    <Text key={url} style={styles.urlValue}>{url}</Text>
+                  ))
+                ) : (
+                  <Text style={styles.cardValue}>Sin URLs detectadas</Text>
+                )}
+              </View>
     fontSize: 14,
-    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+            {/* Best Practices Card */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>💡 Recomendaciones</Text>
+              <View style={styles.tipsContainer}>
+                <Text style={styles.tip}>📍 Activa el GPS antes de iniciar jornada</Text>
+                <Text style={styles.tip}>💻 En Android por USB usa <Text style={styles.tipCode}>adb reverse tcp:8000 tcp:8000</Text></Text>
+                <Text style={styles.tip}>⏸️ Registra descansos para que queden reflejados en la ruta</Text>
+                <Text style={styles.tip}>⚡ Mantén la app en primer plano durante operaciones</Text>
+              </View>
+            </View>
   },
-  cardValue: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  tip: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 20,
-  },
+            {/* Back Button */}
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.backButton}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.backButtonText}>← Volver</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
   errorText: {
     color: colors.danger,
     fontSize: 13,
