@@ -5,15 +5,15 @@ import * as Location from 'expo-location';
 import { useLocation } from '../context/LocationContext';
 import { colors } from '../theme';
 
-function formatReadableAddress(address: Location.LocationGeocodedAddress) {
-  const street = [address.street, address.streetNumber].filter(Boolean).join(' ').trim();
-  const city = address.city || address.subregion || address.region;
-  const parts = [street, city, address.country].filter(Boolean);
+function formatearDireccionLegible(direccion: Location.LocationGeocodedAddress) {
+  const calle = [direccion.street, direccion.streetNumber].filter(Boolean).join(' ').trim();
+  const ciudad = direccion.city || direccion.subregion || direccion.region;
+  const partes = [calle, ciudad, direccion.country].filter(Boolean);
 
-  return parts.length > 0 ? parts.join(', ') : null;
+  return partes.length > 0 ? partes.join(', ') : null;
 }
 
-export default function GeofenceLockScreen() {
+export default function PantallaBloqueoGeofence() {
   const {
     geofenceStatus,
     isCheckingWorkarea,
@@ -21,50 +21,50 @@ export default function GeofenceLockScreen() {
     refreshWorkareaDetection,
   } = useLocation();
   const visible = geofenceStatus.hasWorkarea && !geofenceStatus.inside;
-  const [readableLocation, setReadableLocation] = useState<string | null>(null);
-  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [ubicacionLegible, setUbicacionLegible] = useState<string | null>(null);
+  const [resolviendoUbicacion, setResolviendoUbicacion] = useState(false);
 
   useEffect(() => {
     if (!visible || !location) {
-      setReadableLocation(null);
-      setIsResolvingLocation(false);
+      setUbicacionLegible(null);
+      setResolviendoUbicacion(false);
       return;
     }
 
-    let cancelled = false;
-    setIsResolvingLocation(true);
+    let cancelado = false;
+    setResolviendoUbicacion(true);
 
     void Location.reverseGeocodeAsync({
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
     })
-      .then((addresses) => {
-        if (cancelled) {
+      .then((direcciones) => {
+        if (cancelado) {
           return;
         }
 
-        const nextReadableLocation = addresses[0] ? formatReadableAddress(addresses[0]) : null;
-        setReadableLocation(nextReadableLocation);
+        const siguienteUbicacionLegible = direcciones[0] ? formatearDireccionLegible(direcciones[0]) : null;
+        setUbicacionLegible(siguienteUbicacionLegible);
       })
       .catch(() => {
-        if (!cancelled) {
-          setReadableLocation(null);
+        if (!cancelado) {
+          setUbicacionLegible(null);
         }
       })
       .finally(() => {
-        if (!cancelled) {
-          setIsResolvingLocation(false);
+        if (!cancelado) {
+          setResolviendoUbicacion(false);
         }
       });
 
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
   }, [location, visible]);
 
-  const lastLocationText = location
-    ? readableLocation ??
-      (isResolvingLocation
+  const textoUltimaUbicacion = location
+    ? ubicacionLegible ??
+      (resolviendoUbicacion
         ? 'Buscando ubicacion...'
         : `Lat ${location.coords.latitude.toFixed(6)} | Lng ${location.coords.longitude.toFixed(6)}`)
     : null;
@@ -76,35 +76,35 @@ export default function GeofenceLockScreen() {
       transparent={false}
       onRequestClose={() => undefined}
     >
-      <View style={styles.container}>
-        <Text style={styles.title}>Fuera de la zona asignada</Text>
-        <Text style={styles.message}>
+      <View style={estilos.container}>
+        <Text style={estilos.title}>Fuera de la zona asignada</Text>
+        <Text style={estilos.message}>
           {geofenceStatus.message ?? 'Has salido del area de trabajo. Vuelve dentro del workarea para continuar.'}
         </Text>
 
-        <View style={styles.statusBox}>
-          <Text style={styles.label}>Estado</Text>
-          <Text style={styles.value}>Alerta enviada al centro operativo</Text>
+        <View style={estilos.statusBox}>
+          <Text style={estilos.label}>Estado</Text>
+          <Text style={estilos.value}>Alerta enviada al centro operativo</Text>
 
           {location ? (
             <>
-              <Text style={styles.label}>Ultima ubicacion</Text>
-              <Text style={styles.value}>{lastLocationText}</Text>
+              <Text style={estilos.label}>Ultima ubicacion</Text>
+              <Text style={estilos.value}>{textoUltimaUbicacion}</Text>
             </>
           ) : null}
         </View>
 
         <TouchableOpacity
-          style={[styles.refreshButton, isCheckingWorkarea ? styles.refreshButtonDisabled : null]}
+          style={[estilos.refreshButton, isCheckingWorkarea ? estilos.refreshButtonDisabled : null]}
           onPress={refreshWorkareaDetection}
           disabled={isCheckingWorkarea}
         >
-          <Text style={styles.refreshButtonText}>
+          <Text style={estilos.refreshButtonText}>
             {isCheckingWorkarea ? 'Actualizando...' : 'Actualizar zona'}
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
+        <Text style={estilos.footer}>
           Esta pantalla se cerrara automaticamente cuando vuelvas dentro del area de trabajo.
         </Text>
       </View>
@@ -112,7 +112,7 @@ export default function GeofenceLockScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const estilos = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.danger,

@@ -141,6 +141,9 @@ export default function OperativeScreen({ navigation }: any) {
       case 'incidents':
         navigation.navigate('Incidents');
         break;
+      case 'chat':
+        navigation.navigate('Chat');
+        break;
       case 'stopShift':
         Alert.alert('Parar jornada', 'Desea finalizar su jornada?', [
           { text: 'Cancelar', style: 'cancel' },
@@ -299,6 +302,10 @@ export default function OperativeScreen({ navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
                 <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('chat')}>
+                <Text style={styles.menuOptionText}>💬 Chat</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
