@@ -82,6 +82,9 @@ interface LocationContextType {
   routeDurationHours: number;
   estimatedKcal: number;
   foodSuggestions: Array<{ name: string; kcal: number; portion?: string }>;
+  shiftHoursLimit: number;
+  isOverShift: boolean;
+  fatigueWarningMessage: string | null;
 }
 
 type GeofenceStatus = {
@@ -146,6 +149,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const fatigueAlertSentRef = useRef(false);
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
+  const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
+  const fatigueWarningMessage = isOverShift
+    ? `Has superado el limite de ${shiftHoursLimit} h de jornada. Ojo: el cansancio ya no es una broma, es un riesgo.`
+    : null;
 
   useEffect(() => {
     if (!isTracking || fatigueAlertSentRef.current) {
@@ -450,6 +457,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         routeDurationHours,
         estimatedKcal,
         foodSuggestions,
+        shiftHoursLimit,
+        isOverShift,
+        fatigueWarningMessage,
       }}
     >
       {children}

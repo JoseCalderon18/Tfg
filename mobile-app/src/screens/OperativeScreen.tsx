@@ -37,6 +37,8 @@ export default function OperativeScreen({ navigation }: any) {
     routeDurationHours,
     estimatedKcal,
     foodSuggestions,
+    isOverShift,
+    fatigueWarningMessage,
   } = useLocation();
   const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
   const sosCancelledRef = useRef(false);
@@ -244,6 +246,14 @@ export default function OperativeScreen({ navigation }: any) {
             <Text style={styles.calorieNote}>La estimación aparecerá cuando empiece el seguimiento.</Text>
           )}
         </View>
+
+        {isOverShift ? (
+          <View style={styles.fatigueCard}>
+            <Text style={styles.fatigueTitle}>Aviso visual de cansancio</Text>
+            <Text style={styles.fatigueText}>{fatigueWarningMessage}</Text>
+            <Text style={styles.fatigueText}>Este aviso ya es suficiente para recordar que seguir no compensa si aumentan los errores.</Text>
+          </View>
+        ) : null}
 
         <View style={styles.tarjetaResumen}>
           <Text style={styles.resumenTitulo}>Mapa operativo</Text>
@@ -599,6 +609,26 @@ const styles = StyleSheet.create({
   calorieNote: {
     color: colors.textMuted,
     fontSize: 12,
+    marginTop: 4,
+  },
+  fatigueCard: {
+    marginTop: 14,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  fatigueTitle: {
+    color: '#92400E',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  fatigueText: {
+    color: '#78350F',
+    fontSize: 13,
     marginTop: 4,
   },
   quickActionButton: {

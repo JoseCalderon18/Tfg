@@ -6,7 +6,17 @@ import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout } = useAuth();
-  const { isTracking, startTracking, stopTracking, routeDistanceKm, routeDurationHours, estimatedKcal, foodSuggestions } = useLocation();
+  const {
+    isTracking,
+    startTracking,
+    stopTracking,
+    routeDistanceKm,
+    routeDurationHours,
+    estimatedKcal,
+    foodSuggestions,
+    isOverShift,
+    fatigueWarningMessage,
+  } = useLocation();
 
   function formatDuration(hours: number) {
     if (!hours || hours <= 0) return '0 m';
@@ -49,6 +59,14 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           </View>
         </View>
+
+        {isOverShift ? (
+          <View style={[styles.card, styles.fatigueCard]}>
+            <Text style={styles.fatigueTitle}>Aviso de fatiga</Text>
+            <Text style={styles.fatigueText}>{fatigueWarningMessage}</Text>
+            <Text style={styles.fatigueText}>Baja el ritmo, bebe agua y considera parar antes de cometer errores por cansancio.</Text>
+          </View>
+        ) : null}
       </View>
 
       <TouchableOpacity
@@ -136,6 +154,10 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
     backgroundColor: '#fef2f2',
   },
+  fatigueCard: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+  },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,6 +185,16 @@ const styles = StyleSheet.create({
   cardDescription: {
     ...typography.small,
     color: colors.textMuted,
+  },
+  fatigueTitle: {
+    ...typography.subtitle,
+    color: '#92400E',
+    marginBottom: spacing.xs,
+  },
+  fatigueText: {
+    ...typography.small,
+    color: '#78350F',
+    marginTop: spacing.xs,
   },
   statusDot: {
     width: 12,
