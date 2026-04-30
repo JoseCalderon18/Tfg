@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
+import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { colors } from '../theme';
@@ -35,24 +36,9 @@ export default function OperativeScreen({ navigation }: any) {
     location,
     routeDistanceKm,
     routeDurationHours,
-    estimatedKcal,
-    foodSuggestions,
-    isOverShift,
-    fatigueWarningMessage,
   } = useLocation();
   const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
   const sosCancelledRef = useRef(false);
-
-  const routeDurationLabel = useMemo(() => {
-    if (!routeDurationHours || routeDurationHours <= 0) return '0 m';
-
-    const totalMinutes = Math.round(routeDurationHours * 60);
-    if (totalMinutes < 60) return `${totalMinutes} m`;
-
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours} h ${minutes} m`;
-  }, [routeDurationHours]);
 
   const handleAlertPress = () => {
     navigation.navigate('Alert');
@@ -228,32 +214,7 @@ export default function OperativeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.calorieCard}>
-          <Text style={styles.calorieTitle}>Resumen energético</Text>
-          <Text style={styles.calorieMeta}>Distancia: {routeDistanceKm.toFixed(2)} km</Text>
-          <Text style={styles.calorieMeta}>Duración: {routeDurationLabel}</Text>
-          <Text style={styles.calorieEstimate}>{estimatedKcal} kcal estimadas</Text>
-          {foodSuggestions.length > 0 ? (
-            <View style={styles.foodList}>
-              <Text style={styles.calorieMeta}>Sugerencias rápidas:</Text>
-              {foodSuggestions.slice(0, 3).map((food, index) => (
-                <Text key={`${food.name}-${index}`} style={styles.foodItem}>
-                  • {food.name}{food.portion ? ` (${food.portion})` : ''} - {food.kcal} kcal
-                </Text>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.calorieNote}>La estimación aparecerá cuando empiece el seguimiento.</Text>
-          )}
-        </View>
-
-        {isOverShift ? (
-          <View style={styles.fatigueCard}>
-            <Text style={styles.fatigueTitle}>Aviso visual de cansancio</Text>
-            <Text style={styles.fatigueText}>{fatigueWarningMessage}</Text>
-            <Text style={styles.fatigueText}>Este aviso ya es suficiente para recordar que seguir no compensa si aumentan los errores.</Text>
-          </View>
-        ) : null}
+        <JourneyLivePanel />
 
         <View style={styles.tarjetaResumen}>
           <Text style={styles.resumenTitulo}>Mapa operativo</Text>
@@ -565,71 +526,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     marginTop: 18,
-  },
-  calorieCard: {
-    marginTop: 14,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  calorieTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  calorieMeta: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  calorieEstimate: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 6,
-    marginBottom: 8,
-  },
-  foodList: {
-    marginTop: 4,
-  },
-  foodItem: {
-    color: colors.textSoft,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  calorieNote: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  fatigueCard: {
-    marginTop: 14,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  fatigueTitle: {
-    color: '#92400E',
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  fatigueText: {
-    color: '#78350F',
-    fontSize: 13,
-    marginTop: 4,
   },
   quickActionButton: {
     borderRadius: 14,

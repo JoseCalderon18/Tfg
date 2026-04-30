@@ -6,6 +6,12 @@ export type FoodSuggestion = {
   portion?: string;
 };
 
+export type JourneyNutritionPlan = {
+  headline: string;
+  note: string;
+  suggestions: FoodSuggestion[];
+};
+
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (v: number) => (v * Math.PI) / 180;
   const R = 6371; // km
@@ -96,4 +102,30 @@ export function suggestFoodsForCalories(kcalNeeded: number) {
   }
 
   return suggestion;
+}
+
+export function getJourneyNutritionPlan(opts: { durationHours: number; estimatedKcal: number }): JourneyNutritionPlan {
+  const { durationHours, estimatedKcal } = opts;
+
+  if (durationHours >= 6) {
+    return {
+      headline: 'Turno largo: recuperacion completa',
+      note: 'Ya llevas muchas horas. Prioriza comida completa, agua y algo con proteina y carbohidrato.',
+      suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 500)).slice(0, 5),
+    };
+  }
+
+  if (durationHours >= 3) {
+    return {
+      headline: 'Jornada media: snack serio',
+      note: 'Vas para varias horas. Mejor una mezcla equilibrada que te mantenga estable.',
+      suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 300)).slice(0, 4),
+    };
+  }
+
+  return {
+    headline: 'Inicio de jornada: energia ligera',
+    note: 'Si acabas de empezar, te basta con algo ligero y rapido para mantener el ritmo.',
+    suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 150)).slice(0, 3),
+  };
 }
