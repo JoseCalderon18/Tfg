@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
-import { colors } from '../theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -46,49 +46,120 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    padding: 20,
     backgroundColor: colors.background,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 30,
+  container: {
+    flex: 1,
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  header: {
+    marginBottom: spacing.xxxl,
+    paddingTop: spacing.md,
+  },
+  greeting: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  username: {
+    ...typography.heading2,
     color: colors.text,
+    marginBottom: spacing.md,
+  },
+  subtitle: {
+    ...typography.small,
+    color: colors.textMuted,
   },
   section: {
-    marginBottom: 30,
+    marginBottom: spacing.xxxl,
   },
   sectionTitle: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: colors.textSoft,
+    ...typography.subtitle,
+    color: colors.text,
+    marginBottom: spacing.lg,
   },
-  button: {
-    padding: 15,
-    borderRadius: 8,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadows.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  primaryCard: {
+    borderColor: colors.primary,
+  },
+  alertCard: {
+    borderColor: colors.warning,
+    backgroundColor: '#fffbeb',
+  },
+  mapCard: {
+    borderColor: colors.primary,
+    backgroundColor: '#f0f9ff',
+  },
+  trackingActive: {
+    borderColor: colors.success,
+    backgroundColor: '#f0fdf4',
+  },
+  trackingInactive: {
+    borderColor: colors.danger,
+    backgroundColor: '#fef2f2',
+  },
+  cardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  startButton: {
+  cardIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.lg,
+  },
+  iconText: {
+    fontSize: 28,
+  },
+  cardText: {
+    flex: 1,
+  },
+  cardTitle: {
+    ...typography.subtitle,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  cardDescription: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.border,
+    marginLeft: spacing.md,
+  },
+  statusDotActive: {
     backgroundColor: colors.success,
   },
-  stopButton: {
-    backgroundColor: colors.danger,
-  },
-  alertButton: {
-    backgroundColor: colors.warning,
-  },
-  mapButton: {
-    backgroundColor: colors.primary,
-  },
   logoutButton: {
-    backgroundColor: colors.textMuted,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    ...shadows.sm,
   },
-  buttonText: {
+  logoutButtonText: {
+    ...typography.subtitle,
     color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: colors.text,
   },
 });

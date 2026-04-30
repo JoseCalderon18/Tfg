@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function LoginScreen() {
   // Estado del formulario y feedback visual.
@@ -9,6 +9,7 @@ export default function LoginScreen() {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [focusedField, setFocusedField] = React.useState<string | null>(null);
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -60,62 +61,79 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+    justifyContent: 'space-between',
+    padding: spacing.xxl,
     backgroundColor: colors.background,
   },
+  header: {
+    paddingTop: spacing.xxxl,
+    marginBottom: spacing.xxxl,
+  },
+  formContainer: {
+    paddingBottom: spacing.xxxl,
+  },
   brandBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
+    width: 72,
+    height: 72,
+    borderRadius: borderRadius.lg,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.primary,
+    ...shadows.md,
   },
   brandBadgeText: {
     color: colors.primary,
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.heading1,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
-    marginBottom: 8,
+    ...typography.heading2,
     color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
+    ...typography.body,
     color: colors.textMuted,
-    marginBottom: 24,
-    fontSize: 14,
-    lineHeight: 20,
   },
   input: {
     backgroundColor: colors.surface,
-    padding: 15,
-    borderRadius: 14,
-    marginBottom: 15,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     color: colors.text,
+    ...typography.body,
+    ...shadows.sm,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    borderWidth: 2,
   },
   button: {
     backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 14,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     minHeight: 54,
     justifyContent: 'center',
+    marginTop: spacing.lg,
+    ...shadows.md,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: colors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...typography.subtitle,
   },
   errorText: {
     color: colors.danger,
-    marginBottom: 16,
+    marginBottom: spacing.md,
+    ...typography.small,
+    marginLeft: spacing.sm,
   },
 });
