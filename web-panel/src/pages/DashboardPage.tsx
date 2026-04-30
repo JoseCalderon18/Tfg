@@ -1548,7 +1548,7 @@ export default function DashboardPage() {
                 >
                   Anterior
                 </button>
-                <span>Pagina {incidentPage} de {totalIncidentPages}</span>
+                  <span>Página {incidentPage} de {totalIncidentPages}</span>
                 <button
                   type="button"
                   onClick={() => setIncidentPage((page) => Math.min(totalIncidentPages, page + 1))}
@@ -1622,7 +1622,7 @@ export default function DashboardPage() {
                       >
                         Anterior
                       </button>
-                      <span>Pagina {alertPage} de {totalAlertPages}</span>
+                  <span>Página {alertPage} de {totalAlertPages}</span>
                       <button
                         type="button"
                         onClick={() => setAlertPage((page) => Math.min(totalAlertPages, page + 1))}
@@ -1704,7 +1704,7 @@ export default function DashboardPage() {
                       >
                         Anterior
                       </button>
-                      <span>Pagina {resourcePage} de {totalResourcePages}</span>
+                  <span>Página {resourcePage} de {totalResourcePages}</span>
                       <button
                         type="button"
                         onClick={() => setResourcePage((page) => Math.min(totalResourcePages, page + 1))}
@@ -1762,7 +1762,7 @@ export default function DashboardPage() {
                         >
                           Anterior
                         </button>
-                        <span>Pagina {unitPage} de {totalUnitPages}</span>
+                  <span>Página {unitPage} de {totalUnitPages}</span>
                         <button
                           type="button"
                           onClick={() => setUnitPage((page) => Math.min(totalUnitPages, page + 1))}
@@ -1849,7 +1849,7 @@ export default function DashboardPage() {
                         >
                           Anterior
                         </button>
-                        <span>Pagina {unitPage} de {totalUnitPages}</span>
+                  <span>Página {unitPage} de {totalUnitPages}</span>
                         <button
                           type="button"
                           onClick={() => setUnitPage((page) => Math.min(totalUnitPages, page + 1))}

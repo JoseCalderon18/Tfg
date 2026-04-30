@@ -296,7 +296,7 @@ export default function PointOfInterestPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Terreno</p>
-          <h1 className="mt-1 text-2xl font-bold">Puntos de interes</h1>
+          <h1 className="mt-1 text-2xl font-bold">Puntos de interés</h1>
           <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
             Mapa general de referencias operativas registradas por las unidades.
           </p>
@@ -450,7 +450,7 @@ export default function PointOfInterestPage() {
               {puntoPendienteEliminar.name ? ` "${puntoPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-              Esta accion no se puede deshacer.
+              Esta acción no se puede deshacer.
             </p>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

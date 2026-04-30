@@ -91,7 +91,7 @@ export default function ViewUsersPage() {
       <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administracion</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administración</p>
             <h1 className="text-2xl font-bold">Usuarios del sistema</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export default function ViewUsersPage() {
         {filteredUsers.length > 0 && (
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-[color:var(--cm-text-muted)]">
-              Pagina {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
+              Página {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
             </p>
 
             <div className="flex items-center gap-2">

@@ -126,7 +126,7 @@ export default function WeatherPage() {
       <div className="relative z-10 w-full px-4 py-4 lg:px-5 lg:py-5 2xl:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Meteorologia</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Meteorología</p>
             <h1 className="text-2xl font-bold tracking-tight">Mapa meteorologico</h1>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
               Visualizacion directa con Windy para viento, nubosidad y lluvia.

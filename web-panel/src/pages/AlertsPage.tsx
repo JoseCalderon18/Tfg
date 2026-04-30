@@ -28,7 +28,7 @@ function obtenerBadgeEstado(status?: string | null) {
 }
 
 function obtenerEtiquetaSeveridad(severity?: number | null) {
-  if ((severity ?? 5) <= 1) return "Critica";
+  if ((severity ?? 5) <= 1) return "Crítica";
   if ((severity ?? 5) === 2) return "Alta";
   if ((severity ?? 5) === 3) return "Media";
   if ((severity ?? 5) === 4) return "Baja";
@@ -196,7 +196,7 @@ export default function AlertsPage() {
             <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Alertas</p>
             <h1 className="mt-1 text-2xl font-bold">Centro de alertas operativas</h1>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-              Vista operativa con prioridades visuales, mas registros y busqueda para analisis rapido.
+              Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
@@ -209,7 +209,7 @@ export default function AlertsPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></div>
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Criticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></div>
         </div>
 
@@ -338,7 +338,7 @@ export default function AlertsPage() {
           {alertasFiltradas.length > 0 ? (
             <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-[color:var(--cm-text-muted)]">
-                Pagina {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
+                Página {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
               </p>
 
               <div className="flex items-center gap-2">
@@ -382,7 +382,7 @@ export default function AlertsPage() {
               {alertaPendienteEliminar.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-              Esta accion no se puede deshacer.
+              Esta acción no se puede deshacer.
             </p>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

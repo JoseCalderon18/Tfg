@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
     setMensajeExito("");
 
     if (!correoElectronico.trim()) {
-      setErrorPagina("Introduce un correo electronico valido.");
+      setErrorPagina("Introduce un correo electrónico válido.");
       return;
     }
 
@@ -162,7 +162,7 @@ export default function ResetPasswordPage() {
       }
 
       setModalNuevaPasswordAbierto(false);
-      setMensajeExito("La password se ha actualizado correctamente. Ya puedes iniciar sesion.");
+      setMensajeExito("La contraseña se ha actualizado correctamente. Ya puedes iniciar sesión.");
       setTokenReseteoVerificado("");
       setNuevaPassword("");
       setConfirmacionPassword("");
@@ -192,7 +192,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={continuarAlCambioPassword} className="mt-6 space-y-4">
           <div>
             <label htmlFor="reset-email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
-              Correo electronico
+              Correo electrónico
             </label>
             <input
               id="reset-email"
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
         <div className="mt-5 text-center text-sm text-[color:var(--cm-text-muted)]">
           <p>Si ya recuerdas tu acceso, vuelve al login.</p>
           <Link to="/login" className="text-[color:var(--cm-info)] hover:underline">
-            Ir a iniciar sesion
+          Ir a iniciar sesión
           </Link>
         </div>
       </div>

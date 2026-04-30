@@ -447,7 +447,7 @@ export default function JourneysPage() {
                   Anterior
                 </button>
                 <span className="text-sm text-[color:var(--cm-text-muted)]">
-                  Pagina {pagina} de {paginasTotales}
+              Página {pagina} de {paginasTotales}
                 </span>
                 <button
                   type="button"
@@ -555,7 +555,7 @@ export default function JourneysPage() {
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
               Se eliminara definitivamente la jornada #{jornadaPendienteEliminar.id}.
             </p>
-            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Esta accion no se puede deshacer.</p>
+              <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Esta acción no se puede deshacer.</p>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button

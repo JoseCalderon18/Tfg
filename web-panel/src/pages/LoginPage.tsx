@@ -27,7 +27,7 @@ export default function LoginPage() {
     setEnviando(false);
 
     if (!ok) {
-      setError("Credenciales invalidas o acceso no autorizado.");
+      setError("Credenciales inválidas o acceso no autorizado.");
       return;
     }
 
@@ -47,12 +47,12 @@ export default function LoginPage() {
       >
         <div className="text-center">
           <h1 className="text-2xl font-bold text-[color:var(--cm-text)]">Emergency Management</h1>
-          <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">Panel de supervision</p>
+          <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">Panel de supervisión</p>
         </div>
 
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
-            Correo electronico
+            Correo electrónico
           </label>
           <input
             id="email"
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
-            Contrasena
+            Contraseña
           </label>
           <div className="relative">
             <input
@@ -83,7 +83,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              aria-label={mostrarContrasena ? "Ocultar contrasena" : "Mostrar contrasena"}
+              aria-label={mostrarContrasena ? "Ocultar contraseña" : "Mostrar contraseña"}
               onClick={() => setMostrarContrasena((current) => !current)}
               className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-[color:var(--cm-text-muted)] transition hover:text-[color:var(--cm-text)]"
             >
@@ -99,13 +99,13 @@ export default function LoginPage() {
           disabled={enviando}
           className="cm-button-primary w-full rounded-lg py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {enviando ? "Iniciando sesion..." : "Iniciar sesion"}
+          {enviando ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>
 
         <div className="text-center text-sm text-[color:var(--cm-text-muted)]">
-          <p>No recuerdas la password?</p>
+          <p>¿No recuerdas la contraseña?</p>
           <Link to="/reset-password" className="text-[color:var(--cm-info)] hover:underline">
-            Resetear contrasena
+            Restablecer contraseña
           </Link>
         </div>
       </form>
