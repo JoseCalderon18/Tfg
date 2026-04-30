@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
-import { STATUS_COLOR, getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
+import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
+import { ConfirmDialog, DataTable, ErrorBanner, LoadingState, MetricCard, PageHeader, SearchBar } from "../components/ui";
 
 type FilaAlerta = {
   id: string;
@@ -181,59 +182,41 @@ export default function AlertsPage() {
   }
 
   if (cargando) {
-    return (
-      <div className="cm-loading-state">
-        <div className="cm-loading-inline">
-          <span className="cm-spinner" />
-          <p>Cargando alertas...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState label="Cargando alertas..." />;
   }
 
   return (
     <div className="cm-shell cm-page">
       <div className="w-full">
-        <div className="cm-page-header">
-          <div>
-            <p className="cm-eyebrow">Alertas</p>
-            <h1 className="cm-page-title">Centro de alertas operativas</h1>
-            <p className="cm-muted mt-1 text-sm">
-              Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+        <PageHeader
+          eyebrow="Alertas"
+          title="Centro de alertas operativas"
+          description="Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido."
+          actions={
+            <div className="flex flex-wrap gap-2 text-xs">
             <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
             <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
             <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
-          </div>
-        </div>
+            </div>
+          }
+        />
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="cm-metric-card"><p className="cm-eyebrow">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></div>
-          <div className="cm-metric-card"><p className="cm-eyebrow">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></div>
-          <div className="cm-metric-card"><p className="cm-eyebrow">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
-          <div className="cm-metric-card"><p className="cm-eyebrow">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></div>
+          <MetricCard label="Abiertas" value={indicadores.abiertas} tone="success" />
+          <MetricCard label="Reconocidas" value={indicadores.reconocidas} tone="warning" />
+          <MetricCard label="Críticas" value={indicadores.criticas} tone="danger" />
+          <MetricCard label="Cerradas" value={indicadores.cerradas} />
         </div>
 
-        <div className="cm-card cm-card-pad mt-4">
-          <input
-            type="text"
-            value={consulta}
-            onChange={(event) => setConsulta(event.target.value)}
-            placeholder="Buscar por tipo, titulo, estado o creador..."
-            className="cm-input"
-          />
-        </div>
+        <SearchBar
+          value={consulta}
+          onChange={(event) => setConsulta(event.target.value)}
+          placeholder="Buscar por tipo, título, estado o creador..."
+        />
 
-        {errorMensaje ? (
-          <div className="cm-error-banner mt-4">
-            {errorMensaje}
-          </div>
-        ) : null}
+        {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
 
-        <div className="cm-table-card mt-4">
-          <table className="cm-table min-w-[1220px]">
+        <DataTable minWidth="1220px">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
@@ -336,7 +319,7 @@ export default function AlertsPage() {
                 </tr>
               ) : null}
             </tbody>
-          </table>
+          </DataTable>
 
           {alertasFiltradas.length > 0 ? (
             <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -365,50 +348,25 @@ export default function AlertsPage() {
               </div>
             </div>
           ) : null}
-        </div>
       </div>
 
-      {alertaPendienteEliminar ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="alerta-eliminar-titulo"
-        >
-          <div className="cm-card w-full max-w-md p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar alerta</p>
-            <h2 id="alerta-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
-              ¿Quieres borrar esta alerta?
-            </h2>
-            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente la alerta
-              {alertaPendienteEliminar.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
-            </p>
-            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-              Esta acción no se puede deshacer.
-            </p>
-
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setAlertaPendienteEliminarId("")}
-                disabled={Boolean(alertaEliminandoId)}
-                className="cm-btn cm-btn-secondary"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmarEliminarAlerta(alertaPendienteEliminar.id)}
-                disabled={Boolean(alertaEliminandoId)}
-                className="cm-btn cm-btn-danger"
-              >
-                {alertaEliminandoId === alertaPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(alertaPendienteEliminar)}
+        eyebrow="Eliminar alerta"
+        title="¿Quieres borrar esta alerta?"
+        confirmLabel={alertaEliminandoId === alertaPendienteEliminar?.id ? "Borrando..." : "Confirmar borrado"}
+        isBusy={Boolean(alertaEliminandoId)}
+        onCancel={() => setAlertaPendienteEliminarId("")}
+        onConfirm={() => {
+          if (alertaPendienteEliminar) void confirmarEliminarAlerta(alertaPendienteEliminar.id);
+        }}
+      >
+        <p>
+          Se eliminará definitivamente la alerta
+          {alertaPendienteEliminar?.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
+        </p>
+        <p>Esta acción no se puede deshacer.</p>
+      </ConfirmDialog>
     </div>
   );
 }

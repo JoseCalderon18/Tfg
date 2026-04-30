@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import { DataTable, ErrorBanner, LoadingState, PageHeader, SearchBar } from "../components/ui";
 
 type MeResponse = {
   authenticated: boolean;
@@ -79,25 +80,17 @@ export default function ViewUsersPage() {
   }, [paginaActual, totalPaginas]);
 
   if (loading) {
-    return (
-      <div className="cm-loading-state">
-        <div className="cm-loading-inline">
-          <span className="cm-spinner" />
-          <p>Cargando usuarios...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState label="Cargando usuarios..." />;
   }
 
   return (
     <div className="cm-shell min-h-screen">
       <div className="cm-page w-full">
-        <div className="cm-page-header">
-          <div>
-            <p className="cm-eyebrow">Administración</p>
-            <h1 className="cm-page-title">Usuarios del sistema</h1>
-          </div>
-          <div className="flex items-center gap-2">
+        <PageHeader
+          eyebrow="Administración"
+          title="Usuarios del sistema"
+          actions={
+            <>
             <button
               type="button"
               onClick={() => navigate("/")}
@@ -112,30 +105,22 @@ export default function ViewUsersPage() {
             >
               Crear Usuario
             </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
-        <div className="cm-card cm-card-pad mt-4">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPaginaActual(1);
-            }}
-            placeholder="Buscar por username, email o rol..."
-            className="cm-input"
-          />
-        </div>
+        <SearchBar
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPaginaActual(1);
+          }}
+          placeholder="Buscar por username, email o rol..."
+        />
 
-        {error && (
-          <div className="cm-error-banner mt-4">
-            {error}
-          </div>
-        )}
+        {error ? <ErrorBanner message={error} className="mt-4" /> : null}
 
-        <div className="cm-table-card mt-4">
-          <table className="cm-table min-w-[1050px]">
+        <DataTable minWidth="1050px">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Username</th>
@@ -186,8 +171,7 @@ export default function ViewUsersPage() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
         {filteredUsers.length > 0 && (
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
