@@ -14,6 +14,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
 
 type JourneyApi = {
   id: number;
@@ -338,6 +339,20 @@ export default function StopJourneyScreen({ navigation }: any) {
   const canRenderMap = routeCoordinates.length > 0;
   const canStopJourney = Boolean(journey && !journey.end_date);
 
+  // Calorias estimadas y sugerencias
+  const totalDistanceKm = React.useMemo(() => computeRouteDistanceKm(routeCoordinates), [routeCoordinates]);
+  const durationHours = React.useMemo(() => {
+    if (!journey || !journey.start_date) return 0;
+    const start = new Date(journey.start_date).getTime();
+    const end = journey.end_date ? new Date(journey.end_date).getTime() : Date.now();
+    const hours = Math.max(0, (end - start) / (1000 * 60 * 60));
+    return hours;
+  }, [journey]);
+
+  const userWeight = (user as any)?.weightKg ?? 75; // default weight; profile can add override later
+  const estimatedKcal = React.useMemo(() => estimateCalories({ distanceKm: totalDistanceKm, durationHours, weightKg: userWeight }), [totalDistanceKm, durationHours, userWeight]);
+  const foodSuggestions = React.useMemo(() => suggestFoodsForCalories(estimatedKcal), [estimatedKcal]);
+
   const stopJourney = async () => {
     if (!token || !user) {
       Alert.alert('Sesion requerida', 'No hay una sesion activa para finalizar la jornada');
@@ -505,6 +520,20 @@ export default function StopJourneyScreen({ navigation }: any) {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Estimación de calorías y sugerencias */}
+        <View style={styles.calorieCard}>
+          <Text style={styles.calorieTitle}>Estimación energética</Text>
+          <Text style={styles.calorieMeta}>{`Distancia: ${totalDistanceKm.toFixed(2)} km · Duración: ${durationHours.toFixed(2)} h`}</Text>
+          <Text style={styles.calorieEstimate}>{`${estimatedKcal} kcal estimadas quemadas`}</Text>
+
+          <View style={styles.foodList}>
+            {foodSuggestions.slice(0, 5).map((f, idx) => (
+              <Text key={`${f.name}-${idx}`} style={styles.foodItem}>{`• ${f.name} — ${f.kcal} kcal${f.portion ? ` · ${f.portion}` : ''}`}</Text>
+            ))}
+          </View>
+          <Text style={styles.calorieNote}>Sugerencia: combina opciones según necesidades energéticas.</Text>
         </View>
 
         <TouchableOpacity
