@@ -978,10 +978,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="cm-shell grid min-h-screen place-items-center">
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--cm-text-muted)] border-t-transparent" />
-          <p className="text-[color:var(--cm-text-muted)]">Cargando panel...</p>
+      <div className="cm-loading-state">
+        <div className="cm-loading-inline">
+          <span className="cm-spinner" />
+          <p>Cargando panel...</p>
         </div>
       </div>
     );

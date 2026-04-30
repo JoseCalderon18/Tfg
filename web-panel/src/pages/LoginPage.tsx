@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       <form
         onSubmit={manejarEnvio}
-        className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-2xl"
+        className="cm-card relative z-10 w-full max-w-md space-y-4 p-6"
       >
         <div className="text-center">
           <h1 className="text-2xl font-bold text-[color:var(--cm-text)]">Emergency Management</h1>
@@ -51,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
+          <label htmlFor="email" className="cm-field-label">
             Correo electrónico
           </label>
           <input
@@ -61,13 +61,13 @@ export default function LoginPage() {
             onChange={(e) => setCorreoElectronico(e.target.value)}
             required
             autoComplete="email"
-            className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
+            className="cm-input"
             placeholder="usuario@emergency.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
+          <label htmlFor="password" className="cm-field-label">
             Contraseña
           </label>
           <div className="relative">
@@ -78,7 +78,7 @@ export default function LoginPage() {
               onChange={(e) => setContrasena(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 pr-12 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
+              className="cm-input pr-12"
               placeholder="********"
             />
             <button
@@ -92,12 +92,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {error ? <div className="cm-badge-danger rounded-lg p-3 text-sm">{error}</div> : null}
+        {error ? <div className="cm-error-banner">{error}</div> : null}
 
         <button
           type="submit"
           disabled={enviando}
-          className="cm-button-primary w-full rounded-lg py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="cm-btn cm-btn-primary w-full"
         >
           {enviando ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>

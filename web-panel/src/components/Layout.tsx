@@ -86,7 +86,14 @@ export default function Layout() {
   );
 
   if (isCheckingAuth) {
-    return <div className="cm-shell min-h-screen p-6">Cargando...</div>;
+    return (
+      <div className="cm-loading-state">
+        <div className="cm-loading-inline">
+          <span className="cm-spinner" />
+          <p>Cargando...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -181,7 +188,7 @@ export default function Layout() {
         <div className="absolute bottom-0 w-full p-3">
           <button
             onClick={() => void logout()}
-            className="w-full rounded-xl bg-[color:var(--cm-danger)] py-2.5 text-white transition hover:brightness-110"
+            className="cm-btn cm-btn-danger w-full"
           >
             Logout
           </button>
