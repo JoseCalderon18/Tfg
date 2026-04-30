@@ -38,6 +38,20 @@ export interface User {
   blood_type?: string;
   device_id?: string;
   assigned_supervisor_id?: string;
+  weightKg?: number;
+  weight_kg?: number;
+}
+
+function normalizeUser(u: any): User | null {
+  if (!u) return null;
+  const weightFromCamel = (u as any).weightKg;
+  const weightFromSnake = (u as any).weight_kg;
+  const weight = typeof weightFromCamel === 'number' ? weightFromCamel : typeof weightFromSnake === 'number' ? weightFromSnake : undefined;
+  return {
+    ...u,
+    weightKg: weight,
+    weight_kg: typeof weightFromSnake === 'number' ? weightFromSnake : weight,
+  } as User;
 }
 
 /**
@@ -217,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const currentUser = await parseJsonResponse<User>(response);
         setToken(activeToken);
-        setUser(currentUser);
+        setUser(normalizeUser(currentUser));
       } catch {
         await clearAuthState();
       }
@@ -298,10 +312,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await writeAuthItem('token', payload.access);
-    await writeAuthItem('user', JSON.stringify(currentUser));
+    const normalizedUser = normalizeUser(currentUser);
+    await writeAuthItem('user', JSON.stringify(normalizedUser));
 
     setToken(payload.access);
-    setUser(currentUser);
+    setUser(normalizedUser);
   };
 
   const logout = async () => {
@@ -309,8 +324,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = useCallback(async (nextUser: User) => {
-    await writeAuthItem('user', JSON.stringify(nextUser));
-    setUser(nextUser);
+    const normalized = normalizeUser(nextUser as any) as User | null;
+    await writeAuthItem('user', JSON.stringify(normalized));
+    setUser(normalized);
   }, []);
 
   return (

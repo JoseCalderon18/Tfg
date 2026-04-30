@@ -41,6 +41,7 @@ type ProfileForm = {
   location_lng: string;
   medical_notes: string;
   specialties: string;
+  weight_kg: string;
 };
 
 type SelectOption = {
@@ -121,6 +122,7 @@ const PROFILE_FORM_FIELDS: Array<[keyof ProfileForm, string]> = [
   ['blood_type', 'blood_type'],
   ['operative_schedule', 'operative_schedule'],
   ['operative_status', 'operative_status'],
+  ['weight_kg', 'weight_kg'],
   ['location_lat', 'location_lat'],
   ['location_lng', 'location_lng'],
   ['medical_notes', 'medical_notes'],
@@ -214,6 +216,7 @@ function userToForm(user: User | null): ProfileForm {
     location_lng: toText(user?.location_lng),
     medical_notes: listToText(user?.medical_notes),
     specialties: listToText(user?.specialties),
+    weight_kg: toText((user as any)?.weightKg ?? (user as any)?.weight_kg),
   };
 }
 
@@ -575,6 +578,13 @@ export default function ProfileScreen({ navigation }: any) {
                   value={form.blood_type}
                   onChangeText={(value) => updateField('blood_type', value)}
                   autoCapitalize="characters"
+                />
+                <Field
+                  label="Peso (kg)"
+                  value={form.weight_kg}
+                  onChangeText={(value) => updateField('weight_kg', value)}
+                  keyboardType="decimal-pad"
+                  placeholder="Ej. 75"
                 />
                 <Field
                   label="Notas medicas"
