@@ -6,7 +6,16 @@ import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout } = useAuth();
-  const { isTracking, startTracking, stopTracking } = useLocation();
+  const { isTracking, startTracking, stopTracking, routeDistanceKm, routeDurationHours, estimatedKcal, foodSuggestions } = useLocation();
+
+  function formatDuration(hours: number) {
+    if (!hours || hours <= 0) return '0 m';
+    const totalMinutes = Math.round(hours * 60);
+    if (totalMinutes < 60) return `${totalMinutes} m`;
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${h} h ${m} m`;
+  }
 
   return (
     <View style={styles.container}>
@@ -22,6 +31,24 @@ export default function HomeScreen({ navigation }: any) {
             {isTracking ? 'Stop Tracking' : 'Start Tracking'}
           </Text>
         </TouchableOpacity>
+        <View style={[styles.card, isTracking ? styles.trackingActive : styles.trackingInactive]}>
+          <View style={styles.cardContent}>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>En jornada</Text>
+              <Text style={styles.cardDescription}>Distancia: {routeDistanceKm.toFixed(2)} km</Text>
+              <Text style={styles.cardDescription}>Duración: {formatDuration(routeDurationHours)}</Text>
+              <Text style={[styles.cardDescription, { marginTop: 6, fontWeight: '700' }]}>Estimado: {estimatedKcal} kcal</Text>
+              {foodSuggestions && foodSuggestions.length > 0 ? (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={[styles.cardDescription, { fontWeight: '800' }]}>Sugerencias:</Text>
+                  {foodSuggestions.slice(0, 4).map((f, idx) => (
+                    <Text key={idx} style={styles.cardDescription}>- {f.name} ({f.portion ?? 'porción'}) • {f.kcal} kcal</Text>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
       </View>
 
       <TouchableOpacity
