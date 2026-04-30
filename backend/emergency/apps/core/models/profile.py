@@ -137,6 +137,12 @@ class Perfil(models.Model):
         null=True,
         help_text="Grupo sanguineo",
     )
+    nutrition_preference = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Preferencia nutricional para sugerencias de recuperacion",
+    )
     device = models.ForeignKey(
         Dispositivo,
         on_delete=models.SET_NULL,

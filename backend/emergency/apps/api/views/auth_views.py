@@ -122,6 +122,7 @@ def _serializar_usuario_mobile(user, request):
         "operative_schedule": getattr(profile, "operative_schedule", "") or "",
         "operative_status": getattr(profile, "operative_status", "DISPONIBLE") or "DISPONIBLE",
         "blood_type": getattr(profile, "blood_type", "") or "",
+        "nutrition_preference": getattr(profile, "nutrition_preference", "") or "",
         "device_id": str(getattr(profile, "device_id", "") or ""),
         "assigned_supervisor_id": str(getattr(profile, "assigned_supervisor_id", "") or ""),
     }
@@ -298,6 +299,10 @@ class CurrentUserView(APIView):
         if "blood_type" in payload:
             profile.blood_type = str(payload.get("blood_type", "")).strip()
             profile_updated_fields.append("blood_type")
+
+        if "nutrition_preference" in payload:
+            profile.nutrition_preference = str(payload.get("nutrition_preference", "")).strip()
+            profile_updated_fields.append("nutrition_preference")
 
         user.save()
         if profile_updated_fields:

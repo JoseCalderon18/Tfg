@@ -35,6 +35,7 @@ type ProfileForm = {
   country: string;
   birth_date: string;
   blood_type: string;
+  nutrition_preference: string;
   operative_schedule: string;
   operative_status: string;
   location_lat: string;
@@ -105,6 +106,13 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'NO_DISPONIBLE', label: 'No disponible' },
 ];
 
+const NUTRITION_OPTIONS: SelectOption[] = [
+  { value: '', label: 'Preferencia nutricional' },
+  { value: 'balanced', label: 'Equilibrada' },
+  { value: 'high_protein', label: 'Alta en proteina' },
+  { value: 'vegan', label: 'Vegetal / vegana' },
+];
+
 const PROFILE_FORM_FIELDS: Array<[keyof ProfileForm, string]> = [
   ['username', 'username'],
   ['email', 'email'],
@@ -120,6 +128,7 @@ const PROFILE_FORM_FIELDS: Array<[keyof ProfileForm, string]> = [
   ['country', 'country'],
   ['birth_date', 'birth_date'],
   ['blood_type', 'blood_type'],
+  ['nutrition_preference', 'nutrition_preference'],
   ['operative_schedule', 'operative_schedule'],
   ['operative_status', 'operative_status'],
   ['weight_kg', 'weight_kg'],
@@ -210,6 +219,7 @@ function userToForm(user: User | null): ProfileForm {
     country: user?.country ?? '',
     birth_date: user?.birth_date ?? '',
     blood_type: user?.blood_type ?? '',
+    nutrition_preference: toText((user as any)?.nutrition_preference),
     operative_schedule: user?.operative_schedule ?? '',
     operative_status: user?.operative_status ?? 'DISPONIBLE',
     location_lat: toText(user?.location_lat),
@@ -519,6 +529,10 @@ export default function ProfileScreen({ navigation }: any) {
                   label="Estado"
                   value={STATUS_OPTIONS.find((option) => option.value === form.operative_status)?.label ?? ''}
                 />
+                <InfoPill
+                  label="Nutricion"
+                  value={NUTRITION_OPTIONS.find((option) => option.value === form.nutrition_preference)?.label ?? ''}
+                />
                 <InfoPill label="Creado" value={formatDate(currentUser?.created_at)} />
               </View>
 
@@ -578,6 +592,12 @@ export default function ProfileScreen({ navigation }: any) {
                   value={form.blood_type}
                   onChangeText={(value) => updateField('blood_type', value)}
                   autoCapitalize="characters"
+                />
+                <SelectField
+                  label="Preferencia nutricional"
+                  value={form.nutrition_preference}
+                  onValueChange={(value) => updateField('nutrition_preference', value)}
+                  options={NUTRITION_OPTIONS}
                 />
                 <Field
                   label="Peso (kg)"

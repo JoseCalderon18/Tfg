@@ -104,28 +104,50 @@ export function suggestFoodsForCalories(kcalNeeded: number) {
   return suggestion;
 }
 
-export function getJourneyNutritionPlan(opts: { durationHours: number; estimatedKcal: number }): JourneyNutritionPlan {
-  const { durationHours, estimatedKcal } = opts;
+export function getJourneyNutritionPlan(opts: { durationHours: number; estimatedKcal: number; nutritionPreference?: string }) {
+  const { durationHours, estimatedKcal, nutritionPreference } = opts;
+  const preference = (nutritionPreference ?? '').trim().toLowerCase();
+
+  const applyPreference = (items: FoodSuggestion[]) => {
+    if (preference === 'vegan') {
+      return items.filter((item) => !/pollo|yogur|batido proteico|sándwich/i.test(item.name)).slice(0, 4);
+    }
+
+    if (preference === 'high_protein') {
+      return items
+        .slice()
+        .sort((a, b) => (/(pollo|proteico|sándwich)/i.test(b.name) ? 1 : 0) - (/(pollo|proteico|sándwich)/i.test(a.name) ? 1 : 0))
+        .slice(0, 4);
+    }
+
+    return items.slice(0, 4);
+  };
 
   if (durationHours >= 6) {
     return {
       headline: 'Turno largo: recuperacion completa',
-      note: 'Ya llevas muchas horas. Prioriza comida completa, agua y algo con proteina y carbohidrato.',
-      suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 500)).slice(0, 5),
+      note: preference === 'high_protein'
+        ? 'Ya llevas muchas horas. Busca una comida potente y prioriza proteina para recuperar mejor.'
+        : 'Ya llevas muchas horas. Prioriza comida completa, agua y algo con proteina y carbohidrato.',
+      suggestions: applyPreference(suggestFoodsForCalories(Math.max(estimatedKcal, 500))),
     };
   }
 
   if (durationHours >= 3) {
     return {
       headline: 'Jornada media: snack serio',
-      note: 'Vas para varias horas. Mejor una mezcla equilibrada que te mantenga estable.',
-      suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 300)).slice(0, 4),
+      note: preference === 'vegan'
+        ? 'Vas para varias horas. Mejor algo equilibrado y vegetal para mantenerte estable.'
+        : 'Vas para varias horas. Mejor una mezcla equilibrada que te mantenga estable.',
+      suggestions: applyPreference(suggestFoodsForCalories(Math.max(estimatedKcal, 300))),
     };
   }
 
   return {
     headline: 'Inicio de jornada: energia ligera',
-    note: 'Si acabas de empezar, te basta con algo ligero y rapido para mantener el ritmo.',
-    suggestions: suggestFoodsForCalories(Math.max(estimatedKcal, 150)).slice(0, 3),
+    note: preference === 'vegan'
+      ? 'Si acabas de empezar, te basta con algo ligero, rapido y vegetal para mantener el ritmo.'
+      : 'Si acabas de empezar, te basta con algo ligero y rapido para mantener el ritmo.',
+    suggestions: applyPreference(suggestFoodsForCalories(Math.max(estimatedKcal, 150))),
   };
 }

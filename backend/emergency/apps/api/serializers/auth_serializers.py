@@ -18,12 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source='profile.organization.name', read_only=True)
     specialties = serializers.ListField(source='profile.specialties', child=serializers.CharField(), read_only=True)
     dni = serializers.CharField(source='profile.dni', read_only=True)
+    nutrition_preference = serializers.CharField(source='profile.nutrition_preference', read_only=True)
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
                   'profile_id', 'role', 'organization_id', 'organization_name',
-                  'phone', 'is_active', 'created_at', 'specialties', 'dni']
+                  'phone', 'is_active', 'created_at', 'specialties', 'dni', 'nutrition_preference']
         read_only_fields = ['id', 'created_at']
 
     def get_organization_id(self, obj):
@@ -73,7 +74,7 @@ class PerfilSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'role', 'organization', 'organization_name',
                   'emergency_contact', 'emergency_phone', 'medical_notes', 'name', 'lastname',
                   'dni', 'avatar', 'language', 'city', 'province', 'country', 'birth_date',
-                  'specialties', 'operative_schedule', 'blood_type', 'device', 'assigned_supervisor']
+                  'specialties', 'operative_schedule', 'blood_type', 'nutrition_preference', 'device', 'assigned_supervisor']
 
 
 class OrganizacionSerializer(serializers.ModelSerializer):
