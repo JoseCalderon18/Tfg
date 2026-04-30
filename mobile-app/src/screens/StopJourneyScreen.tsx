@@ -765,4 +765,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  calorieCard: {
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  calorieTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  calorieMeta: {
+    color: '#64748B',
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  calorieEstimate: {
+    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  foodList: {
+    marginBottom: 8,
+  },
+  foodItem: {
+    color: '#475569',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  calorieNote: {
+    color: '#64748B',
+    fontSize: 12,
+  },
 });
