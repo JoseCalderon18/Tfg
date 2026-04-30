@@ -5,6 +5,7 @@ import * as TaskManager from 'expo-task-manager';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
 
 const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
 
@@ -75,6 +76,11 @@ interface LocationContextType {
   errorMsg: string | null;
   isCheckingWorkarea: boolean;
   geofenceStatus: GeofenceStatus;
+  // Live calorie/distance info while tracking
+  routeDistanceKm: number;
+  routeDurationHours: number;
+  estimatedKcal: number;
+  foodSuggestions: Array<{ name: string; kcal: number; portion?: string }>;
 }
 
 type GeofenceStatus = {
@@ -106,7 +112,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     alertId: null,
   });
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
-  const { token, updateUser } = useAuth();
+  const [routePoints, setRoutePoints] = useState<Array<{ latitude: number; longitude: number }>>([]);
+  const [routeStartTime, setRouteStartTime] = useState<number | null>(null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number>(0);
+  const [routeDurationHours, setRouteDurationHours] = useState<number>(0);
+  const [estimatedKcal, setEstimatedKcal] = useState<number>(0);
+  const [foodSuggestions, setFoodSuggestions] = useState<Array<{ name: string; kcal: number; portion?: string }>>([]);
+  const { token, updateUser, user } = useAuth();
   const { queueTrackingPoint } = useOfflineSync();
 
   useEffect(() => {
@@ -277,6 +289,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         accuracy: Location.Accuracy.High,
       });
       setLocation(currentLocation);
+      // initialize route tracking
+      setRoutePoints([{ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }]);
+      setRouteStartTime(Date.now());
+      setRouteDistanceKm(0);
+      setRouteDurationHours(0);
+      setEstimatedKcal(0);
+      setFoodSuggestions([]);
       await syncProfileLocation(currentLocation);
       await sendTrackingPoint(currentLocation);
       await checkWorkareaPosition(currentLocation);
@@ -292,6 +311,26 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           setLocation(newLocation);
           await sendTrackingPoint(newLocation);
           await checkWorkareaPosition(newLocation);
+
+          // Update route points and live metrics
+          setRoutePoints((prev) => {
+            const next = prev.concat({ latitude: newLocation.coords.latitude, longitude: newLocation.coords.longitude });
+            const dist = computeRouteDistanceKm(next);
+            setRouteDistanceKm(dist);
+
+            const start = routeStartTime ?? Date.now();
+            const durationMs = Date.now() - start;
+            const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
+            setRouteDurationHours(durationH);
+
+            // Use authenticated user's weight if available
+            const userWeight = (user as any)?.weightKg ?? (user as any)?.weight_kg ?? 75;
+            const kcal = estimateCalories({ distanceKm: dist, durationHours: durationH, weightKg: userWeight });
+            setEstimatedKcal(kcal);
+            setFoodSuggestions(suggestFoodsForCalories(kcal));
+
+            return next;
+          });
         }
       );
       setLocationSubscription(subscription);
@@ -327,6 +366,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         errorMsg,
         isCheckingWorkarea,
         geofenceStatus,
+        routeDistanceKm,
+        routeDurationHours,
+        estimatedKcal,
+        foodSuggestions,
       }}
     >
       {children}
