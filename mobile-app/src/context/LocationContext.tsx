@@ -1,8 +1,62 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Location from 'expo-location';
+import * as SecureStore from 'expo-secure-store';
+import * as TaskManager from 'expo-task-manager';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+
+const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
+
+type BackgroundLocationTaskData = {
+  locations?: Location.LocationObject[];
+};
+
+async function sendBackgroundLocationUpdate(nextLocation: Location.LocationObject) {
+  const storedToken = await SecureStore.getItemAsync('token');
+  if (!storedToken) {
+    return;
+  }
+
+  const payload = {
+    latitude: nextLocation.coords.latitude,
+    longitude: nextLocation.coords.longitude,
+    accuracy_m: nextLocation.coords.accuracy,
+    altitude: nextLocation.coords.altitude,
+    speed: nextLocation.coords.speed,
+    recorded_at: new Date(nextLocation.timestamp).toISOString(),
+  };
+
+  await apiFetch('/tracking/point/', {
+    method: 'POST',
+    token: storedToken,
+    body: JSON.stringify(payload),
+    timeoutMs: 10000,
+  });
+
+  await apiFetch('/workareas/check-position/', {
+    method: 'POST',
+    token: storedToken,
+    body: JSON.stringify({
+      lat: nextLocation.coords.latitude,
+      lng: nextLocation.coords.longitude,
+    }),
+    timeoutMs: 10000,
+  });
+}
+
+TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
+  if (error) {
+    return;
+  }
+
+  const locations = (data as BackgroundLocationTaskData | undefined)?.locations ?? [];
+  const lastLocation = locations[locations.length - 1];
+
+  if (lastLocation) {
+    void sendBackgroundLocationUpdate(lastLocation).catch(() => undefined);
+  }
+});
 
 /**
  * Interface que define el contexto de ubicación
@@ -17,8 +71,18 @@ interface LocationContextType {
   isTracking: boolean;
   startTracking: () => Promise<void>;
   stopTracking: () => void;
+  refreshWorkareaDetection: () => Promise<GeofenceStatus | null>;
   errorMsg: string | null;
+  isCheckingWorkarea: boolean;
+  geofenceStatus: GeofenceStatus;
 }
+
+type GeofenceStatus = {
+  inside: boolean;
+  hasWorkarea: boolean;
+  message: string | null;
+  alertId?: string | null;
+};
 
 // Creación del contexto de ubicación
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -34,6 +98,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isCheckingWorkarea, setIsCheckingWorkarea] = useState(false);
+  const [geofenceStatus, setGeofenceStatus] = useState<GeofenceStatus>({
+    inside: true,
+    hasWorkarea: false,
+    message: null,
+    alertId: null,
+  });
   const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
   const { token, updateUser } = useAuth();
   const { queueTrackingPoint } = useOfflineSync();
@@ -95,6 +166,98 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setErrorMsg(null);
   };
 
+  const checkWorkareaPosition = async (nextLocation: Location.LocationObject): Promise<GeofenceStatus | null> => {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const response = await apiFetch('/workareas/check-position/', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({
+          lat: nextLocation.coords.latitude,
+          lng: nextLocation.coords.longitude,
+        }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload = await parseJsonResponse<{
+        inside: boolean;
+        has_workarea: boolean;
+        message?: string;
+        alert_id?: string | null;
+      }>(response);
+
+      const nextStatus = {
+        inside: payload.inside,
+        hasWorkarea: payload.has_workarea,
+        message: payload.message ?? null,
+        alertId: payload.alert_id ?? null,
+      };
+
+      setGeofenceStatus(nextStatus);
+      return nextStatus;
+    } catch {
+      // La perdida puntual de conexion no debe detener el tracking.
+      return null;
+    }
+  };
+
+  const refreshWorkareaDetection = async () => {
+    try {
+      setIsCheckingWorkarea(true);
+      const nextLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      setLocation(nextLocation);
+      await sendTrackingPoint(nextLocation);
+      return await checkWorkareaPosition(nextLocation);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : 'No se pudo actualizar la deteccion del workarea.');
+      return null;
+    } finally {
+      setIsCheckingWorkarea(false);
+    }
+  };
+
+  const startBackgroundWorkareaDetection = async () => {
+    const { status } = await Location.requestBackgroundPermissionsAsync();
+    if (status !== 'granted') {
+      setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
+      return;
+    }
+
+    const hasStarted = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK);
+    if (hasStarted) {
+      return;
+    }
+
+    await Location.startLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK, {
+      accuracy: Location.Accuracy.High,
+      timeInterval: 15000,
+      distanceInterval: 15,
+      pausesUpdatesAutomatically: false,
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: 'Emergencias',
+        notificationBody: 'Comprobando area de trabajo en segundo plano.',
+        notificationColor: '#DC2626',
+      },
+    });
+  };
+
+  const stopBackgroundWorkareaDetection = async () => {
+    const hasStarted = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK);
+    if (hasStarted) {
+      await Location.stopLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK);
+    }
+  };
+
   /**
    * Inicia el seguimiento continuo de la ubicación
    * Actualiza cada 5 segundos o cada 10 metros de movimiento
@@ -116,6 +279,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setLocation(currentLocation);
       await syncProfileLocation(currentLocation);
       await sendTrackingPoint(currentLocation);
+      await checkWorkareaPosition(currentLocation);
+      await startBackgroundWorkareaDetection();
 
       const subscription = await Location.watchPositionAsync(
         {
@@ -126,6 +291,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         async (newLocation) => {
           setLocation(newLocation);
           await sendTrackingPoint(newLocation);
+          await checkWorkareaPosition(newLocation);
         }
       );
       setLocationSubscription(subscription);
@@ -146,11 +312,23 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       locationSubscription.remove();
       setLocationSubscription(null);
     }
+    void stopBackgroundWorkareaDetection();
     setIsTracking(false);
   };
 
   return (
-    <LocationContext.Provider value={{ location, isTracking, startTracking, stopTracking, errorMsg }}>
+    <LocationContext.Provider
+      value={{
+        location,
+        isTracking,
+        startTracking,
+        stopTracking,
+        refreshWorkareaDetection,
+        errorMsg,
+        isCheckingWorkarea,
+        geofenceStatus,
+      }}
+    >
       {children}
     </LocationContext.Provider>
   );

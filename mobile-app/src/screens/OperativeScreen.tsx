@@ -26,7 +26,14 @@ export default function OperativeScreen({ navigation }: any) {
   const [sosCountdown, setSosCountdown] = useState(SOS_COUNTDOWN_SECONDS);
   const [isSendingSos, setIsSendingSos] = useState(false);
   const { user, token, logout } = useAuth();
-  const { isTracking, startTracking, stopTracking, errorMsg, location } = useLocation();
+  const {
+    isTracking,
+    startTracking,
+    stopTracking,
+    errorMsg,
+    geofenceStatus,
+    location,
+  } = useLocation();
   const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
   const sosCancelledRef = useRef(false);
 
@@ -177,6 +184,14 @@ export default function OperativeScreen({ navigation }: any) {
         </Text>
         <Text style={styles.syncText}>
           Sincronizacion: {isSyncing ? 'Sincronizando...' : pendingCount > 0 ? `${pendingCount} pendiente(s)` : 'Al dia'}
+        </Text>
+        <Text style={styles.workareaText}>
+          Workarea:{' '}
+          {!geofenceStatus.hasWorkarea
+            ? 'Sin zona activa'
+            : geofenceStatus.inside
+              ? 'Dentro'
+              : 'Fuera'}
         </Text>
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
         {!errorMsg && lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
@@ -483,12 +498,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  workareaText: {
+    marginTop: 6,
+    color: colors.textSoft,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   errorText: {
     marginTop: 10,
     color: colors.danger,
   },
   quickActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 12,
     marginTop: 18,
   },
