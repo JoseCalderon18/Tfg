@@ -36,6 +36,7 @@ export interface User {
   operative_schedule?: string;
   operative_status?: string;
   blood_type?: string;
+  nutrition_preference?: string;
   device_id?: string;
   assigned_supervisor_id?: string;
   weightKg?: number;
