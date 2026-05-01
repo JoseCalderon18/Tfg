@@ -1,4 +1,5 @@
 type LayerType = "satellite" | "relief" | "vegetation";
+type StatusFilter = "ALL" | "OPEN" | "TRIAGE" | "CLOSED";
 
 type DashboardHeaderProps = {
   email?: string;
@@ -109,6 +110,132 @@ export function DashboardKpis({ kpis, closedColor }: DashboardKpisProps) {
         <p className="cm-eyebrow">Operativos activos</p>
         <p className="mt-2 text-3xl font-bold text-[color:var(--cm-info)]">{kpis.operativos}</p>
       </article>
+    </div>
+  );
+}
+
+type DashboardMapToolbarProps = {
+  search: string;
+  statusFilter: StatusFilter;
+  totalIncidents: number;
+  visibleIncidents: number;
+  selectedIncidentName?: string | null;
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (status: StatusFilter) => void;
+  onClearSelection: () => void;
+};
+
+const STATUS_FILTERS: Array<{ value: StatusFilter; label: string; activeClass: string }> = [
+  { value: "ALL", label: "Todas", activeClass: "cm-badge-info" },
+  { value: "OPEN", label: "Abiertas", activeClass: "cm-badge-success" },
+  { value: "TRIAGE", label: "Revisión", activeClass: "cm-badge-warning" },
+  { value: "CLOSED", label: "Cerradas", activeClass: "cm-badge-neutral" },
+];
+
+export function DashboardMapToolbar({
+  search,
+  statusFilter,
+  totalIncidents,
+  visibleIncidents,
+  selectedIncidentName,
+  onSearchChange,
+  onStatusFilterChange,
+  onClearSelection,
+}: DashboardMapToolbarProps) {
+  return (
+    <div className="mb-3 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="cm-eyebrow">Mapa operativo</p>
+          <h2 className="mt-1 text-lg font-bold">Resumen geográfico de incidencias</h2>
+          <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">
+            Mostrando {visibleIncidents} de {totalIncidents} incidentes
+            {selectedIncidentName ? ` · Foco: ${selectedIncidentName}` : ""}
+          </p>
+        </div>
+        {selectedIncidentName ? (
+          <button type="button" onClick={onClearSelection} className="cm-btn cm-btn-secondary cm-btn-sm">
+            Mostrar todo
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-2 xl:grid-cols-[minmax(16rem,1fr)_auto]">
+        <input
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Buscar por nombre, estado o ubicación"
+          className="cm-input text-sm"
+        />
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => onStatusFilterChange(filter.value)}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                statusFilter === filter.value
+                  ? filter.activeClass
+                  : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] hover:border-[color:var(--cm-info)]/50"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type DashboardSideSummaryProps = {
+  selectedIncidentName?: string | null;
+  incidents: number;
+  alerts: number;
+  resources: number;
+  units: number;
+  onClearSelection: () => void;
+};
+
+export function DashboardSideSummary({
+  selectedIncidentName,
+  incidents,
+  alerts,
+  resources,
+  units,
+  onClearSelection,
+}: DashboardSideSummaryProps) {
+  return (
+    <div className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="cm-eyebrow">Vista actual</p>
+          <h2 className="mt-1 text-base font-bold">{selectedIncidentName ?? "Todos los incidentes"}</h2>
+        </div>
+        {selectedIncidentName ? (
+          <button type="button" onClick={onClearSelection} className="cm-btn cm-btn-secondary cm-btn-sm">
+            Limpiar
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+        <div className="rounded-lg bg-[color:var(--cm-bg)]/45 p-2">
+          <p className="text-lg font-bold">{incidents}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--cm-text-muted)]">Inc.</p>
+        </div>
+        <div className="rounded-lg bg-[color:var(--cm-bg)]/45 p-2">
+          <p className="text-lg font-bold text-[color:var(--cm-alert)]">{alerts}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--cm-text-muted)]">Alertas</p>
+        </div>
+        <div className="rounded-lg bg-[color:var(--cm-bg)]/45 p-2">
+          <p className="text-lg font-bold text-teal-300">{resources}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--cm-text-muted)]">Puntos</p>
+        </div>
+        <div className="rounded-lg bg-[color:var(--cm-bg)]/45 p-2">
+          <p className="text-lg font-bold text-[color:var(--cm-info)]">{units}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--cm-text-muted)]">Unid.</p>
+        </div>
+      </div>
     </div>
   );
 }

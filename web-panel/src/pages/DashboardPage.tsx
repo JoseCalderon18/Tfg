@@ -9,7 +9,14 @@ import {
   Polyline,
 } from "react-leaflet";
 import { Circle, Polygon } from "react-leaflet";
-import { DashboardEmptyPanel, DashboardHeader, DashboardKpis, DashboardMapLegend } from "../components/DashboardVisualBlocks";
+import {
+  DashboardEmptyPanel,
+  DashboardHeader,
+  DashboardKpis,
+  DashboardMapLegend,
+  DashboardMapToolbar,
+  DashboardSideSummary,
+} from "../components/DashboardVisualBlocks";
 import { LoadingState } from "../components/ui";
 import { apiFetch } from "../utils/api";
 import { STATUS_COLOR, getAlertStatusBadge, getIncidentMarkerColor, getIncidentStatusBadge } from "../utils/statusColors";
@@ -640,8 +647,8 @@ export default function DashboardPage() {
   const [alertPage, setAlertPage] = useState(1);
   const [resourcePage, setResourcePage] = useState(1);
   const [unitPage, setUnitPage] = useState(1);
-  const [incidentsExpanded, setIncidentsExpanded] = useState(false);
-  const [alertsExpanded, setAlertsExpanded] = useState(false);
+  const [incidentsExpanded, setIncidentsExpanded] = useState(true);
+  const [alertsExpanded, setAlertsExpanded] = useState(true);
   const [recursosExpandidos, setRecursosExpandidos] = useState(false);
   const [unitsExpanded, setUnitsExpanded] = useState(false);
   const [trackPoints, setTrackPoints] = useState<TrackPointRow[]>([]);
@@ -1003,41 +1010,18 @@ export default function DashboardPage() {
           {/* El mapa y el resumen juntos */}
           <div className="mt-4 grid h-[calc(100vh-255px)] gap-4 xl:grid-cols-[1.8fr_0.95fr]">
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Mapa operativo</p>
-                  <h2 className="mt-1 text-lg font-bold">Resumen geográfico de incidencias</h2>
-                </div>
-                <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row">
-                  <div className="relative w-full lg:w-[22rem]">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[color:var(--cm-text-muted)]">
-                      🔎
-                    </span>
-                    <input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Buscar por nombre, estado o ubicación"
-                      className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] pl-10 pr-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => setStatusFilter("ALL")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "ALL" ? "cm-badge-info" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
-                      Todas
-                    </button>
-                    <button type="button" onClick={() => setStatusFilter("OPEN")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "OPEN" ? "cm-badge-success" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
-                      Abiertas
-                    </button>
-                    <button type="button" onClick={() => setStatusFilter("TRIAGE")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "TRIAGE" ? "cm-badge-warning" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
-                      Revisión
-                    </button>
-                    <button type="button" onClick={() => setStatusFilter("CLOSED")} className={`rounded-lg px-3 py-2 text-xs font-semibold ${statusFilter === "CLOSED" ? "cm-badge-neutral" : "border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"}`}>
-                      Cerradas
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <DashboardMapToolbar
+                search={search}
+                statusFilter={statusFilter}
+                totalIncidents={incidents.length}
+                visibleIncidents={visibleIncidents.length}
+                selectedIncidentName={selectedIncident?.name}
+                onSearchChange={setSearch}
+                onStatusFilterChange={setStatusFilter}
+                onClearSelection={() => setSelectedIncidentId(null)}
+              />
 
-              <div className="h-[calc(100%-74px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
+              <div className="h-[calc(100%-116px)] min-h-[28rem] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
             <DashboardMapLegend closedColor={STATUS_COLOR.cerrado} />
             {incidents.length === 0 && (
               <DashboardEmptyPanel title="No hay incidentes cargados" detail={`Total incidentes: ${incidents.length}`} />
@@ -1349,6 +1333,16 @@ export default function DashboardPage() {
             </section>
 
             <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <DashboardSideSummary
+                selectedIncidentName={selectedIncident?.name}
+                incidents={visibleIncidents.length}
+                alerts={visibleAlerts.length}
+                resources={visiblePointsOfInterest.length}
+                units={visibleUnits.length}
+                onClearSelection={() => setSelectedIncidentId(null)}
+              />
+
+              <div className="mt-5">
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
@@ -1448,6 +1442,7 @@ export default function DashboardPage() {
               </div>
                 </>
               ) : null}
+              </div>
 
               <div className="mt-5 border-t border-[color:var(--cm-border)] pt-5">
                 <div className="flex items-center justify-between gap-3">
