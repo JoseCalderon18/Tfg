@@ -400,7 +400,6 @@ export default function StopJourneyScreen({ navigation }: any) {
 
       const updatedJourney = await parseJsonResponse<JourneyApi>(response);
       setJourney(updatedJourney);
-      stopTracking();
 
       Alert.alert('Exito', 'Jornada finalizada correctamente.', [
         {
@@ -411,6 +410,7 @@ export default function StopJourneyScreen({ navigation }: any) {
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Error de conexion');
     } finally {
+      stopTracking();
       setLoading(false);
     }
   };
