@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import { DataTable, EmptyState, ErrorBanner, LoadingState, Pagination, SearchBar } from "../components/ui";
 
 type MeResponse = {
   authenticated: boolean;
@@ -211,14 +212,7 @@ export default function ViewOrganizationsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="cm-loading-state">
-        <div className="cm-loading-inline">
-          <span className="cm-spinner" />
-          <p>Cargando organizaciones...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState label="Cargando organizaciones..." />;
   }
 
   return (
@@ -268,27 +262,71 @@ export default function ViewOrganizationsPage() {
           </article>
         </div>
 
-        <div className="cm-card cm-card-pad mt-4">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPaginaActual(1);
-            }}
-            placeholder="Buscar por nombre, tipo o contacto..."
-            className="cm-input"
-          />
-        </div>
+        <SearchBar
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPaginaActual(1);
+          }}
+          onClear={() => {
+            setQuery("");
+            setPaginaActual(1);
+          }}
+          placeholder="Buscar por nombre, tipo o contacto..."
+          resultLabel={`${filteredOrganizations.length} de ${organizations.length} organizaciones`}
+        />
 
-        {error && (
-          <div className="cm-error-banner mt-4">
-            {error}
+        {error ? <ErrorBanner message={error} className="mt-4" /> : null}
+
+        {filteredOrganizations.length === 0 ? (
+          <EmptyState
+            title="No hay organizaciones para mostrar"
+            description={query ? "Prueba con otra búsqueda o limpia el filtro." : "Cuando haya organizaciones aparecerán en este listado."}
+          />
+        ) : (
+          <div className="mt-4 grid gap-3 md:hidden">
+            {organizacionesPaginadas.map((org) => (
+              <article key={org.id} className="cm-card cm-card-pad">
+                <button
+                  type="button"
+                  onClick={() => setOrganizacionSeleccionadaId(org.id)}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold">{org.name}</h2>
+                      <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{obtenerEtiquetaTipoOrganizacion(org.org_type)}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ring-1 ${org.is_active ? "cm-badge-success" : "cm-badge-warning"}`}>
+                      {org.is_active ? "Activa" : "Inactiva"}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-1 text-sm text-[color:var(--cm-text-muted)]">
+                    <p className="break-all">Email: {org.contact_email || "-"}</p>
+                    <p>Teléfono: {org.contact_phone || "-"}</p>
+                    <p>Dirección: {org.address || "-"}</p>
+                    <p>Creada: {org.created_at ? new Date(org.created_at).toLocaleString() : "Fecha desconocida"}</p>
+                  </div>
+                </button>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => navigate(`/editorganization/${org.id}`)} className="cm-btn cm-btn-primary">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void prepararEliminarOrganizacion(org.id)}
+                    disabled={Boolean(organizacionEliminandoId)}
+                    className="cm-btn cm-btn-danger"
+                  >
+                    {organizacionEliminandoId === org.id ? "Borrando..." : "Borrar"}
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
         )}
 
-        <div className="cm-table-card mt-4">
-          <table className="cm-table min-w-[1220px]">
+        <DataTable minWidth="1220px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
@@ -303,11 +341,7 @@ export default function ViewOrganizationsPage() {
             </thead>
             <tbody>
               {filteredOrganizations.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="cm-empty-state">
-                    No hay organizaciones para mostrar.
-                  </td>
-                </tr>
+                <EmptyState colSpan={8} title="No hay organizaciones para mostrar" />
               ) : (
                 organizacionesPaginadas.map((org) => (
                   <tr
@@ -365,36 +399,17 @@ export default function ViewOrganizationsPage() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
-        {filteredOrganizations.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-400">
-              Página {paginaActual} de {totalPaginas} · Mostrando {organizacionesPaginadas.length} de {filteredOrganizations.length} organizaciones
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                disabled={paginaActual === 1}
-              className="cm-btn cm-btn-secondary"
-              >
-                Anterior
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                disabled={paginaActual === totalPaginas}
-                className="cm-btn cm-btn-secondary"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={paginaActual}
+          totalPages={totalPaginas}
+          visibleCount={organizacionesPaginadas.length}
+          totalCount={filteredOrganizations.length}
+          itemLabel="organizaciones"
+          onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+          onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+        />
       </div>
 
       {organizacionPendienteEliminar ? (

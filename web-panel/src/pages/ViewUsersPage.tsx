@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
-import { DataTable, ErrorBanner, LoadingState, PageHeader, SearchBar } from "../components/ui";
+import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
 
 type MeResponse = {
   authenticated: boolean;
@@ -115,12 +115,51 @@ export default function ViewUsersPage() {
             setQuery(e.target.value);
             setPaginaActual(1);
           }}
+          onClear={() => {
+            setQuery("");
+            setPaginaActual(1);
+          }}
           placeholder="Buscar por username, email o rol..."
+          resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
         />
 
         {error ? <ErrorBanner message={error} className="mt-4" /> : null}
 
-        <DataTable minWidth="1050px">
+        {filteredUsers.length === 0 ? (
+          <EmptyState
+            title="No hay usuarios para mostrar"
+            description={query ? "Prueba con otra búsqueda o limpia el filtro." : "Cuando haya usuarios aparecerán en este listado."}
+          />
+        ) : (
+          <div className="mt-4 grid gap-3 md:hidden">
+            {usuariosPaginados.map((u) => (
+              <article key={u.id} className="cm-card cm-card-pad">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold">{u.username}</h2>
+                    <p className="mt-1 break-all text-sm text-[color:var(--cm-text-muted)]">{u.email}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ring-1 ${u.is_active ? "cm-badge-success" : "cm-badge-warning"}`}>
+                    {u.is_active ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 text-sm text-[color:var(--cm-text-muted)]">
+                  <p>Rol: {u.role ?? "Sin rol asignado"}</p>
+                  <p>Creado: {u.created_at ? new Date(u.created_at).toLocaleString() : "Fecha desconocida"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/edituser/${u.id}`)}
+                  className="cm-btn cm-btn-primary mt-4 w-full"
+                >
+                  Editar usuario
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <DataTable minWidth="1050px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Username</th>
@@ -133,11 +172,7 @@ export default function ViewUsersPage() {
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="cm-empty-state">
-                    No hay usuarios para mostrar.
-                  </td>
-                </tr>
+                <EmptyState colSpan={6} title="No hay usuarios para mostrar" />
               ) : (
                 usuariosPaginados.map((u) => (
                   <tr key={u.id}>
@@ -173,33 +208,15 @@ export default function ViewUsersPage() {
             </tbody>
         </DataTable>
 
-        {filteredUsers.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[color:var(--cm-text-muted)]">
-              Página {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                disabled={paginaActual === 1}
-                className="cm-btn cm-btn-secondary"
-              >
-                Anterior
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                disabled={paginaActual === totalPaginas}
-                className="cm-btn cm-btn-secondary"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={paginaActual}
+          totalPages={totalPaginas}
+          visibleCount={usuariosPaginados.length}
+          totalCount={filteredUsers.length}
+          itemLabel="usuarios"
+          onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+          onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+        />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
-import { ConfirmDialog, DataTable, ErrorBanner, LoadingState, MetricCard, PageHeader, SearchBar } from "../components/ui";
+import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
 
 type FilaAlerta = {
   id: string;
@@ -211,12 +211,75 @@ export default function AlertsPage() {
         <SearchBar
           value={consulta}
           onChange={(event) => setConsulta(event.target.value)}
+          onClear={() => setConsulta("")}
           placeholder="Buscar por tipo, título, estado o creador..."
+          resultLabel={`${alertasFiltradas.length} de ${alertas.length} alertas`}
         />
 
         {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
 
-        <DataTable minWidth="1220px">
+        {alertasFiltradas.length === 0 ? (
+          <EmptyState
+            title="No hay alertas para mostrar"
+            description={consulta ? "Prueba con otra búsqueda o limpia el filtro." : "Cuando haya alertas aparecerán en este listado."}
+          />
+        ) : (
+          <div className="mt-4 grid gap-3 md:hidden">
+            {alertasPaginadas.map((alerta) => (
+              <article key={alerta.id} className="cm-card cm-card-pad">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold">{alerta.title || "Alerta sin título"}</h2>
+                    <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
+                      {alerta.created_by || "Sistema"} · {alerta.created_at ? new Date(alerta.created_at).toLocaleString() : "-"}
+                    </p>
+                  </div>
+                  <span className={`${obtenerBadgeEstado(alerta.status)} shrink-0 rounded-full px-2.5 py-1 text-xs`}>
+                    {alerta.status === "OPEN" ? "Abierta" : alerta.status === "ACK" ? "Evaluación" : alerta.status === "CLOSED" ? "Cerrada" : "Desconocida"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
+                    {alerta.alert_type || "Desconocido"}
+                  </span>
+                  <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
+                    {obtenerEtiquetaSeveridad(alerta.severity)}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => navegar(`/editAlert/${alerta.id}`)} className="cm-btn cm-btn-primary">
+                    Ver
+                  </button>
+                  <button type="button" onClick={() => prepararEliminarAlerta(alerta.id)} className="cm-btn cm-btn-danger">
+                    Eliminar
+                  </button>
+                  {alerta.status === "OPEN" ? (
+                    <button
+                      type="button"
+                      onClick={() => void actualizarEstadoAlerta(alerta.id, "acknowledge")}
+                      disabled={alertaActualizandoId === alerta.id}
+                      className="cm-btn cm-btn-warning"
+                    >
+                      Reconocer
+                    </button>
+                  ) : null}
+                  {alerta.status !== "CLOSED" ? (
+                    <button
+                      type="button"
+                      onClick={() => void actualizarEstadoAlerta(alerta.id, "close")}
+                      disabled={alertaActualizandoId === alerta.id}
+                      className="cm-btn cm-btn-success"
+                    >
+                      Cerrar
+                    </button>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <DataTable minWidth="1220px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
@@ -311,43 +374,19 @@ export default function AlertsPage() {
                   </td>
                 </tr>
               ))}
-              {alertasFiltradas.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="cm-empty-state">
-                    No hay alertas para mostrar con ese filtro.
-                  </td>
-                </tr>
-              ) : null}
+              {alertasFiltradas.length === 0 ? <EmptyState colSpan={7} title="No hay alertas para mostrar" /> : null}
             </tbody>
           </DataTable>
 
-          {alertasFiltradas.length > 0 ? (
-            <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[color:var(--cm-text-muted)]">
-                Página {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                  disabled={paginaActual === 1}
-                className="cm-btn cm-btn-secondary"
-                >
-                  Anterior
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                  disabled={paginaActual === totalPaginas}
-                className="cm-btn cm-btn-secondary"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          ) : null}
+        <Pagination
+          page={paginaActual}
+          totalPages={totalPaginas}
+          visibleCount={alertasPaginadas.length}
+          totalCount={alertasFiltradas.length}
+          itemLabel="alertas"
+          onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+          onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+        />
       </div>
 
       <ConfirmDialog

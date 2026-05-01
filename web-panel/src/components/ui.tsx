@@ -68,13 +68,33 @@ export function ErrorBanner({ message, className = "" }: ErrorBannerProps) {
 }
 
 type SearchBarProps = InputHTMLAttributes<HTMLInputElement> & {
+  resultLabel?: string;
+  onClear?: () => void;
   wrapperClassName?: string;
 };
 
-export function SearchBar({ wrapperClassName = "mt-4", className = "", type = "text", ...props }: SearchBarProps) {
+export function SearchBar({
+  resultLabel,
+  onClear,
+  wrapperClassName = "mt-4",
+  className = "",
+  type = "text",
+  value,
+  ...props
+}: SearchBarProps) {
+  const hasValue = typeof value === "string" && value.trim().length > 0;
+
   return (
     <div className={`cm-card cm-card-pad ${wrapperClassName}`.trim()}>
-      <input type={type} className={`cm-input ${className}`.trim()} {...props} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input type={type} value={value} className={`cm-input ${className}`.trim()} {...props} />
+        {onClear && hasValue ? (
+          <button type="button" onClick={onClear} className="cm-btn cm-btn-secondary shrink-0">
+            Limpiar
+          </button>
+        ) : null}
+      </div>
+      {resultLabel ? <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">{resultLabel}</p> : null}
     </div>
   );
 }
@@ -125,11 +145,12 @@ export function ConfirmDialog({
 
 type DataTableProps = TableHTMLAttributes<HTMLTableElement> & {
   minWidth?: string;
+  wrapperClassName?: string;
 };
 
-export function DataTable({ children, minWidth = "1050px", className = "", style, ...props }: DataTableProps) {
+export function DataTable({ children, minWidth = "1050px", wrapperClassName = "mt-4", className = "", style, ...props }: DataTableProps) {
   return (
-    <div className="cm-table-card mt-4">
+    <div className={`cm-table-card ${wrapperClassName}`.trim()}>
       <table
         className={`cm-table ${className}`.trim()}
         style={{ minWidth, ...style }}
@@ -137,6 +158,71 @@ export function DataTable({ children, minWidth = "1050px", className = "", style
       >
         {children}
       </table>
+    </div>
+  );
+}
+
+type EmptyStateProps = {
+  title: string;
+  description?: string;
+  colSpan?: number;
+};
+
+export function EmptyState({ title, description, colSpan }: EmptyStateProps) {
+  const content = (
+    <div>
+      <p className="font-medium text-[color:var(--cm-text)]">{title}</p>
+      {description ? <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{description}</p> : null}
+    </div>
+  );
+
+  if (colSpan) {
+    return (
+      <tr>
+        <td colSpan={colSpan} className="cm-empty-state">
+          {content}
+        </td>
+      </tr>
+    );
+  }
+
+  return <div className="cm-card cm-empty-state mt-4">{content}</div>;
+}
+
+type PaginationProps = {
+  page: number;
+  totalPages: number;
+  visibleCount: number;
+  totalCount: number;
+  itemLabel: string;
+  onPrevious: () => void;
+  onNext: () => void;
+};
+
+export function Pagination({
+  page,
+  totalPages,
+  visibleCount,
+  totalCount,
+  itemLabel,
+  onPrevious,
+  onNext,
+}: PaginationProps) {
+  if (totalCount === 0) return null;
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-[color:var(--cm-text-muted)]">
+        Página {page} de {totalPages} · Mostrando {visibleCount} de {totalCount} {itemLabel}
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+        <button type="button" onClick={onPrevious} disabled={page === 1} className="cm-btn cm-btn-secondary">
+          Anterior
+        </button>
+        <button type="button" onClick={onNext} disabled={page === totalPages} className="cm-btn cm-btn-secondary">
+          Siguiente
+        </button>
+      </div>
     </div>
   );
 }
