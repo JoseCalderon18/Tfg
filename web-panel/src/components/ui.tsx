@@ -67,6 +67,43 @@ export function ErrorBanner({ message, className = "" }: ErrorBannerProps) {
   return <div className={`cm-error-banner ${className}`.trim()}>{message}</div>;
 }
 
+type SuccessBannerProps = {
+  message: string;
+  className?: string;
+};
+
+export function SuccessBanner({ message, className = "" }: SuccessBannerProps) {
+  return <div className={`cm-success-banner ${className}`.trim()}>{message}</div>;
+}
+
+type FormSectionProps = {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+};
+
+export function FormSection({ title, description, children, className = "" }: FormSectionProps) {
+  return (
+    <section className={`cm-card cm-card-pad ${className}`.trim()}>
+      <div className="border-b border-[color:var(--cm-border)] pb-4">
+        <h2 className="text-base font-semibold text-[color:var(--cm-text)]">{title}</h2>
+        {description ? <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{description}</p> : null}
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+type FormActionsProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+export function FormActions({ children, className = "" }: FormActionsProps) {
+  return <div className={`cm-form-actions ${className}`.trim()}>{children}</div>;
+}
+
 type SearchBarProps = InputHTMLAttributes<HTMLInputElement> & {
   resultLabel?: string;
   onClear?: () => void;
