@@ -178,48 +178,6 @@ function formatCoordinates(coordinates: [number, number] | null) {
   return `Latitud: ${latitude.toFixed(6)} | Longitud: ${longitude.toFixed(6)}`;
 }
 
-async function reverseGeocode(latitude: number, longitude: number) {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=es`
-    );
-
-    if (!response.ok) {
-      return '';
-    }
-
-    const data = (await response.json()) as {
-      display_name?: string;
-      address?: {
-        road?: string;
-        pedestrian?: string;
-        house_number?: string;
-        city?: string;
-        town?: string;
-        village?: string;
-        municipality?: string;
-        country?: string;
-      };
-    };
-
-    const address = data.address;
-    if (!address) {
-      return data.display_name ?? '';
-    }
-
-    const street = [address.road || address.pedestrian || '', address.house_number || '']
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    const city = address.city || address.town || address.village || address.municipality || '';
-    const parts = [street, city, address.country || ''].filter(Boolean);
-
-    return parts.length > 0 ? parts.join(', ') : data.display_name ?? '';
-  } catch {
-    return '';
-  }
-}
-
 async function readErrorMessage(response: Response) {
   const text = await response.text();
 
@@ -241,8 +199,6 @@ export default function IncidentsScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [readableLocations, setReadableLocations] = useState<Record<string, string>>({});
-  const [resolvingLocationIds, setResolvingLocationIds] = useState<Record<string, boolean>>({});
 
   const refreshCurrentUser = useCallback(async () => {
     if (!token) {
@@ -306,69 +262,7 @@ export default function IncidentsScreen({ navigation }: any) {
     void loadIncidents();
   }, [loadIncidents]);
 
-  useEffect(() => {
-    const incidentsToResolve = incidents.filter((incident) => {
-      if (readableLocations[incident.id]) {
-        return false;
-      }
-
-      return Boolean(extractCoordinates(incident.location));
-    });
-
-    if (incidentsToResolve.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-
-    setResolvingLocationIds((current) => {
-      const next = { ...current };
-      incidentsToResolve.forEach((incident) => {
-        next[incident.id] = true;
-      });
-      return next;
-    });
-
-    incidentsToResolve.forEach((incident) => {
-      const coordinates = extractCoordinates(incident.location);
-      if (!coordinates) {
-        return;
-      }
-
-      const [latitude, longitude] = coordinates;
-      void reverseGeocode(latitude, longitude).then((address) => {
-        if (cancelled) {
-          return;
-        }
-
-        if (address) {
-          setReadableLocations((current) => ({
-            ...current,
-            [incident.id]: address,
-          }));
-        }
-
-        setResolvingLocationIds((current) => ({
-          ...current,
-          [incident.id]: false,
-        }));
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [incidents, readableLocations]);
-
   const getReadableLocation = (incident: Incident) => {
-    if (readableLocations[incident.id]) {
-      return readableLocations[incident.id];
-    }
-
-    if (resolvingLocationIds[incident.id]) {
-      return 'Buscando direccion...';
-    }
-
     if (incident.location_address) {
       return incident.location_address;
     }

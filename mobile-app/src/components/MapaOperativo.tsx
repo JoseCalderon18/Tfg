@@ -20,6 +20,7 @@ type IncidenteMapa = {
 type AlertaMapa = {
   id: string;
   title: string;
+  incident?: string | null;
   location?: PuntoGeografico;
 };
 
@@ -140,7 +141,7 @@ export default function MapaOperativo({
 }: MapaOperativoProps) {
   const mapaRef = useRef<MapView | null>(null);
   const { location } = useLocation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [incidentes, setIncidentes] = useState<IncidenteMapa[]>([]);
   const [alertas, setAlertas] = useState<AlertaMapa[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -156,12 +157,20 @@ export default function MapaOperativo({
       return;
     }
 
+    if (!user?.organization_id) {
+      setErrorRemoto('El usuario no tiene organizacion asignada para filtrar el mapa.');
+      setIncidentes([]);
+      setAlertas([]);
+      return;
+    }
+
     setCargando(true);
     setErrorRemoto('');
 
     try {
+      const organizationId = encodeURIComponent(user.organization_id);
       const [respuestaIncidentes, respuestaAlertas] = await Promise.all([
-        apiFetch('/incidents/', { token }),
+        apiFetch(`/incidents/?owner_organization=${organizationId}&status=OPEN`, { token }),
         apiFetch('/alerts/open/', { token }),
       ]);
 
@@ -186,7 +195,9 @@ export default function MapaOperativo({
         const datosAlertas = await parseJsonResponse<AlertaMapa[] | { results?: AlertaMapa[] }>(
           respuestaAlertas
         );
-        siguientesAlertas = Array.isArray(datosAlertas) ? datosAlertas : datosAlertas.results ?? [];
+        const todasAlertas = Array.isArray(datosAlertas) ? datosAlertas : datosAlertas.results ?? [];
+        const idsIncidentes = new Set(siguientesIncidentes.map((incidente) => String(incidente.id)));
+        siguientesAlertas = todasAlertas.filter((alerta) => alerta.incident && idsIncidentes.has(String(alerta.incident)));
       } else {
         const datosError = await parseJsonResponse<{ detail?: string }>(respuestaAlertas);
         const errorAlertas =
@@ -204,7 +215,7 @@ export default function MapaOperativo({
     } finally {
       setCargando(false);
     }
-  }, [token]);
+  }, [token, user?.organization_id]);
 
   useFocusEffect(
     useCallback(() => {
