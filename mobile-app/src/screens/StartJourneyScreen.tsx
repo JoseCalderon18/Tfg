@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } fro
 import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from '../context/LocationContext';
 import { apiFetch } from '../services/api';
 import { colors } from '../theme';
 
@@ -12,6 +13,7 @@ export default function StartJourneyScreen({ navigation }: any) {
   const [locationPermission, setLocationPermission] = useState(false);
   const [notesText, setNotesText] = useState('');
   const { token, user } = useAuth();
+  const { isTracking, startTracking } = useLocation();
 
   useEffect(() => {
     void requestLocationPermission();
@@ -80,7 +82,12 @@ export default function StartJourneyScreen({ navigation }: any) {
         return;
       }
 
-      Alert.alert('Exito', 'Jornada iniciada', [
+      const wasTracking = isTracking;
+      if (!wasTracking) {
+        await startTracking();
+      }
+
+      Alert.alert('Exito', wasTracking ? 'Jornada iniciada.' : 'Jornada iniciada y GPS activado.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
@@ -187,7 +194,9 @@ export default function StartJourneyScreen({ navigation }: any) {
         {loading ? (
           <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={{ color: colors.white, textAlign: 'center', fontWeight: '600' }}>Confirmar inicio</Text>
+          <Text style={{ color: colors.white, textAlign: 'center', fontWeight: '600' }}>
+            {isTracking ? 'Confirmar inicio' : 'Confirmar inicio y activar GPS'}
+          </Text>
         )}
       </TouchableOpacity>
     </View>
