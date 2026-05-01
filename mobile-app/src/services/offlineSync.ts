@@ -12,6 +12,7 @@ export type OfflineQueueItem = {
   path: string;
   method: 'POST';
   body: string;
+  dedupeKey?: string;
   createdAt: string;
 };
 
@@ -32,6 +33,18 @@ export type OfflineSyncSummary = {
 
 function buildQueueId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeBodyForDedupe(body: string) {
+  try {
+    return JSON.stringify(JSON.parse(body));
+  } catch {
+    return body;
+  }
+}
+
+function buildDedupeKey(item: Pick<OfflineQueueItem, 'kind' | 'path' | 'method' | 'body'>) {
+  return [item.kind, item.method, item.path, normalizeBodyForDedupe(item.body)].join('|');
 }
 
 function isOfflineLikeError(error: unknown) {
@@ -66,8 +79,16 @@ export async function getOfflineQueue() {
 
 export async function enqueueOfflineItem(item: Omit<OfflineQueueItem, 'id' | 'createdAt'>) {
   const queue = await readQueue();
+  const dedupeKey = item.dedupeKey ?? buildDedupeKey(item);
+  const existingItem = queue.find((queuedItem) => (queuedItem.dedupeKey ?? buildDedupeKey(queuedItem)) === dedupeKey);
+
+  if (existingItem) {
+    return existingItem;
+  }
+
   const nextItem: OfflineQueueItem = {
     ...item,
+    dedupeKey,
     id: buildQueueId(),
     createdAt: new Date().toISOString(),
   };
