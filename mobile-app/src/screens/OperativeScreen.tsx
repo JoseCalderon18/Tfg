@@ -106,6 +106,11 @@ export default function OperativeScreen({ navigation }: any) {
     Vibration.vibrate([0, 500, 250], true);
   };
 
+  const handleLogout = async () => {
+    stopTracking();
+    await logout();
+  };
+
   useEffect(() => {
     if (!sosModalVisible || isSendingSos) {
       return;
@@ -159,7 +164,7 @@ export default function OperativeScreen({ navigation }: any) {
       case 'logout':
         Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Cerrar sesion', onPress: logout, style: 'destructive' },
+          { text: 'Cerrar sesion', onPress: () => void handleLogout(), style: 'destructive' },
         ]);
         break;
       default:

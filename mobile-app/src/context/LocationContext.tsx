@@ -147,6 +147,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const { token, updateUser, user } = useAuth();
   const { queueTrackingPoint, queueAlert } = useOfflineSync();
   const fatigueAlertSentRef = useRef(false);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
   const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
@@ -201,12 +202,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, [isTracking, location, queueAlert, routeDurationHours, shiftHoursLimit, token]);
 
   useEffect(() => {
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
-    };
+    locationSubscriptionRef.current = locationSubscription;
   }, [locationSubscription]);
+
+  useEffect(() => {
+    return () => {
+      if (locationSubscriptionRef.current) {
+        locationSubscriptionRef.current.remove();
+        locationSubscriptionRef.current = null;
+      }
+
+      void stopBackgroundWorkareaDetection();
+    };
+  }, []);
 
   const syncProfileLocation = async (nextLocation: Location.LocationObject) => {
     if (!token) {
