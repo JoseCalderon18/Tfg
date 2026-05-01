@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef,
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import * as TaskManager from 'expo-task-manager';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -73,6 +73,12 @@ interface LocationContextType {
   isTracking: boolean;
   startTracking: () => Promise<void>;
   stopTracking: () => void;
+  foregroundPermissionStatus: Location.PermissionStatus | null;
+  backgroundPermissionStatus: Location.PermissionStatus | null;
+  hasRequiredLocationPermissions: boolean;
+  refreshLocationPermissions: () => Promise<void>;
+  requestLocationPermissions: () => Promise<boolean>;
+  openLocationSettings: () => Promise<void>;
   refreshWorkareaDetection: () => Promise<GeofenceStatus | null>;
   errorMsg: string | null;
   isCheckingWorkarea: boolean;
@@ -144,6 +150,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [routeDurationHours, setRouteDurationHours] = useState<number>(0);
   const [estimatedKcal, setEstimatedKcal] = useState<number>(0);
   const [foodSuggestions, setFoodSuggestions] = useState<Array<{ name: string; kcal: number; portion?: string }>>([]);
+  const [foregroundPermissionStatus, setForegroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
+  const [backgroundPermissionStatus, setBackgroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
   const { token, updateUser, user } = useAuth();
   const { queueTrackingPoint, queueAlert } = useOfflineSync();
   const fatigueAlertSentRef = useRef(false);
@@ -151,9 +159,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
   const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
+  const hasRequiredLocationPermissions =
+    foregroundPermissionStatus === Location.PermissionStatus.GRANTED &&
+    backgroundPermissionStatus === Location.PermissionStatus.GRANTED;
   const fatigueWarningMessage = isOverShift
     ? `Has superado el limite de ${shiftHoursLimit} h de jornada. Ojo: el cansancio ya no es una broma, es un riesgo.`
     : null;
+
+  useEffect(() => {
+    void refreshLocationPermissions();
+  }, []);
 
   useEffect(() => {
     if (!isTracking || fatigueAlertSentRef.current) {
@@ -324,9 +339,45 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshLocationPermissions = async () => {
+    const [foreground, background] = await Promise.all([
+      Location.getForegroundPermissionsAsync(),
+      Location.getBackgroundPermissionsAsync(),
+    ]);
+
+    setForegroundPermissionStatus(foreground.status);
+    setBackgroundPermissionStatus(background.status);
+  };
+
+  const requestLocationPermissions = async () => {
+    const foreground = await Location.requestForegroundPermissionsAsync();
+    setForegroundPermissionStatus(foreground.status);
+
+    if (foreground.status !== Location.PermissionStatus.GRANTED) {
+      setErrorMsg('El seguimiento necesita permiso de ubicacion mientras usas la app.');
+      return false;
+    }
+
+    const background = await Location.requestBackgroundPermissionsAsync();
+    setBackgroundPermissionStatus(background.status);
+
+    if (background.status !== Location.PermissionStatus.GRANTED) {
+      setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
+      return false;
+    }
+
+    setErrorMsg(null);
+    return true;
+  };
+
+  const openLocationSettings = async () => {
+    await Linking.openSettings();
+  };
+
   const startBackgroundWorkareaDetection = async () => {
-    const { status } = await Location.requestBackgroundPermissionsAsync();
-    if (status !== 'granted') {
+    const { status } = await Location.getBackgroundPermissionsAsync();
+    setBackgroundPermissionStatus(status);
+    if (status !== Location.PermissionStatus.GRANTED) {
       setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
       return;
     }
@@ -366,9 +417,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const startTracking = async () => {
     try {
       fatigueAlertSentRef.current = false;
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+      const hasPermissions = await requestLocationPermissions();
+      if (!hasPermissions) {
         setIsTracking(false);
         return;
       }
@@ -457,6 +507,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         isTracking,
         startTracking,
         stopTracking,
+        foregroundPermissionStatus,
+        backgroundPermissionStatus,
+        hasRequiredLocationPermissions,
+        refreshLocationPermissions,
+        requestLocationPermissions,
+        openLocationSettings,
         refreshWorkareaDetection,
         errorMsg,
         isCheckingWorkarea,

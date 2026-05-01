@@ -26,6 +26,7 @@ import IncidentsScreen from './src/screens/IncidentsScreen';
 import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
+import LocationPermissionsScreen from './src/components/LocationPermissionsScreen';
 
 // Creamos el stack navigator para la navegacion entre pantallas
 const Stack = createStackNavigator();
@@ -134,6 +135,7 @@ function OperativeNavigator() {
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
+        <LocationPermissionsScreen />
         <GeofenceLockScreen />
       </>
     </LocationProvider>
