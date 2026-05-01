@@ -253,14 +253,14 @@ export default function MapaOperativo({
         <View style={styles.cabecera}>
           <Text style={styles.tituloCabecera}>Mapa operativo</Text>
           <Text style={styles.textoCabecera}>
-            {cargando ? 'Cargando capas...' : `Incidentes: ${incidentes.length} · Alertas: ${alertas.length}`}
+            {cargando ? 'Cargando capas...' : `Incidentes: ${incidentes.length} | Alertas: ${alertas.length}`}
           </Text>
           {errorRemoto ? <Text style={styles.errorTexto}>{errorRemoto}</Text> : null}
         </View>
       ) : (
         <View style={styles.resumenSuperior}>
           <Text style={styles.resumenTexto}>
-            {cargando ? 'Cargando capas...' : `Incidentes: ${incidentes.length} · Alertas: ${alertas.length}`}
+            {cargando ? 'Cargando capas...' : `Incidentes: ${incidentes.length} | Alertas: ${alertas.length}`}
           </Text>
           <Text style={styles.etiquetaMapa}>{modoLigero ? 'LIGERO' : 'SATELITE'}</Text>
           {errorRemoto ? <Text style={styles.errorTextoCompacto}>{errorRemoto}</Text> : null}

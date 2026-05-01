@@ -94,7 +94,7 @@ export default function JourneyLivePanel() {
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
           <Text style={styles.title}>Estado en vivo</Text>
-          <Text style={styles.subtitle}>{isTracking ? 'La jornada está en marcha' : 'Inicia el GPS para ver datos en directo'}</Text>
+          <Text style={styles.subtitle}>{isTracking ? 'La jornada esta en marcha' : 'Inicia el GPS para ver datos en directo'}</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: journeyTone.colors.background }]}>
           <Text style={[styles.badgeText, { color: journeyTone.colors.text }]}>{journeyTone.label}</Text>
@@ -107,7 +107,7 @@ export default function JourneyLivePanel() {
           <Text style={styles.metricValue}>{routeDistanceKm.toFixed(2)} km</Text>
         </View>
         <View style={styles.metricBox}>
-          <Text style={styles.metricLabel}>Duración</Text>
+          <Text style={styles.metricLabel}>Duracion</Text>
           <Text style={styles.metricValue}>{formatDuration(routeDurationHours)}</Text>
         </View>
         <View style={styles.metricBox}>
@@ -133,9 +133,9 @@ export default function JourneyLivePanel() {
         <View style={styles.suggestionList}>
           {nutritionPlan.suggestions.slice(0, 4).map((item, index) => (
             <View key={`${item.name}-${index}`} style={styles.suggestionRow}>
-              <Text style={styles.suggestionBullet}>•</Text>
+              <Text style={styles.suggestionBullet}>-</Text>
               <Text style={styles.suggestionText}>
-                {item.name}{item.portion ? ` (${item.portion})` : ''} · {item.kcal} kcal
+                {item.name}{item.portion ? ` (${item.portion})` : ''} | {item.kcal} kcal
               </Text>
             </View>
           ))}

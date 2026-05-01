@@ -61,11 +61,11 @@ TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
 });
 
 /**
- * Interface que define el contexto de ubicación
- * @property location - Objeto con la última ubicación conocida
- * @property isTracking - Indica si el seguimiento está activo
- * @property startTracking - Inicia el seguimiento de ubicación
- * @property stopTracking - Detiene el seguimiento de ubicación
+ * Interface que define el contexto de ubicacion
+ * @property location - Objeto con la ultima ubicacion conocida
+ * @property isTracking - Indica si el seguimiento esta activo
+ * @property startTracking - Inicia el seguimiento de ubicacion
+ * @property stopTracking - Detiene el seguimiento de ubicacion
  * @property errorMsg - Mensaje de error si ocurre alguno
  */
 interface LocationContextType {
@@ -116,17 +116,17 @@ function extractShiftHours(schedule?: string) {
   return Number.isFinite(value) && value > 0 ? value : 8;
 }
 
-// Creación del contexto de ubicación
+// Creacion del contexto de ubicacion
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 /**
- * Provider que maneja el seguimiento de ubicación GPS
- * Permite rastrear la posición del operativo en tiempo real
+ * Provider que maneja el seguimiento de ubicacion GPS
+ * Permite rastrear la posicion del operativo en tiempo real
  * 
- * @param children - Componentes hijos que tendrán acceso al contexto
+ * @param children - Componentes hijos que tendran acceso al contexto
  */
 export function LocationProvider({ children }: { children: ReactNode }) {
-  // Estado del seguimiento GPS y errores de permisos/envío.
+  // Estado del seguimiento GPS y errores de permisos/envio.
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -350,10 +350,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Inicia el seguimiento continuo de la ubicación
+   * Inicia el seguimiento continuo de la ubicacion
    * Actualiza cada 5 segundos o cada 10 metros de movimiento
    * 
-   * TODO: Enviar ubicación al backend en cada actualización
+   * TODO: Enviar ubicacion al backend en cada actualizacion
    */
   const startTracking = async () => {
     try {
@@ -383,7 +383,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
       const subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,  // Alta precisión
+          accuracy: Location.Accuracy.High,  // Alta precision
           timeInterval: 5000,                // Actualizar cada 5 segundos
           distanceInterval: 10,              // O cada 10 metros
         },
@@ -423,8 +423,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Detiene el seguimiento de ubicación
-   * Elimina la suscripción a las actualizaciones de GPS
+   * Detiene el seguimiento de ubicacion
+   * Elimina la suscripcion a las actualizaciones de GPS
    */
   const stopTracking = () => {
     if (locationSubscription) {
@@ -468,9 +468,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Hook personalizado para acceder al contexto de ubicación
+ * Hook personalizado para acceder al contexto de ubicacion
  * 
- * @returns El contexto de ubicación
+ * @returns El contexto de ubicacion
  * @throws Error si se usa fuera de LocationProvider
  * 
  * @example

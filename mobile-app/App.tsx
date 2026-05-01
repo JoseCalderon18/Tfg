@@ -11,7 +11,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
 import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
 
-// Importamos las pantallas de la aplicación
+// Importamos las pantallas de la aplicacion
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AlertScreen from './src/screens/AlertScreen';
@@ -27,7 +27,7 @@ import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 
-// Creamos el stack navigator para la navegación entre pantallas
+// Creamos el stack navigator para la navegacion entre pantallas
 const Stack = createStackNavigator();
 
 type ErrorBoundaryState = {
@@ -159,8 +159,8 @@ function AppNavigator() {
 }
 
 /**
- * Componente principal de la aplicación móvil
- * Configura los proveedores de contexto y la navegación
+ * Componente principal de la aplicacion movil
+ * Configura los proveedores de contexto y la navegacion
  */
 export default function App() {
   return (

@@ -171,7 +171,7 @@ export default function OperativeScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
-          <Text style={styles.hamburgerText}>☰</Text>
+          <Text style={styles.hamburgerText}>Menu</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Emergencias</Text>
         <View style={styles.userInfo}>
@@ -185,7 +185,7 @@ export default function OperativeScreen({ navigation }: any) {
         <Text style={styles.statusText}>Seguimiento: {isTracking ? 'Activo' : 'Detenido'}</Text>
         <Text style={styles.statusSubtext}>
           {location
-            ? `Lat ${location.coords.latitude.toFixed(4)} · Lng ${location.coords.longitude.toFixed(4)}`
+            ? `Lat ${location.coords.latitude.toFixed(4)} | Lng ${location.coords.longitude.toFixed(4)}`
             : 'Sin posicion registrada'}
         </Text>
         <Text style={styles.syncText}>
@@ -245,15 +245,15 @@ export default function OperativeScreen({ navigation }: any) {
 
       <View style={styles.bottomMenu}>
         <TouchableOpacity style={styles.sideButton} onPress={handleAlertPress}>
-          <Text style={styles.sideButtonText}>🚨{'\n'}ALERTA</Text>
+          <Text style={styles.sideButtonText}>ALERTA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.centerButton} onPress={handleSosPress} disabled={isSendingSos}>
-          <Text style={styles.centerButtonText}>{`🆘\nSOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
+          <Text style={styles.centerButtonText}>{`SOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
-          <Text style={styles.sideButtonText}>📍{'\n'}PUNTOS DE{'\n'}INTERES</Text>
+          <Text style={styles.sideButtonText}>PUNTOS DE{'\n'}INTERES</Text>
         </TouchableOpacity>
       </View>
 
@@ -292,25 +292,25 @@ export default function OperativeScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.drawerMenu}>
             <TouchableOpacity style={styles.closeButton} onPress={() => setMenuVisible(false)}>
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={styles.closeButtonText}>X</Text>
             </TouchableOpacity>
 
             <Text style={styles.drawerTitle}>Menu</Text>
 
             <ScrollView style={styles.menuOptions}>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('companions')}>
-                <Text style={styles.menuOptionText}>👥 Companeros</Text>
+                <Text style={styles.menuOptionText}>Companeros</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
-                <Text style={styles.menuOptionText}>⛅ Meteorologia</Text>
+                <Text style={styles.menuOptionText}>Meteorologia</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
-                <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
+                <Text style={styles.menuOptionText}>Incidentes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('chat')}>
-                <Text style={styles.menuOptionText}>💬 Chat</Text>
+                <Text style={styles.menuOptionText}>Chat</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -320,7 +320,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StartJourney');
                 }}
               >
-                <Text style={styles.menuOptionText}>▶ Iniciar jornada</Text>
+                <Text style={styles.menuOptionText}>Iniciar jornada</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -330,7 +330,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StartBreak');
                 }}
               >
-                <Text style={styles.menuOptionText}>⏸ Iniciar descanso</Text>
+                <Text style={styles.menuOptionText}>Iniciar descanso</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -340,7 +340,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StopJourney');
                 }}
               >
-                <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
+                <Text style={styles.menuOptionText}>Parar jornada</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -350,7 +350,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('Profile');
                 }}
               >
-                <Text style={styles.menuOptionText}>👤 Perfil</Text>
+                <Text style={styles.menuOptionText}>Perfil</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -360,14 +360,14 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('Settings');
                 }}
               >
-                <Text style={styles.menuOptionText}>⚙ Configuracion</Text>
+                <Text style={styles.menuOptionText}>Configuracion</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.menuOption, styles.logoutOption]}
                 onPress={() => handleMenuOption('logout')}
               >
-                <Text style={styles.menuOptionText}>🚪 Cerrar sesion</Text>
+                <Text style={styles.menuOptionText}>Cerrar sesion</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

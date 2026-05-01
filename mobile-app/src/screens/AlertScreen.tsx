@@ -18,9 +18,9 @@ export default function AlertScreen({ navigation }: any) {
 
   const handleSendAlert = async () => {
     try {
-      // Validamos sesión y ubicación antes de registrar la alerta operativa.
+      // Validamos sesion y ubicacion antes de registrar la alerta operativa.
       if (!token) {
-        Alert.alert('Error', 'No hay sesión activa.');
+        Alert.alert('Error', 'No hay sesion activa.');
         return;
       }
 
@@ -60,7 +60,7 @@ export default function AlertScreen({ navigation }: any) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Enviar alerta</Text>
-            <Text style={styles.subtitle}>Documenta la situación de emergencia</Text>
+            <Text style={styles.subtitle}>Documenta la situacion de emergencia</Text>
           </View>
 
           {/* Form Sections */}
@@ -72,10 +72,10 @@ export default function AlertScreen({ navigation }: any) {
                 onValueChange={setTipoAlerta} 
                 style={styles.picker}
               >
-                <Picker.Item label="🆘 Emergencia SOS" value="SOS" />
-                <Picker.Item label="👤 Hombre caído" value="MAN_DOWN" />
-                <Picker.Item label="🔴 Perdido" value="LOST" />
-                <Picker.Item label="📋 Otro" value="OTHER" />
+                <Picker.Item label="Emergencia SOS" value="SOS" />
+                <Picker.Item label="Hombre caido" value="MAN_DOWN" />
+                <Picker.Item label="Perdido" value="LOST" />
+                <Picker.Item label="Otro" value="OTHER" />
               </Picker>
             </View>
           </View>
@@ -102,19 +102,19 @@ export default function AlertScreen({ navigation }: any) {
               ))}
             </View>
             <View style={styles.severityLabels}>
-              <Text style={styles.severityText}>Crítico</Text>
-              <Text style={styles.severityText}>Información</Text>
+              <Text style={styles.severityText}>Critico</Text>
+              <Text style={styles.severityText}>Informacion</Text>
             </View>
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={styles.label}>Descripcion</Text>
             <TextInput
               style={[
                 styles.textArea,
                 focusedField === 'description' && styles.inputFocused,
               ]}
-              placeholder="Describe la situación..."
+              placeholder="Describe la situacion..."
               placeholderTextColor={colors.textMuted}
               value={descripcion}
               onChangeText={setDescripcion}
