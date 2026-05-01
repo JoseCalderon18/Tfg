@@ -23,6 +23,7 @@ import StartBreakScreen from './src/screens/StartBreakScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
+import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 
@@ -110,6 +111,11 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Incidents"
             component={IncidentsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Incident"
+            component={IncidentScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
