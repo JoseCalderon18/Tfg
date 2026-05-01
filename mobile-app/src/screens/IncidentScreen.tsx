@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MapView, { Circle, Marker, Polygon, Region } from 'react-native-maps';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -30,6 +31,30 @@ type Incident = {
   is_active?: boolean;
 };
 
+type IncidentAlert = {
+  id: string;
+  alert_type?: string | null;
+  severity?: number | null;
+  status?: string | null;
+  title?: string | null;
+  description?: string | null;
+  created_at?: string | null;
+};
+
+type WorkArea = {
+  id: string;
+  name?: string | null;
+  area_type?: 'CIRCLE' | 'POLYGON' | string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+  radius_m?: number | null;
+  polygon_coordinates?: unknown;
+  active?: boolean;
+};
+
+type ListResponse<T> = T[] | { results?: T[] };
+type Point = { latitude: number; longitude: number };
+
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Abierto',
   CLOSED: 'Cerrado',
@@ -47,6 +72,10 @@ const TYPE_LABELS: Record<string, string> = {
   SECURITY: 'Seguridad',
   OTHER: 'Otro',
 };
+
+function normalizeList<T>(payload: ListResponse<T>) {
+  return Array.isArray(payload) ? payload : payload.results ?? [];
+}
 
 function getLabel(value: string | null | undefined, labels: Record<string, string>) {
   if (!value) {
@@ -75,7 +104,7 @@ function formatDate(value: string | null | undefined) {
   }).format(date);
 }
 
-function extractCoordinates(location: unknown): [number, number] | null {
+function extractCoordinates(location: unknown): Point | null {
   if (!location) {
     return null;
   }
@@ -83,9 +112,7 @@ function extractCoordinates(location: unknown): [number, number] | null {
   if (Array.isArray(location) && location.length >= 2) {
     const longitude = Number(location[0]);
     const latitude = Number(location[1]);
-    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-      return [latitude, longitude];
-    }
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
   }
 
   if (typeof location === 'object') {
@@ -102,17 +129,13 @@ function extractCoordinates(location: unknown): [number, number] | null {
     if (Array.isArray(value.coordinates) && value.coordinates.length >= 2) {
       const longitude = Number(value.coordinates[0]);
       const latitude = Number(value.coordinates[1]);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        return [latitude, longitude];
-      }
+      return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
     }
 
     if (value.x !== undefined && value.y !== undefined) {
       const longitude = Number(value.x);
       const latitude = Number(value.y);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        return [latitude, longitude];
-      }
+      return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
     }
 
     const latitudeValue = value.latitude ?? value.lat;
@@ -120,9 +143,7 @@ function extractCoordinates(location: unknown): [number, number] | null {
     if (latitudeValue !== undefined && longitudeValue !== undefined) {
       const latitude = Number(latitudeValue);
       const longitude = Number(longitudeValue);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        return [latitude, longitude];
-      }
+      return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
     }
   }
 
@@ -131,31 +152,19 @@ function extractCoordinates(location: unknown): [number, number] | null {
     if (match) {
       const longitude = Number(match[1]);
       const latitude = Number(match[3]);
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        return [latitude, longitude];
-      }
+      return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
     }
   }
 
   return null;
 }
 
-function formatCoordinates(coordinates: [number, number] | null) {
-  if (!coordinates) {
+function formatCoordinates(point: Point | null) {
+  if (!point) {
     return 'Sin coordenadas registradas';
   }
 
-  const [latitude, longitude] = coordinates;
-  return `Lat ${latitude.toFixed(6)} | Lng ${longitude.toFixed(6)}`;
-}
-
-async function readErrorMessage(response: Response) {
-  try {
-    const payload = await parseJsonResponse<{ detail?: string; error?: string }>(response);
-    return payload.detail ?? payload.error ?? 'No se pudo cargar el incidente.';
-  } catch {
-    return 'El servidor no devolvio una respuesta valida.';
-  }
+  return `Lat ${point.latitude.toFixed(6)} | Lng ${point.longitude.toFixed(6)}`;
 }
 
 function getStatusStyle(status: string | null | undefined, isActive?: boolean) {
@@ -174,15 +183,103 @@ function getStatusStyle(status: string | null | undefined, isActive?: boolean) {
   return styles.defaultBadge;
 }
 
+function getAlertStatusStyle(status: string | null | undefined) {
+  if (status === 'OPEN') {
+    return styles.openBadge;
+  }
+
+  if (status === 'ACK') {
+    return styles.triageBadge;
+  }
+
+  return styles.inactiveBadge;
+}
+
+function parsePolygonCoordinates(value: unknown): Point[] {
+  const rawRing =
+    Array.isArray(value) && Array.isArray(value[0]) && Array.isArray(value[0][0])
+      ? value[0]
+      : Array.isArray(value)
+        ? value
+        : [];
+
+  return rawRing
+    .map((item) => {
+      if (!Array.isArray(item) || item.length < 2) {
+        return null;
+      }
+
+      const longitude = Number(item[0]);
+      const latitude = Number(item[1]);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+      }
+
+      return { latitude, longitude };
+    })
+    .filter((point): point is Point => Boolean(point));
+}
+
+function buildMapRegion(incidentPoint: Point | null, workareas: WorkArea[]): Region {
+  const workareaPoints = workareas.flatMap((workarea) => {
+    if (workarea.area_type === 'CIRCLE' && workarea.center_lat && workarea.center_lng) {
+      return [{ latitude: workarea.center_lat, longitude: workarea.center_lng }];
+    }
+
+    return parsePolygonCoordinates(workarea.polygon_coordinates);
+  });
+
+  const points = [...(incidentPoint ? [incidentPoint] : []), ...workareaPoints];
+  if (points.length === 0) {
+    return {
+      latitude: 40.4168,
+      longitude: -3.7038,
+      latitudeDelta: 0.08,
+      longitudeDelta: 0.08,
+    };
+  }
+
+  const latitudes = points.map((point) => point.latitude);
+  const longitudes = points.map((point) => point.longitude);
+  const minLatitude = Math.min(...latitudes);
+  const maxLatitude = Math.max(...latitudes);
+  const minLongitude = Math.min(...longitudes);
+  const maxLongitude = Math.max(...longitudes);
+
+  return {
+    latitude: (minLatitude + maxLatitude) / 2,
+    longitude: (minLongitude + maxLongitude) / 2,
+    latitudeDelta: Math.max((maxLatitude - minLatitude) * 1.8, 0.03),
+    longitudeDelta: Math.max((maxLongitude - minLongitude) * 1.8, 0.03),
+  };
+}
+
+async function readErrorMessage(response: Response) {
+  try {
+    const payload = await parseJsonResponse<{ detail?: string; error?: string }>(response);
+    return payload.detail ?? payload.error ?? 'No se pudo cargar el incidente.';
+  } catch {
+    return 'El servidor no devolvio una respuesta valida.';
+  }
+}
+
 export default function IncidentScreen({ navigation, route }: any) {
   const incidentId = route?.params?.incidentId as string | undefined;
   const { token } = useAuth();
   const [incident, setIncident] = useState<Incident | null>(null);
+  const [alerts, setAlerts] = useState<IncidentAlert[]>([]);
+  const [workareas, setWorkareas] = useState<WorkArea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const coordinates = useMemo(() => extractCoordinates(incident?.location), [incident?.location]);
+  const activeAlerts = useMemo(
+    () => alerts.filter((alert) => alert.status === 'OPEN' || alert.status === 'ACK'),
+    [alerts]
+  );
+  const activeWorkareas = useMemo(() => workareas.filter((workarea) => workarea.active !== false), [workareas]);
+  const mapRegion = useMemo(() => buildMapRegion(coordinates, activeWorkareas), [activeWorkareas, coordinates]);
 
   const loadIncident = useCallback(async (refreshing = false) => {
     if (!token) {
@@ -206,16 +303,30 @@ export default function IncidentScreen({ navigation, route }: any) {
     setError(null);
 
     try {
-      const response = await apiFetch(`/incidents/${encodeURIComponent(incidentId)}/`, {
-        token,
-        timeoutMs: 12000,
-      });
+      const encodedIncidentId = encodeURIComponent(incidentId);
+      const [incidentResponse, alertsResponse, workareasResponse] = await Promise.all([
+        apiFetch(`/incidents/${encodedIncidentId}/`, { token, timeoutMs: 12000 }),
+        apiFetch(`/alerts/?incident=${encodedIncidentId}`, { token, timeoutMs: 12000 }),
+        apiFetch(`/workareas/?incident=${encodedIncidentId}`, { token, timeoutMs: 12000 }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response));
+      if (!incidentResponse.ok) {
+        throw new Error(await readErrorMessage(incidentResponse));
       }
 
-      setIncident(await parseJsonResponse<Incident>(response));
+      setIncident(await parseJsonResponse<Incident>(incidentResponse));
+
+      if (alertsResponse.ok) {
+        setAlerts(normalizeList(await parseJsonResponse<ListResponse<IncidentAlert>>(alertsResponse)));
+      } else {
+        setAlerts([]);
+      }
+
+      if (workareasResponse.ok) {
+        setWorkareas(normalizeList(await parseJsonResponse<ListResponse<WorkArea>>(workareasResponse)));
+      } else {
+        setWorkareas([]);
+      }
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'No se pudo cargar el incidente.');
     } finally {
@@ -272,8 +383,49 @@ export default function IncidentScreen({ navigation, route }: any) {
           {incident.description ? <Text style={styles.description}>{incident.description}</Text> : null}
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ubicacion</Text>
+        <View style={styles.summaryGrid}>
+          <SummaryBox label="Alertas activas" value={String(activeAlerts.length)} tone={activeAlerts.length > 0 ? 'danger' : 'success'} />
+          <SummaryBox label="Workareas" value={String(activeWorkareas.length)} tone={activeWorkareas.length > 0 ? 'primary' : 'muted'} />
+          <SummaryBox label="Estado" value={incident.is_active === false ? 'Inactivo' : 'Activo'} tone={incident.is_active === false ? 'muted' : 'success'} />
+        </View>
+
+        <View style={styles.mapCard}>
+          <Text style={styles.cardTitle}>Mapa</Text>
+          <View style={styles.mapWrapper}>
+            <MapView style={styles.map} initialRegion={mapRegion} region={mapRegion} toolbarEnabled={false}>
+              {coordinates ? (
+                <Marker coordinate={coordinates} title={incident.name || 'Incidente'} pinColor={colors.danger} />
+              ) : null}
+
+              {activeWorkareas.map((workarea) => {
+                if (workarea.area_type === 'CIRCLE' && workarea.center_lat && workarea.center_lng && workarea.radius_m) {
+                  return (
+                    <Circle
+                      key={workarea.id}
+                      center={{ latitude: workarea.center_lat, longitude: workarea.center_lng }}
+                      radius={workarea.radius_m}
+                      strokeColor={colors.primary}
+                      fillColor="rgba(37, 99, 235, 0.16)"
+                    />
+                  );
+                }
+
+                const polygon = parsePolygonCoordinates(workarea.polygon_coordinates);
+                if (polygon.length >= 3) {
+                  return (
+                    <Polygon
+                      key={workarea.id}
+                      coordinates={polygon}
+                      strokeColor={colors.primary}
+                      fillColor="rgba(37, 99, 235, 0.16)"
+                    />
+                  );
+                }
+
+                return null;
+              })}
+            </MapView>
+          </View>
           <Text style={styles.cardValue}>{incident.location_address || 'Sin direccion registrada'}</Text>
           <Text style={styles.cardValue}>{formatCoordinates(coordinates)}</Text>
         </View>
@@ -287,13 +439,59 @@ export default function IncidentScreen({ navigation, route }: any) {
           <InfoRow label="Actualizado" value={formatDate(incident.updated_at)} />
         </View>
 
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Map')}>
-            <Text style={styles.secondaryButtonText}>Ver mapa</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Chat')}>
-            <Text style={styles.primaryButtonText}>Abrir chat</Text>
-          </TouchableOpacity>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Workarea</Text>
+          {activeWorkareas.length === 0 ? (
+            <Text style={styles.cardValue}>No hay workareas activas para este incidente.</Text>
+          ) : (
+            activeWorkareas.map((workarea) => (
+              <View key={workarea.id} style={styles.listItem}>
+                <Text style={styles.listTitle}>{workarea.name || 'Workarea sin nombre'}</Text>
+                <Text style={styles.listMeta}>
+                  {workarea.area_type === 'CIRCLE'
+                    ? `Circular | Radio ${workarea.radius_m ?? 0} m`
+                    : 'Poligonal'}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Alertas</Text>
+          {alerts.length === 0 ? (
+            <Text style={styles.cardValue}>No hay alertas registradas para este incidente.</Text>
+          ) : (
+            alerts.slice(0, 5).map((alert) => (
+              <View key={alert.id} style={styles.listItem}>
+                <View style={styles.listHeader}>
+                  <Text style={styles.listTitle}>{alert.title || getLabel(alert.alert_type, {})}</Text>
+                  <View style={[styles.smallBadge, getAlertStatusStyle(alert.status)]}>
+                    <Text style={styles.smallBadgeText}>{alert.status || 'Sin estado'}</Text>
+                  </View>
+                </View>
+                <Text style={styles.listMeta}>
+                  Severidad {alert.severity ?? '-'} | {formatDate(alert.created_at)}
+                </Text>
+                {alert.description ? <Text style={styles.listDescription}>{alert.description}</Text> : null}
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Acciones rapidas</Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Map')}>
+              <Text style={styles.secondaryButtonText}>Ver mapa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Alert')}>
+              <Text style={styles.secondaryButtonText}>Crear alerta</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Chat')}>
+              <Text style={styles.primaryButtonText}>Abrir chat</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </>
     );
@@ -307,7 +505,7 @@ export default function IncidentScreen({ navigation, route }: any) {
         </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.title}>Detalle de incidente</Text>
-          <Text style={styles.subtitle}>{incidentId ?? 'Sin identificador'}</Text>
+          <Text style={styles.subtitle}>{incident?.name ?? incidentId ?? 'Sin identificador'}</Text>
         </View>
       </View>
 
@@ -323,6 +521,24 @@ export default function IncidentScreen({ navigation, route }: any) {
       >
         {renderBody()}
       </ScrollView>
+    </View>
+  );
+}
+
+function SummaryBox({ label, value, tone }: { label: string; value: string; tone: 'danger' | 'success' | 'primary' | 'muted' }) {
+  const toneStyle =
+    tone === 'danger'
+      ? styles.summaryDanger
+      : tone === 'success'
+        ? styles.summarySuccess
+        : tone === 'primary'
+          ? styles.summaryPrimary
+          : styles.summaryMuted;
+
+  return (
+    <View style={[styles.summaryBox, toneStyle]}>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
     </View>
   );
 }
@@ -438,10 +654,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
+  summaryGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  summaryBox: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+  },
+  summaryDanger: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.danger,
+  },
+  summarySuccess: {
+    backgroundColor: '#DCFCE7',
+    borderColor: colors.success,
+  },
+  summaryPrimary: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
+  },
+  summaryMuted: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.borderStrong,
+  },
+  summaryValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  summaryLabel: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
   statusBadge: {
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  smallBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   defaultBadge: {
     backgroundColor: colors.primary,
@@ -460,12 +719,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  smallBadgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '800',
+  },
   card: {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: 16,
+  },
+  mapCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 16,
+  },
+  mapWrapper: {
+    height: 220,
+    overflow: 'hidden',
+    borderRadius: 12,
+    backgroundColor: colors.surfaceMuted,
+    marginBottom: 12,
+  },
+  map: {
+    flex: 1,
   },
   cardTitle: {
     color: colors.text,
@@ -497,8 +778,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  listItem: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    marginTop: 12,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  listTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  listMeta: {
+    marginTop: 5,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  listDescription: {
+    marginTop: 7,
+    color: colors.textSoft,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   actionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   primaryButton: {
