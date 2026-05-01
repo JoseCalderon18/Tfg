@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,17 +15,32 @@ import { useAuth } from '../context/AuthContext';
 import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 import { colors } from '../theme';
 
 const { height } = Dimensions.get('window');
 const ALTURA_MENU_INFERIOR = height * 0.15;
 const SOS_COUNTDOWN_SECONDS = 4;
 
+type ActiveIncident = {
+  id: string;
+  name?: string | null;
+  status?: string | null;
+  is_active?: boolean;
+};
+
+type IncidentListResponse = ActiveIncident[] | { results?: ActiveIncident[] };
+
+function normalizeIncidentList(payload: IncidentListResponse) {
+  return Array.isArray(payload) ? payload : payload.results ?? [];
+}
+
 export default function OperativeScreen({ navigation }: any) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [sosModalVisible, setSosModalVisible] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(SOS_COUNTDOWN_SECONDS);
   const [isSendingSos, setIsSendingSos] = useState(false);
+  const [activeIncident, setActiveIncident] = useState<ActiveIncident | null>(null);
   const { user, token, logout } = useAuth();
   const {
     isTracking,
@@ -43,6 +58,32 @@ export default function OperativeScreen({ navigation }: any) {
   const handleAlertPress = () => {
     navigation.navigate('Alert');
   };
+
+  const loadActiveIncident = useCallback(async () => {
+    if (!token || !user?.organization_id) {
+      setActiveIncident(null);
+      return null;
+    }
+
+    const organizationId = encodeURIComponent(user.organization_id);
+    const response = await apiFetch(`/incidents/?owner_organization=${organizationId}&status=OPEN`, {
+      token,
+      timeoutMs: 12000,
+    });
+
+    if (!response.ok) {
+      throw new Error('No se pudo consultar el incidente activo.');
+    }
+
+    const incidents = normalizeIncidentList(await parseJsonResponse<IncidentListResponse>(response));
+    const nextIncident = incidents.find((incident) => incident.is_active !== false) ?? null;
+    setActiveIncident(nextIncident);
+    return nextIncident;
+  }, [token, user?.organization_id]);
+
+  useEffect(() => {
+    void loadActiveIncident().catch(() => undefined);
+  }, [loadActiveIncident]);
 
   const closeSosModal = () => {
     sosCancelledRef.current = true;
@@ -65,12 +106,22 @@ export default function OperativeScreen({ navigation }: any) {
       }
 
       setIsSendingSos(true);
+      const incident = await loadActiveIncident().catch(() => activeIncident);
+
+      if (!incident?.id) {
+        Alert.alert(
+          'Sin incidente activo',
+          'No hay un incidente abierto asociado a tu organizacion. No se enviara el SOS sin incidente asignado.'
+        );
+        return;
+      }
+
       const result = await queueAlert({
-        incident: null,
+        incident: incident.id,
         alert_type: 'SOS',
         severity: 1,
         title: 'SOS operativo',
-        description: 'SOS enviado desde el boton principal del operativo.',
+        description: `SOS enviado desde el boton principal del operativo para ${incident.name ?? 'incidente activo'}.`,
         lat: location.coords.latitude,
         lng: location.coords.longitude,
       });
@@ -82,8 +133,8 @@ export default function OperativeScreen({ navigation }: any) {
       Alert.alert(
         result.queued ? 'SOS en cola' : 'SOS enviado',
         result.queued
-          ? 'El SOS se ha guardado sin conexion y se enviara automaticamente al incidente asignado cuando vuelva la red.'
-          : 'El SOS se ha enviado correctamente al incidente asignado.'
+          ? `El SOS se ha guardado sin conexion y se enviara automaticamente al incidente ${incident.name ?? incident.id} cuando vuelva la red.`
+          : `El SOS se ha enviado correctamente al incidente ${incident.name ?? incident.id}.`
       );
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo enviar la alerta SOS.');
