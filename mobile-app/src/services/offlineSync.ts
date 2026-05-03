@@ -14,6 +14,9 @@ export type OfflineQueueItem = {
   body: string;
   dedupeKey?: string;
   createdAt: string;
+  retryCount?: number;
+  lastAttemptAt?: string | null;
+  lastError?: string | null;
 };
 
 export type OfflineDispatchResult = {
@@ -45,6 +48,15 @@ function normalizeBodyForDedupe(body: string) {
 
 function buildDedupeKey(item: Pick<OfflineQueueItem, 'kind' | 'path' | 'method' | 'body'>) {
   return [item.kind, item.method, item.path, normalizeBodyForDedupe(item.body)].join('|');
+}
+
+function markQueueAttempt(item: OfflineQueueItem, error: string): OfflineQueueItem {
+  return {
+    ...item,
+    retryCount: (item.retryCount ?? 0) + 1,
+    lastAttemptAt: new Date().toISOString(),
+    lastError: error,
+  };
 }
 
 function isOfflineLikeError(error: unknown) {
@@ -80,10 +92,19 @@ export async function getOfflineQueue() {
 export async function enqueueOfflineItem(item: Omit<OfflineQueueItem, 'id' | 'createdAt'>) {
   const queue = await readQueue();
   const dedupeKey = item.dedupeKey ?? buildDedupeKey(item);
-  const existingItem = queue.find((queuedItem) => (queuedItem.dedupeKey ?? buildDedupeKey(queuedItem)) === dedupeKey);
+  const existingItemIndex = queue.findIndex((queuedItem) => (queuedItem.dedupeKey ?? buildDedupeKey(queuedItem)) === dedupeKey);
 
-  if (existingItem) {
-    return existingItem;
+  if (existingItemIndex >= 0) {
+    const existingItem = queue[existingItemIndex];
+    const updatedItem = {
+      ...existingItem,
+      dedupeKey,
+      lastAttemptAt: item.lastAttemptAt ?? existingItem.lastAttemptAt ?? null,
+      lastError: item.lastError ?? existingItem.lastError ?? null,
+    };
+    queue[existingItemIndex] = updatedItem;
+    await writeQueue(queue);
+    return updatedItem;
   }
 
   const nextItem: OfflineQueueItem = {
@@ -91,6 +112,9 @@ export async function enqueueOfflineItem(item: Omit<OfflineQueueItem, 'id' | 'cr
     dedupeKey,
     id: buildQueueId(),
     createdAt: new Date().toISOString(),
+    retryCount: item.retryCount ?? 0,
+    lastAttemptAt: item.lastAttemptAt ?? null,
+    lastError: item.lastError ?? null,
   };
 
   queue.push(nextItem);
@@ -143,7 +167,12 @@ export async function sendOrQueueItem(
     }
 
     if (await shouldQueueResponse(response)) {
-      await enqueueOfflineItem(item);
+      const errorMessage = await getResponseErrorMessage(response);
+      await enqueueOfflineItem({
+        ...item,
+        lastAttemptAt: new Date().toISOString(),
+        lastError: errorMessage,
+      });
       return { ok: true, queued: true, response };
     }
 
@@ -155,7 +184,11 @@ export async function sendOrQueueItem(
     };
   } catch (error) {
     if (isOfflineLikeError(error)) {
-      await enqueueOfflineItem(item);
+      await enqueueOfflineItem({
+        ...item,
+        lastAttemptAt: new Date().toISOString(),
+        lastError: getReadableError(error),
+      });
       return { ok: true, queued: true };
     }
 
@@ -211,9 +244,9 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
       }
 
       if (await shouldQueueResponse(response)) {
-        remaining.push(item, ...queue.slice(index + 1));
-        failedCount += 1;
         lastError = await getResponseErrorMessage(response);
+        remaining.push(markQueueAttempt(item, lastError), ...queue.slice(index + 1));
+        failedCount += 1;
         break;
       }
 
@@ -221,9 +254,9 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
       lastError = await getResponseErrorMessage(response);
     } catch (error) {
       if (isOfflineLikeError(error)) {
-        remaining.push(item, ...queue.slice(index + 1));
-        failedCount += 1;
         lastError = getReadableError(error);
+        remaining.push(markQueueAttempt(item, lastError), ...queue.slice(index + 1));
+        failedCount += 1;
         break;
       }
 
