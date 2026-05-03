@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiConnectionError, apiFetch, parseJsonResponse } from './api';
 
 const OFFLINE_QUEUE_KEY = 'offlineSyncQueue';
+const RETRY_BASE_DELAY_MS = 15000;
+const RETRY_MAX_DELAY_MS = 5 * 60 * 1000;
 
 export type OfflineQueueKind = 'tracking' | 'alert' | 'point_of_interest';
 
@@ -59,6 +61,31 @@ function markQueueAttempt(item: OfflineQueueItem, error: string): OfflineQueueIt
   };
 }
 
+function getRetryDelayMs(retryCount = 0) {
+  if (retryCount <= 0) {
+    return 0;
+  }
+
+  return Math.min(RETRY_BASE_DELAY_MS * 2 ** (retryCount - 1), RETRY_MAX_DELAY_MS);
+}
+
+function getNextRetryTime(item: Pick<OfflineQueueItem, 'retryCount' | 'lastAttemptAt'>) {
+  if (!item.lastAttemptAt) {
+    return 0;
+  }
+
+  const lastAttemptTime = new Date(item.lastAttemptAt).getTime();
+  if (!Number.isFinite(lastAttemptTime)) {
+    return 0;
+  }
+
+  return lastAttemptTime + getRetryDelayMs(item.retryCount ?? 0);
+}
+
+function canRetryItem(item: OfflineQueueItem, now = Date.now()) {
+  return getNextRetryTime(item) <= now;
+}
+
 function isOfflineLikeError(error: unknown) {
   return error instanceof ApiConnectionError || (error instanceof Error && error.name === 'AbortError');
 }
@@ -99,6 +126,7 @@ export async function enqueueOfflineItem(item: Omit<OfflineQueueItem, 'id' | 'cr
     const updatedItem = {
       ...existingItem,
       dedupeKey,
+      retryCount: Math.max(existingItem.retryCount ?? 0, item.retryCount ?? 0),
       lastAttemptAt: item.lastAttemptAt ?? existingItem.lastAttemptAt ?? null,
       lastError: item.lastError ?? existingItem.lastError ?? null,
     };
@@ -170,6 +198,7 @@ export async function sendOrQueueItem(
       const errorMessage = await getResponseErrorMessage(response);
       await enqueueOfflineItem({
         ...item,
+        retryCount: item.retryCount ?? 1,
         lastAttemptAt: new Date().toISOString(),
         lastError: errorMessage,
       });
@@ -186,6 +215,7 @@ export async function sendOrQueueItem(
     if (isOfflineLikeError(error)) {
       await enqueueOfflineItem({
         ...item,
+        retryCount: item.retryCount ?? 1,
         lastAttemptAt: new Date().toISOString(),
         lastError: getReadableError(error),
       });
@@ -227,9 +257,15 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
   let syncedCount = 0;
   let failedCount = 0;
   let lastError: string | null = null;
+  const now = Date.now();
 
   for (let index = 0; index < queue.length; index += 1) {
     const item = queue[index];
+
+    if (!canRetryItem(item, now)) {
+      remaining.push(item);
+      continue;
+    }
 
     try {
       const response = await apiFetch(item.path, {
