@@ -16,10 +16,39 @@ type FilaAlerta = {
   created_at?: string | null;
 };
 
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  SOS: "SOS Emergencia",
+  MAN_DOWN: "Operativo caido",
+  FIRE_SPREAD: "Cambio de fuego",
+  SMOKE: "Humo en incidente",
+  INJURY: "Operativo herido",
+  DEATH: "Operativo fallecido",
+  EVACUATION: "Evacuacion de zona",
+  MEDICAL: "Emergencia medica",
+  TRAPPED: "Operativo atrapado",
+  VEHICLE: "Incidente vehicular",
+  ANIMAL: "Animal peligroso",
+  ANIMAL_INJURY: "Animal herido",
+  LOW_SUPPLIES: "Recursos bajos",
+  COMM_LOSS: "Perdida de comunicacion",
+  HAZARD: "Peligro ambiental",
+  FATIGUE: "Fatiga extrema",
+  WEATHER: "Clima peligroso",
+  LOST: "Operativo perdido",
+  GEOFENCE: "Fuera de zona segura",
+  ANOMALY: "Anomalia detectada",
+  OTHER: "Otro",
+};
+
+function obtenerEtiquetaTipoAlerta(type?: string | null) {
+  if (!type) return "Desconocido";
+  return ALERT_TYPE_LABELS[type] ?? type;
+}
+
 function obtenerBadgeAlerta(type?: string | null) {
   if (type === "SOS") return "cm-badge-danger";
-  if (type === "MAN_DOWN") return "cm-badge-alert";
-  if (type === "GEOFENCE") return "cm-badge-warning";
+  if (type === "MAN_DOWN" || type === "INJURY" || type === "DEATH" || type === "TRAPPED") return "cm-badge-alert";
+  if (type === "GEOFENCE" || type === "FIRE_SPREAD" || type === "SMOKE" || type === "WEATHER" || type === "HAZARD") return "cm-badge-warning";
   if (type === "OTHER") return "cm-badge-special";
   return "cm-badge-info";
 }
@@ -68,7 +97,7 @@ export default function AlertsPage() {
     const normalized = consulta.trim().toLowerCase();
     if (!normalized) return alertas;
     return alertas.filter((alerta) =>
-      `${alerta.alert_type ?? ""} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
+      `${alerta.alert_type ?? ""} ${obtenerEtiquetaTipoAlerta(alerta.alert_type)} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
         .toLowerCase()
         .includes(normalized)
     );
@@ -240,7 +269,7 @@ export default function AlertsPage() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                    {alerta.alert_type || "Desconocido"}
+                    {obtenerEtiquetaTipoAlerta(alerta.alert_type)}
                   </span>
                   <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
                     {obtenerEtiquetaSeveridad(alerta.severity)}
@@ -296,19 +325,7 @@ export default function AlertsPage() {
                 <tr key={alerta.id}>
                   <td className="px-4 py-3.5">
                     <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alerta.alert_type === "SOS"
-                        ? "SOS"
-                        : alerta.alert_type === "MAN_DOWN"
-                        ? "Hombre caido"
-                        : alerta.alert_type === "GEOFENCE"
-                        ? "Geofence"
-                        : alerta.alert_type === "LOST"
-                        ? "Perdida"
-                        : alerta.alert_type === "ANOMALY"
-                        ? "Anomalia"
-                        : alerta.alert_type === "OTHER"
-                        ? "Otro"
-                        : "Desconocido"}
+                      {obtenerEtiquetaTipoAlerta(alerta.alert_type)}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
