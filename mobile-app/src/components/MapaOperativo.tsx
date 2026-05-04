@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import { useLocation } from '../context/LocationContext';
@@ -84,12 +84,21 @@ type RutaJornada = {
   detalles: string[];
 };
 
+type CapaMapa = 'incidentes' | 'alertas' | 'poi' | 'jornadas';
+type CapasVisibles = Record<CapaMapa, boolean>;
+
 const DELTA_MINIMO = 0.08;
 const REGION_ESPANA = {
   latitude: 40.4168,
   longitude: -3.7038,
   latitudeDelta: 2.6,
   longitudeDelta: 2.6,
+};
+const CAPAS_INICIALES: CapasVisibles = {
+  incidentes: true,
+  alertas: true,
+  poi: true,
+  jornadas: true,
 };
 
 function tieneValor<T>(valor: T | null): valor is T {
@@ -701,6 +710,7 @@ export default function MapaOperativo({
   const [errorRemoto, setErrorRemoto] = useState('');
   const [mapaListo, setMapaListo] = useState(false);
   const [errorMapa, setErrorMapa] = useState('');
+  const [capasVisibles, setCapasVisibles] = useState<CapasVisibles>(CAPAS_INICIALES);
 
   const cargarCapasRemotas = useCallback(async () => {
     if (!token) {
@@ -826,11 +836,6 @@ export default function MapaOperativo({
     [location]
   );
 
-  const marcadores = useMemo(
-    () => crearMarcadores(incidentes, alertas, puntosInteres, jornadas, location?.coords.latitude, location?.coords.longitude),
-    [alertas, incidentes, jornadas, location, puntosInteres]
-  );
-
   const puntoActual = location
     ? {
         latitude: location.coords.latitude,
@@ -838,13 +843,49 @@ export default function MapaOperativo({
       }
     : null;
 
-  const rutasJornadas = useMemo(() => crearRutasJornadas(jornadas, puntoActual), [jornadas, puntoActual]);
+  const incidentesVisibles = useMemo(() => (capasVisibles.incidentes ? incidentes : []), [capasVisibles.incidentes, incidentes]);
+  const alertasVisibles = useMemo(() => (capasVisibles.alertas ? alertas : []), [alertas, capasVisibles.alertas]);
+  const puntosInteresVisibles = useMemo(() => (capasVisibles.poi ? puntosInteres : []), [capasVisibles.poi, puntosInteres]);
+  const jornadasVisibles = useMemo(() => (capasVisibles.jornadas ? jornadas : []), [capasVisibles.jornadas, jornadas]);
+
+  const marcadores = useMemo(
+    () =>
+      crearMarcadores(
+        incidentesVisibles,
+        alertasVisibles,
+        puntosInteresVisibles,
+        jornadasVisibles,
+        location?.coords.latitude,
+        location?.coords.longitude
+      ),
+    [alertasVisibles, incidentesVisibles, jornadasVisibles, location, puntosInteresVisibles]
+  );
+
+  const rutasJornadas = useMemo(() => crearRutasJornadas(jornadasVisibles, puntoActual), [jornadasVisibles, puntoActual]);
 
   const regionAjustada = useMemo(() => calcularRegionAjustada(marcadores, regionBase), [marcadores, regionBase]);
 
   const mapaHtml = useMemo(() => crearHtmlMapa(marcadores, rutasJornadas, regionAjustada), [marcadores, regionAjustada, rutasJornadas]);
 
-  const jornadasActivas = jornadas.filter((jornada) => !jornada.end_date).length;
+  const jornadasActivas = jornadasVisibles.filter((jornada) => !jornada.end_date).length;
+  const todasLasCapasActivas = Object.values(capasVisibles).every(Boolean);
+  const layerButtons: Array<{ id: CapaMapa; label: string; count: number }> = [
+    { id: 'incidentes', label: 'Incidentes', count: incidentes.length },
+    { id: 'alertas', label: 'Alertas', count: alertas.length },
+    { id: 'poi', label: 'POI', count: puntosInteres.length },
+    { id: 'jornadas', label: 'Jornadas', count: jornadas.length },
+  ];
+
+  const activarTodasLasCapas = () => {
+    setCapasVisibles(CAPAS_INICIALES);
+  };
+
+  const alternarCapa = (capa: CapaMapa) => {
+    setCapasVisibles((actuales) => ({
+      ...actuales,
+      [capa]: !actuales[capa],
+    }));
+  };
 
   useEffect(() => {
     if (mapaListo) {
@@ -866,10 +907,10 @@ export default function MapaOperativo({
           <Text style={styles.textoCabecera}>
             {cargando
               ? 'Cargando capas...'
-              : `Incidentes: ${incidentes.length} | Alertas: ${alertas.length} | POI: ${puntosInteres.length}`}
+              : `Incidentes: ${incidentesVisibles.length} | Alertas: ${alertasVisibles.length} | POI: ${puntosInteresVisibles.length}`}
           </Text>
           <Text style={styles.textoCabecera}>
-            {`Jornadas: ${jornadas.length} | Activas: ${jornadasActivas} | Recorridos: ${rutasJornadas.length}`}
+            {`Jornadas: ${jornadasVisibles.length} | Activas: ${jornadasActivas} | Recorridos: ${rutasJornadas.length}`}
           </Text>
           {errorRemoto ? <Text style={styles.errorTexto}>{errorRemoto}</Text> : null}
         </View>
@@ -878,13 +919,42 @@ export default function MapaOperativo({
           <Text style={styles.resumenTexto}>
             {cargando
               ? 'Cargando capas...'
-              : `Incidentes: ${incidentes.length} | Alertas: ${alertas.length} | POI: ${puntosInteres.length}`}
+              : `Incidentes: ${incidentesVisibles.length} | Alertas: ${alertasVisibles.length} | POI: ${puntosInteresVisibles.length}`}
           </Text>
           <Text style={styles.etiquetaMapa}>{modoLigero ? 'LIGERO' : 'MAPA'}</Text>
-          <Text style={styles.resumenTexto}>{`Jornadas: ${jornadas.length} | Activas: ${jornadasActivas}`}</Text>
+          <Text style={styles.resumenTexto}>{`Jornadas: ${jornadasVisibles.length} | Activas: ${jornadasActivas}`}</Text>
           {errorRemoto ? <Text style={styles.errorTextoCompacto}>{errorRemoto}</Text> : null}
         </View>
       )}
+
+      <View style={[styles.capasPanel, mostrarCabecera ? styles.capasPanelConCabecera : styles.capasPanelCompacto]}>
+        <View style={styles.capasBotones}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Mostrar todas las capas"
+            onPress={activarTodasLasCapas}
+            style={[styles.capaBoton, styles.capaBotonTodas, todasLasCapasActivas && styles.capaBotonActiva]}
+          >
+            <Text style={[styles.capaBotonTexto, todasLasCapasActivas && styles.capaBotonTextoActiva]}>Todas</Text>
+          </TouchableOpacity>
+          {layerButtons.map((layer) => {
+            const activa = capasVisibles[layer.id];
+            return (
+              <TouchableOpacity
+                key={layer.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${activa ? 'Ocultar' : 'Mostrar'} ${layer.label}`}
+                onPress={() => alternarCapa(layer.id)}
+                style={[styles.capaBoton, activa && styles.capaBotonActiva]}
+              >
+                <Text style={[styles.capaBotonTexto, activa && styles.capaBotonTextoActiva]}>
+                  {`${layer.label} ${layer.count}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       <WebView
         style={styles.mapa}
@@ -1039,6 +1109,56 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  capasPanel: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    zIndex: 4,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  capasPanelConCabecera: {
+    top: 118,
+  },
+  capasPanelCompacto: {
+    top: 64,
+  },
+  capasBotones: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  capaBoton: {
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  capaBotonTodas: {
+    minWidth: 72,
+  },
+  capaBotonActiva: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  capaBotonTexto: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  capaBotonTextoActiva: {
+    color: colors.white,
   },
   etiquetaMapa: {
     color: colors.textSoft,
