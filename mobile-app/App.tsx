@@ -3,7 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from './src/theme';
 
 // Importamos los contextos para manejo de estado global
@@ -30,6 +30,41 @@ import LocationPermissionsScreen from './src/components/LocationPermissionsScree
 
 // Creamos el stack navigator para la navegacion entre pantallas
 const Stack = createStackNavigator();
+
+const MENU_ROUTE_NAME = 'Operative';
+
+function buildOperativeScreenOptions({ navigation, route }: any) {
+  const isMenu = route.name === MENU_ROUTE_NAME;
+
+  return {
+    headerShown: !isMenu,
+    headerTitle: '',
+    headerLeft: () => null,
+    headerShadowVisible: false,
+    headerStyle: {
+      backgroundColor: colors.background,
+    },
+    headerRightContainerStyle: {
+      paddingRight: 16,
+    },
+    headerRight: () => (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+        onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+          }
+          navigation.navigate(MENU_ROUTE_NAME);
+        }}
+        style={styles.headerBackButton}
+      >
+        <Text style={styles.headerBackButtonText}>Volver</Text>
+      </TouchableOpacity>
+    ),
+  };
+}
 
 type ErrorBoundaryState = {
   hasError: boolean;
@@ -79,7 +114,7 @@ function OperativeNavigator() {
   return (
     <LocationProvider>
       <>
-        <Stack.Navigator initialRouteName="Operative">
+        <Stack.Navigator initialRouteName="Operative" screenOptions={buildOperativeScreenOptions}>
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen
             name="Map"
@@ -89,50 +124,41 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Operative"
             component={OperativeScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="PointsOfInterest"
             component={PointsOfInterestScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartJourney"
             component={StartJourneyScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartBreak"
             component={StartBreakScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen name="StopJourney" 
                 component={StopJourneyScreen}
-                options={{headerShown: false}} />
+          />
           <Stack.Screen
             name="Incidents"
             component={IncidentsScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Incident"
             component={IncidentScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Chat"
             component={ChatScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ headerShown: false }}
           />
         </Stack.Navigator>
         <LocationPermissionsScreen />
@@ -207,5 +233,20 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 15,
     lineHeight: 22,
+  },
+  headerBackButton: {
+    minWidth: 86,
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  headerBackButtonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
