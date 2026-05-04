@@ -72,9 +72,26 @@ export default function AlertScreen({ navigation }: any) {
                 onValueChange={setTipoAlerta} 
                 style={styles.picker}
               >
-                <Picker.Item label="Emergencia SOS" value="SOS" />
-                <Picker.Item label="Hombre caido" value="MAN_DOWN" />
-                <Picker.Item label="Perdido" value="LOST" />
+                <Picker.Item label="SOS Emergencia" value="SOS" />
+                <Picker.Item label="Operativo caido" value="MAN_DOWN" />
+                <Picker.Item label="Cambio de fuego" value="FIRE_SPREAD" />
+                <Picker.Item label="Humo en incidente" value="SMOKE" />
+                <Picker.Item label="Operativo herido" value="INJURY" />
+                <Picker.Item label="Operativo fallecido" value="DEATH" />
+                <Picker.Item label="Evacuacion de zona" value="EVACUATION" />
+                <Picker.Item label="Emergencia medica" value="MEDICAL" />
+                <Picker.Item label="Operativo atrapado" value="TRAPPED" />
+                <Picker.Item label="Incidente vehicular" value="VEHICLE" />
+                <Picker.Item label="Encuentro con animal peligroso" value="ANIMAL" />
+                <Picker.Item label="Animal herido" value="ANIMAL_INJURY" />
+                <Picker.Item label="Recursos bajos" value="LOW_SUPPLIES" />
+                <Picker.Item label="Perdida de comunicacion" value="COMM_LOSS" />
+                <Picker.Item label="Peligro ambiental" value="HAZARD" />
+                <Picker.Item label="Fatiga extrema" value="FATIGUE" />
+                <Picker.Item label="Clima peligroso" value="WEATHER" />
+                <Picker.Item label="Operativo perdido/desorientado" value="LOST" />
+                <Picker.Item label="Fuera de zona segura" value="GEOFENCE" />
+                <Picker.Item label="Anomalia detectada" value="ANOMALY" />
                 <Picker.Item label="Otro" value="OTHER" />
               </Picker>
             </View>
