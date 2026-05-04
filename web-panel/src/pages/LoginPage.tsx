@@ -87,7 +87,37 @@ export default function LoginPage() {
               onClick={() => setMostrarContrasena((current) => !current)}
               className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-[color:var(--cm-text-muted)] transition hover:text-[color:var(--cm-text)]"
             >
-              {mostrarContrasena ? "Ocultar" : "Ver"}
+              {mostrarContrasena ? (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                >
+                  <path d="M10.7 5.1A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.8 6.5a1 1 0 0 1 0 1C21.1 13.6 19.8 15.3 18 16.7" />
+                  <path d="M14.1 14.1a3 3 0 0 1-4.2-4.2" />
+                  <path d="M4.2 4.2 19.8 19.8" />
+                  <path d="M6.4 6.4C4.5 7.7 3.1 9.5 2.2 11.5a1 1 0 0 0 0 1C3.5 14.5 7 19 12 19c1.7 0 3.2-.5 4.5-1.2" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                >
+                  <path d="M2.2 11.5a1 1 0 0 0 0 1C3.5 14.5 7 19 12 19s8.5-4.5 9.8-6.5a1 1 0 0 0 0-1C20.5 9.5 17 5 12 5s-8.5 4.5-9.8 6.5Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
