@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Emergency Mobile",
-    "slug": "emergency-mobile",
+    "slug": "app-emergencias",
     "version": "1.0.0",
     "orientation": "portrait",
     "assetBundlePatterns": [
@@ -20,6 +20,12 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "06e6ea4d-3392-4f2b-a62a-96b2a8192d6b"
+      }
+    },
+    "owner": "adri016"
   }
 }

@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 7.0.0",
+    "requireCommit": false,
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "environment": "development",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://short-islands-smell.loca.lt/api",
+        "EXPO_PUBLIC_ANDROID_API_HOST": "https://short-islands-smell.loca.lt"
+      }
+    },
+    "preview": {
+      "environment": "preview",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://short-islands-smell.loca.lt/api",
+        "EXPO_PUBLIC_ANDROID_API_HOST": "https://short-islands-smell.loca.lt"
+      }
+    },
+    "production": {
+      "environment": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://short-islands-smell.loca.lt/api",
+        "EXPO_PUBLIC_ANDROID_API_HOST": "https://short-islands-smell.loca.lt"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
