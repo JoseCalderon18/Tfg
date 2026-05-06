@@ -737,10 +737,10 @@ export default function MapaOperativo({
     try {
       const organizationId = encodeURIComponent(user.organization_id);
       const [respuestaIncidentes, respuestaAlertas, respuestaPuntosInteres, respuestaJornadas] = await Promise.all([
-        apiFetch(`/incidents/?owner_organization=${organizationId}&status=OPEN`, { token }),
-        apiFetch('/alerts/open/', { token }),
-        apiFetch('/points-of-interest/?is_active=true', { token }),
-        apiFetch('/journeys/?ordering=-created_at', { token }),
+        apiFetch(`/incidents/?owner_organization=${organizationId}&status=OPEN`, { token, timeoutMs: 30000 }),
+        apiFetch('/alerts/open/', { token, timeoutMs: 30000 }),
+        apiFetch('/points-of-interest/?is_active=true', { token, timeoutMs: 30000 }),
+        apiFetch('/journeys/?ordering=-created_at', { token, timeoutMs: 30000 }),
       ]);
 
       let siguientesIncidentes: IncidenteMapa[] = [];

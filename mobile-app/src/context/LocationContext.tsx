@@ -363,6 +363,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     if (background.status !== Location.PermissionStatus.GRANTED) {
       setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
+      Alert.alert(
+        'Permiso de ubicacion siempre activa',
+        'Android no siempre muestra este permiso dentro de la app. En la pantalla de ajustes, entra en Permisos > Ubicacion y selecciona "Permitir todo el tiempo".',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir ajustes', onPress: () => void Linking.openSettings() },
+        ],
+      );
       return false;
     }
 

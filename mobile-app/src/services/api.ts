@@ -97,7 +97,7 @@ export function getApiDebugUrls() {
 
 // Cliente base para llamadas autenticadas y publicas hacia Django.
 export async function apiFetch(path: string, options: ApiOptions = {}) {
-  const { timeoutMs = 10000, ...requestOptions } = options;
+  const { timeoutMs = 30000, ...requestOptions } = options;
   const buildFetchOptions = (tokenOverride?: string | null) => {
     const headers = new Headers(options.headers || {});
     headers.set('Accept', 'application/json');
@@ -127,7 +127,7 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
       try {
         return await fetchWithTimeout(requestUrl, fetchOptions, timeoutMs);
       } catch {
-        // probamos con la siguiente URL fallback
+        // Probamos con la siguiente URL fallback si el tunel o la red tardan demasiado.
       }
     }
 

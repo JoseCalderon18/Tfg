@@ -253,7 +253,7 @@ export default function PointsOfInterestScreen({ navigation }: any) {
     setSavedPointsError(null);
 
     try {
-      const response = await apiFetch('/points-of-interest/', { token, timeoutMs: 12000 });
+      const response = await apiFetch('/points-of-interest/', { token, timeoutMs: 30000 });
       if (!response.ok) {
         throw new Error(await readErrorMessage(response));
       }

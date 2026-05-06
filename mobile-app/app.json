@@ -2,13 +2,14 @@
   "expo": {
     "name": "Emergency Mobile",
     "slug": "app-emergencias",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
       "package": "com.emergency.mobile",
+      "versionCode": 3,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -19,7 +20,14 @@
       ]
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Mando Operativo necesita acceder a tu ubicacion siempre para mantener el seguimiento de jornadas y alertas de zona segura aunque la app este en segundo plano.",
+          "locationWhenInUsePermission": "Mando Operativo necesita tu ubicacion para registrar jornadas, incidentes y puntos de interes."
+        }
+      ]
     ],
     "extra": {
       "eas": {
