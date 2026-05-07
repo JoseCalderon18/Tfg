@@ -3,8 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
 
@@ -60,11 +58,6 @@ type AlertaFila = {
   actualizadaEn: string | null;
 };
 
-const TAMANO_TILE = 256;
-const ZOOM_MAPA_PDF = 13;
-const ANCHO_MAPA_PDF = 900;
-const ALTO_MAPA_PDF = 450;
-
 function extraerCoordenadas(location: unknown): LatLngTuple | null {
   if (!location) return null;
 
@@ -104,93 +97,6 @@ function extraerCoordenadas(location: unknown): LatLngTuple | null {
   }
 
   return null;
-}
-
-function convertirLatLngAPixelGlobal(latitud: number, longitud: number, zoom: number) {
-  const escala = TAMANO_TILE * 2 ** zoom;
-  const senoLatitud = Math.sin((latitud * Math.PI) / 180);
-
-  return {
-    x: ((longitud + 180) / 360) * escala,
-    y:
-      (0.5 - Math.log((1 + senoLatitud) / (1 - senoLatitud)) / (4 * Math.PI)) * escala,
-  };
-}
-
-async function cargarTileComoBitmap(url: string) {
-  const respuesta = await fetch(url, { mode: "cors" });
-  if (!respuesta.ok) {
-    throw new Error("No se pudo cargar el tile del mapa.");
-  }
-
-  const imagenBlob = await respuesta.blob();
-  return createImageBitmap(imagenBlob);
-}
-
-async function generarImagenMapaIncidente(incidente: IncidenteFila): Promise<string | null> {
-  if (!incidente.parsedLocation) return null;
-
-  const [latitud, longitud] = incidente.parsedLocation;
-  const canvas = document.createElement("canvas");
-  canvas.width = ANCHO_MAPA_PDF;
-  canvas.height = ALTO_MAPA_PDF;
-
-  const contexto = canvas.getContext("2d");
-  if (!contexto) return null;
-
-  contexto.fillStyle = "#0f172a";
-  contexto.fillRect(0, 0, canvas.width, canvas.height);
-
-  const totalTiles = 2 ** ZOOM_MAPA_PDF;
-  const centro = convertirLatLngAPixelGlobal(latitud, longitud, ZOOM_MAPA_PDF);
-  const origenX = centro.x - canvas.width / 2;
-  const origenY = centro.y - canvas.height / 2;
-  const tileInicialX = Math.floor(origenX / TAMANO_TILE);
-  const tileFinalX = Math.floor((origenX + canvas.width - 1) / TAMANO_TILE);
-  const tileInicialY = Math.floor(origenY / TAMANO_TILE);
-  const tileFinalY = Math.floor((origenY + canvas.height - 1) / TAMANO_TILE);
-
-  let algunTileDibujado = false;
-
-  for (let tileY = tileInicialY; tileY <= tileFinalY; tileY += 1) {
-    if (tileY < 0 || tileY >= totalTiles) continue;
-
-    for (let tileX = tileInicialX; tileX <= tileFinalX; tileX += 1) {
-      const tileXNormalizado = ((tileX % totalTiles) + totalTiles) % totalTiles;
-      const urlTile = `https://tile.openstreetmap.org/${ZOOM_MAPA_PDF}/${tileXNormalizado}/${tileY}.png`;
-
-      try {
-        const imagenTile = await cargarTileComoBitmap(urlTile);
-        const destinoX = tileX * TAMANO_TILE - origenX;
-        const destinoY = tileY * TAMANO_TILE - origenY;
-        contexto.drawImage(imagenTile, destinoX, destinoY, TAMANO_TILE, TAMANO_TILE);
-        algunTileDibujado = true;
-      } catch {
-        // Si falla un tile concreto seguimos con los demas para no romper el PDF completo.
-      }
-    }
-  }
-
-  if (!algunTileDibujado) return null;
-
-  const posicionMarcadorX = centro.x - origenX;
-  const posicionMarcadorY = centro.y - origenY;
-
-  contexto.fillStyle = "#ef4444";
-  contexto.strokeStyle = "#ffffff";
-  contexto.lineWidth = 4;
-  contexto.beginPath();
-  contexto.arc(posicionMarcadorX, posicionMarcadorY, 14, 0, Math.PI * 2);
-  contexto.fill();
-  contexto.stroke();
-
-  contexto.fillStyle = "rgba(15, 23, 42, 0.78)";
-  contexto.fillRect(18, 18, 180, 32);
-  contexto.fillStyle = "#ffffff";
-  contexto.font = "bold 20px sans-serif";
-  contexto.fillText("Mapa del incidente", 28, 40);
-
-  return canvas.toDataURL("image/png");
 }
 
 async function geocodificarInverso(lat: number, lon: number): Promise<string | null> {
@@ -353,7 +259,7 @@ function formatDate(value?: string | null) {
   return Number.isNaN(dt.getTime()) ? value : dt.toLocaleString();
 }
 
-function obtenerEtiquetaTipoIncidente(tipo: string) {
+export function obtenerEtiquetaTipoIncidente(tipo: string) {
   switch (tipo) {
     case "SEARCH":
       return "Búsqueda de personas";
@@ -369,7 +275,7 @@ function obtenerEtiquetaTipoIncidente(tipo: string) {
       return "Otro";
   }
 }
-function obtenerEtiquetaEstado(tipo: string){
+export function obtenerEtiquetaEstado(tipo: string){
   switch (tipo) {
     case "OPEN":
       return "Abierto";
@@ -462,161 +368,6 @@ export default function IncidentsPage() {
       return coincideBusqueda && coincideAbiertos && coincideEvaluacion;
     });
   }, [consulta, incidentes, soloIncidentesAbiertos, incidentesEvaluacion]);
-
-  async function exportarIncidentesPdf() {
-    if (incidentesFiltrados.length === 0) {
-      setErrorMensaje("No hay incidentes para exportar.");
-      return;
-    }
-
-    setErrorMensaje("");
-
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4",
-    });
-
-    let posicionY = 14;
-
-    for (let indice = 0; indice < incidentesFiltrados.length; indice += 1) {
-      const incidente = incidentesFiltrados[indice];
-      const coordenadasTexto = incidente.parsedLocation
-        ? `${incidente.parsedLocation[0]}, ${incidente.parsedLocation[1]}`
-        : "-";
-      const imagenMapa = await generarImagenMapaIncidente(incidente);
-
-      const descripcionTexto = incidente.description || "Sin descripcion.";
-      const direccionTexto = incidente.location_address || "-";
-
-      if (posicionY > 20) {
-        posicionY += 6;
-      }
-
-      autoTable(pdf, {
-        startY: posicionY,
-        theme: "grid",
-        head: [[
-          "Nombre",
-          "Tipo",
-          "Estado",
-          "Organizacion",
-          "Direccion",
-          "Coordenadas",
-          "Descripcion",
-        ]],
-        body: [[
-          incidente.name,
-          obtenerEtiquetaTipoIncidente(incidente.incident_type),
-          obtenerEtiquetaEstado(incidente.status),
-          incidente.owner_organization || "-",
-          direccionTexto,
-          coordenadasTexto,
-          descripcionTexto,
-        ]],
-        styles: {
-          fontSize: 8,
-          cellPadding: 2.2,
-          overflow: "linebreak",
-          valign: "middle",
-        },
-        headStyles: {
-          fillColor: [30, 41, 59],
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-        },
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 32 },
-          2: { cellWidth: 22 },
-          3: { cellWidth: 34 },
-          4: { cellWidth: 62 },
-          5: { cellWidth: 35 },
-          6: { cellWidth: 70 },
-        },
-        margin: { left: 14, right: 14 },
-      });
-
-      const ultimaTabla = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
-      const finalTablaY = ultimaTabla?.finalY ?? posicionY + 20;
-      const alturaMapa = imagenMapa ? 65 : 14;
-      const espacioNecesario = finalTablaY + 8 + alturaMapa + 10;
-
-      if (espacioNecesario > 200) {
-        pdf.addPage();
-        posicionY = 14;
-
-        autoTable(pdf, {
-          startY: posicionY,
-          theme: "grid",
-          head: [[
-            "Nombre",
-            "Tipo",
-            "Estado",
-            "Organizacion",
-            "Direccion",
-            "Coordenadas",
-            "Descripcion",
-          ]],
-          body: [[
-            incidente.name,
-            obtenerEtiquetaTipoIncidente(incidente.incident_type),
-            obtenerEtiquetaEstado(incidente.status),
-            incidente.owner_organization || "-",
-            direccionTexto,
-            coordenadasTexto,
-            descripcionTexto,
-          ]],
-          styles: {
-            fontSize: 8,
-            cellPadding: 2.2,
-            overflow: "linebreak",
-            valign: "middle",
-          },
-          headStyles: {
-            fillColor: [30, 41, 59],
-            textColor: [255, 255, 255],
-            fontStyle: "bold",
-          },
-          columnStyles: {
-            0: { cellWidth: 35 },
-            1: { cellWidth: 32 },
-            2: { cellWidth: 22 },
-            3: { cellWidth: 34 },
-            4: { cellWidth: 62 },
-            5: { cellWidth: 35 },
-            6: { cellWidth: 70 },
-          },
-          margin: { left: 14, right: 14 },
-        });
-      }
-
-      const tablaActual = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
-      const posicionMapa = (tablaActual?.finalY ?? posicionY + 20) + 8;
-
-      pdf.setFontSize(10);
-      pdf.text(`Mapa del incidente ${indice + 1}`, 14, posicionMapa);
-
-      if (imagenMapa) {
-        pdf.addImage(imagenMapa, "PNG", 14, posicionMapa + 4, 120, 65);
-        posicionY = posicionMapa + 75;
-      } else if (!incidente.parsedLocation) {
-        pdf.text("Este incidente no tiene coordenadas disponibles.", 14, posicionMapa + 8);
-        posicionY = posicionMapa + 18;
-      } else {
-        pdf.text("No se pudo generar el mapa de este incidente.", 14, posicionMapa + 8);
-        posicionY = posicionMapa + 18;
-      }
-
-      if (posicionY > 185 && indice < incidentesFiltrados.length - 1) {
-        pdf.addPage();
-        posicionY = 14;
-      }
-    }
-
-    const fecha = new Date().toISOString().slice(0, 10);
-    pdf.save(`incidentes-${fecha}.pdf`);
-  }
 
   const resumenKpis = useMemo(() => {
     const incidentesAbiertos = incidentes.filter((incidente) => incidente.status === "OPEN").length;
@@ -777,16 +528,6 @@ export default function IncidentsPage() {
           </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={exportarIncidentesPdf}
-            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]"
-            style={{ cursor: "pointer" }}
-          >
-            Exportar PDF
-          </button>
-
-
           <button
             type="button"
             onClick={() => navegar("/createincident")}
