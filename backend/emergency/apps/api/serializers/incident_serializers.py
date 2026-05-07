@@ -2,15 +2,34 @@ from rest_framework import serializers
 from emergency.apps.core.models import Incident, IncidentMember
 
 
+class IncidentAssignmentUserSerializer(serializers.Serializer):
+    """Datos minimos del usuario que necesita el modal de asignaciones."""
+
+    id = serializers.UUIDField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+    role = serializers.CharField(source="profile.role", read_only=True)
+    organization_id = serializers.SerializerMethodField()
+    organization_name = serializers.CharField(source="profile.organization.name", read_only=True)
+
+    def get_organization_id(self, obj):
+        profile = getattr(obj, "profile", None)
+        return str(getattr(profile, "organization_id", "") or "")
+
+
 class IncidentMemberSerializer(serializers.ModelSerializer):
     """Serializer para leer miembros de incidente"""
     user = serializers.StringRelatedField()
     user_id = serializers.UUIDField(source="user.id", read_only=True)
+    user_detail = IncidentAssignmentUserSerializer(source="user", read_only=True)
+    role = serializers.CharField(source="role_in_incident", read_only=True)
 
     class Meta:
         model = IncidentMember
         fields = [
-            'id', 'user', 'user_id', 'incident', 'role_in_incident',
+            'id', 'user', 'user_id', 'user_detail', 'incident', 'role_in_incident', 'role',
             'joined_at', 'left_at', 'is_active'
         ]
         read_only_fields = fields
@@ -28,13 +47,14 @@ class IncidentSerializer(serializers.ModelSerializer):
     """Serializer para leer incidentes"""
     created_by = serializers.StringRelatedField()
     owner_organization = serializers.StringRelatedField()
+    owner_organization_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Incident
         fields = [
             'id', 'name', 'incident_type', 'status', 'description',
             'location', 'location_address', 'created_by',
-            'owner_organization', 'started_at', 'ended_at',
+            'owner_organization', 'owner_organization_id', 'started_at', 'ended_at',
             'created_at', 'updated_at', 'is_active'
         ]
         read_only_fields = [

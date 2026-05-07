@@ -21,6 +21,7 @@ type IncidenteApiFila = {
   location_address?: string | null;
   created_by?: string | null;
   owner_organization?: string | null;
+  owner_organization_id?: string | null;
   started_at?: string | null;
   ended_at?: string | null;
   created_at?: string | null;
@@ -57,6 +58,34 @@ type AlertaFila = {
   creadaEn: string | null;
   actualizadaEn: string | null;
 };
+
+type UsuarioOperativo = {
+  id: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  role?: string;
+  organization_id?: string;
+  organization_name?: string;
+}
+
+type AsignacionUnidad = {
+  id: string;
+  incident: string;
+  user?: string;
+  user_id?: string;
+  user_detail?: UsuarioOperativo;
+  role?: string;
+  role_in_incident?: string;
+}
+
+type RespuestaPaginada<T> = {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: T[];
+}
 
 function extraerCoordenadas(location: unknown): LatLngTuple | null {
   if (!location) return null;
@@ -159,6 +188,7 @@ function normalizarIncidentes(raw: unknown): IncidenteFila[] {
       location_address: row.location_address ?? null,
       created_by: row.created_by ?? null,
       owner_organization: row.owner_organization ?? null,
+      owner_organization_id: row.owner_organization_id ?? null,
       started_at: row.started_at ?? null,
       ended_at: row.ended_at ?? null,
       created_at: row.created_at ?? null,
@@ -188,6 +218,60 @@ function normalizarAlertas(crudo: unknown): AlertaFila[] {
       creadaEn: typeof alerta.created_at === "string" ? alerta.created_at : null,
       actualizadaEn: typeof alerta.updated_at === "string" ? alerta.updated_at : null,
     }));
+}
+
+function normalizarUsuarios(crudo: unknown): UsuarioOperativo[] {
+  if (Array.isArray(crudo)) return crudo as UsuarioOperativo[];
+  if (crudo && typeof crudo === "object" && Array.isArray((crudo as RespuestaPaginada<UsuarioOperativo>).results)) {
+    return (crudo as RespuestaPaginada<UsuarioOperativo>).results ?? [];
+  }
+  return [];
+}
+
+function obtenerResultadosPaginadosUsuarios(crudo: unknown): UsuarioOperativo[] | null {
+  if (crudo && typeof crudo === "object" && Array.isArray((crudo as RespuestaPaginada<UsuarioOperativo>).results)) {
+    return (crudo as RespuestaPaginada<UsuarioOperativo>).results ?? [];
+  }
+  return null;
+}
+
+async function cargarTodasLasUnidadesOperativas(): Promise<UsuarioOperativo[]> {
+  const unidadesAcumuladas: UsuarioOperativo[] = [];
+  let urlSiguiente: string | null = "/users/";
+
+  while (urlSiguiente) {
+    const respuesta = urlSiguiente.startsWith("http")
+      ? await fetch(urlSiguiente, {
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        })
+      : await apiFetch(urlSiguiente);
+
+    if (!respuesta.ok) {
+      throw new Error("No se pudieron cargar los usuarios.");
+    }
+
+    const datos = (await respuesta.json()) as unknown;
+    const resultadosPaginados = obtenerResultadosPaginadosUsuarios(datos);
+
+    if (resultadosPaginados) {
+      unidadesAcumuladas.push(...resultadosPaginados);
+      urlSiguiente = (datos as RespuestaPaginada<UsuarioOperativo>).next ?? null;
+      continue;
+    }
+
+    return normalizarUsuarios(datos).filter(
+      (usuario) => usuario.role === "OPERATIVE" || usuario.role === "SUPERVISOR"
+    );
+  }
+
+  return unidadesAcumuladas.filter(
+    (usuario) => usuario.role === "OPERATIVE" || usuario.role === "SUPERVISOR"
+  );
+}
+
+function obtenerIdUsuarioAsignado(asignacion: AsignacionUnidad) {
+  return asignacion.user_id ?? asignacion.user_detail?.id ?? "";
 }
 
 function agruparAlertasPorIncidente(alertas: AlertaFila[]) {
@@ -290,6 +374,7 @@ export function obtenerEtiquetaEstado(tipo: string){
 export default function IncidentsPage() {
   const navegar = useNavigate();
   const INCIDENTES_POR_PAGINA = 10;
+  const UNIDADES_POR_PAGINA_MODAL = 5;
 
   const [ubicacionResuelta, setUbicacionResuelta] = useState<string>("");
   const [resolviendoUbicacion, setResolviendoUbicacion] = useState(false);
@@ -308,7 +393,13 @@ export default function IncidentsPage() {
   const [incidenteActualizandoId, setIncidenteActualizandoId] = useState<string>("");
   const [incidentePendienteEliminarId, setIncidentePendienteEliminarId] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
-
+  const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false);
+  const [usuariosDisponibles, setUsuariosDisponibles] = useState<UsuarioOperativo[]>([]);
+  const [asignaciones, setAsignaciones] = useState<AsignacionUnidad[]>([]);
+  const [cargandoAsignaciones, setCargandoAsignaciones] = useState(false);
+  const [errorAsignaciones, setErrorAsignaciones] = useState("");
+  const [paginaAsignadas, setPaginaAsignadas] = useState(1);
+  const [paginaDisponibles, setPaginaDisponibles] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -392,12 +483,48 @@ export default function IncidentsPage() {
   const alertasDelIncidenteSeleccionado = incidenteSeleccionado
     ? alertasPorIncidente[incidenteSeleccionado.id] ?? []
     : [];
+  const usuariosDisponiblesSinAsignar = useMemo(() => {
+    const usuariosAsignadosIds = new Set(asignaciones.map(obtenerIdUsuarioAsignado).filter(Boolean));
+    return usuariosDisponibles.filter((usuario) => !usuariosAsignadosIds.has(usuario.id));
+  }, [asignaciones, usuariosDisponibles]);
+
+  const totalPaginasAsignadas = Math.max(1, Math.ceil(asignaciones.length / UNIDADES_POR_PAGINA_MODAL));
+  const asignacionesPaginadas = useMemo(() => {
+    const inicio = (paginaAsignadas - 1) * UNIDADES_POR_PAGINA_MODAL;
+    return asignaciones.slice(inicio, inicio + UNIDADES_POR_PAGINA_MODAL);
+  }, [asignaciones, paginaAsignadas, UNIDADES_POR_PAGINA_MODAL]);
+
+  const totalPaginasDisponibles = Math.max(1, Math.ceil(usuariosDisponiblesSinAsignar.length / UNIDADES_POR_PAGINA_MODAL));
+  const usuariosDisponiblesPaginados = useMemo(() => {
+    const inicio = (paginaDisponibles - 1) * UNIDADES_POR_PAGINA_MODAL;
+    return usuariosDisponiblesSinAsignar.slice(inicio, inicio + UNIDADES_POR_PAGINA_MODAL);
+  }, [usuariosDisponiblesSinAsignar, paginaDisponibles, UNIDADES_POR_PAGINA_MODAL]);
 
   useEffect(() => {
     if (paginaActual > totalPaginas) {
       setPaginaActual(totalPaginas);
     }
   }, [paginaActual, totalPaginas]);
+
+  useEffect(() => {
+    if (!modalAsignarAbierto || !incidenteSeleccionado) return;
+
+    setPaginaAsignadas(1);
+    setPaginaDisponibles(1);
+    void cargarDatosAsignacion(incidenteSeleccionado.id);
+  }, [modalAsignarAbierto, incidenteSeleccionado?.id]);
+
+  useEffect(() => {
+    if (paginaAsignadas > totalPaginasAsignadas) {
+      setPaginaAsignadas(totalPaginasAsignadas);
+    }
+  }, [paginaAsignadas, totalPaginasAsignadas]);
+
+  useEffect(() => {
+    if (paginaDisponibles > totalPaginasDisponibles) {
+      setPaginaDisponibles(totalPaginasDisponibles);
+    }
+  }, [paginaDisponibles, totalPaginasDisponibles]);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,6 +604,68 @@ export default function IncidentsPage() {
     } finally {
       setIncidenteEliminandoId("");
     }
+  }
+
+  async function cargarDatosAsignacion(incidentId: string) {
+    setCargandoAsignaciones(true);
+    setErrorAsignaciones("");
+
+    try {
+      const [usuariosCombinados, asignacionesRes] = await Promise.all([
+        cargarTodasLasUnidadesOperativas(),
+        apiFetch(`/incidents/${incidentId}/assignments/`),
+      ]);
+
+      if (!asignacionesRes.ok) {
+        setErrorAsignaciones("No se pudieron cargar los datos de asignación.");
+        return;
+      }
+
+      const asignacionesData = await asignacionesRes.json();
+
+      setUsuariosDisponibles(usuariosCombinados);
+      setAsignaciones(
+        Array.isArray(asignacionesData) ? asignacionesData : asignacionesData.results ?? []
+      );
+    } catch {
+      setErrorAsignaciones("No se pudieron cargar los datos de asignación.");
+    } finally {
+      setCargandoAsignaciones(false);
+    }
+  }
+
+  async function asignarUsuario(userId: string) {
+    if (!incidenteSeleccionado) return;
+
+    const res = await apiFetch(`/incidents/${incidenteSeleccionado.id}/assignments/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: userId }),
+    });
+
+    if (!res.ok) {
+      setErrorAsignaciones("No se pudo asignar el usuario.");
+      return;
+    }
+
+    await cargarDatosAsignacion(incidenteSeleccionado.id);
+  }
+
+  async function quitarUsuario(assignmentId: string) {
+    if (!incidenteSeleccionado) return;
+
+    const res = await apiFetch(`/incidents/${incidenteSeleccionado.id}/remove_assignment/`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignment_id: assignmentId }),
+    });
+
+    if (!res.ok) {
+      setErrorAsignaciones("No se pudo quitar el usuario.");
+      return;
+    }
+
+    await cargarDatosAsignacion(incidenteSeleccionado.id);
   }
 
   async function cerrarIncidente(incidentId: string) {
@@ -761,11 +950,17 @@ export default function IncidentsPage() {
           <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
         {incidenteSeleccionado ? (
           <div className="space-y-6">
-            <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-xl font-bold text-slate-100">{incidenteSeleccionado.name}</h2>
+              <button 
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--cm-info)] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                  onClick={() => setModalAsignarAbierto(true)}
+                >
+                Asignar unidad 
+              </button>
             </div>
 
-            {!incidentePendienteEliminarId && incidenteSeleccionado.parsedLocation && (
+            {!incidentePendienteEliminarId && !modalAsignarAbierto && incidenteSeleccionado.parsedLocation && (
               <MapaMiniUnidad
                 latitud={incidenteSeleccionado.parsedLocation[0]}
                 longitud={incidenteSeleccionado.parsedLocation[1]}
@@ -1043,6 +1238,196 @@ export default function IncidentsPage() {
           </div>
         </div>
       ) : null}
+      {modalAsignarAbierto && incidenteSeleccionado ? (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <button
+      type="button"
+      aria-label="Cerrar modal"
+      onClick={() => setModalAsignarAbierto(false)}
+      className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+    />
+
+    <div className="relative w-full max-w-3xl rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+            Unidad operativa
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-white">
+            Asignar unidad a {incidenteSeleccionado.name}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setModalAsignarAbierto(false)}
+          className="rounded-xl bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700"
+        >
+          Cerrar
+        </button>
+      </div>
+
+      {errorAsignaciones && (
+        <div className="mt-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-200 ring-1 ring-red-500/30">
+          {errorAsignaciones}
+        </div>
+      )}
+
+      {cargandoAsignaciones ? (
+        <p className="mt-6 text-sm text-slate-400">Cargando usuarios...</p>
+      ) : (
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <section>
+            <h3 className="font-semibold text-slate-100">
+              Usuarios asignados
+            </h3>
+
+            <div className="mt-3 space-y-3">
+              {asignaciones.length === 0 ? (
+                <p className="rounded-xl bg-slate-950/60 p-4 text-sm text-slate-400">
+                  Todavía no hay usuarios asignados.
+                </p>
+              ) : (
+                asignacionesPaginadas.map((asignacion) => {
+                  const usuario = asignacion.user_detail;
+                  const asignacionDeOrganizacion = Boolean(
+                    incidenteSeleccionado.owner_organization_id &&
+                    usuario?.organization_id === incidenteSeleccionado.owner_organization_id
+                  );
+
+                  return (
+                    <article
+                      key={asignacion.id}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800"
+                    >
+                      <div>
+                        <p className="font-medium text-slate-100">
+                          {usuario
+                            ? `${usuario.first_name ?? ""} ${usuario.last_name ?? ""}`.trim() ||
+                              usuario.username ||
+                              usuario.email
+                            : asignacion.user ?? asignacion.user_id}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {usuario?.role ?? asignacion.role ?? asignacion.role_in_incident ?? "Sin rol"}
+                        </p>
+                      </div>
+
+                      {asignacionDeOrganizacion ? (
+                        <span className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300">
+                          Organizacion
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void quitarUsuario(asignacion.id)}
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </article>
+                  );
+                })
+              )}
+            </div>
+            {asignaciones.length > UNIDADES_POR_PAGINA_MODAL ? (
+              <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
+                <span>
+                  Pagina {paginaAsignadas} de {totalPaginasAsignadas}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaAsignadas((pagina) => Math.max(1, pagina - 1))}
+                    disabled={paginaAsignadas === 1}
+                    className="rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaginaAsignadas((pagina) => Math.min(totalPaginasAsignadas, pagina + 1))}
+                    disabled={paginaAsignadas === totalPaginasAsignadas}
+                    className="rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section>
+            <h3 className="font-semibold text-slate-100">
+              Operativos y supervisores disponibles
+            </h3>
+
+            <div className="mt-3 space-y-3">
+              {usuariosDisponiblesSinAsignar.length === 0 ? (
+                <p className="rounded-xl bg-slate-950/60 p-4 text-sm text-slate-400">
+                  No hay usuarios disponibles para anadir.
+                </p>
+              ) : (
+                usuariosDisponiblesPaginados.map((usuario) => (
+                  <article
+                    key={usuario.id}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-100">
+                        {`${usuario.first_name ?? ""} ${usuario.last_name ?? ""}`.trim() ||
+                          usuario.username ||
+                          usuario.email}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {usuario.role ?? "Sin rol"}
+                        {usuario.organization_name ? ` - ${usuario.organization_name}` : ""}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => void asignarUsuario(usuario.id)}
+                      className="rounded-lg bg-[color:var(--cm-success)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-110"
+                    >
+                      Añadir
+                    </button>
+                  </article>
+                ))
+              )}
+            </div>
+            {usuariosDisponiblesSinAsignar.length > UNIDADES_POR_PAGINA_MODAL ? (
+              <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
+                <span>
+                  Pagina {paginaDisponibles} de {totalPaginasDisponibles}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaginaDisponibles((pagina) => Math.max(1, pagina - 1))}
+                    disabled={paginaDisponibles === 1}
+                    className="rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaginaDisponibles((pagina) => Math.min(totalPaginasDisponibles, pagina + 1))}
+                    disabled={paginaDisponibles === totalPaginasDisponibles}
+                    className="rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      )}
+    </div>
+  </div>
+) : null}
     </div>
   );
 }

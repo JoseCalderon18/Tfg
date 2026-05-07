@@ -7,7 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 
-from emergency.apps.core.models import Incidente, IncidentMember, IncidentMessage
+from emergency.apps.core.models import Incidente, IncidentMember, IncidentMessage, User
 from .auth_views import _has_panel_full_access
 from ..serializers import (
     IncidenteSerializer,
@@ -50,6 +50,42 @@ class IncidentViewSet(viewsets.ModelViewSet):
             user=user,
             is_active=True,
         ).exists()
+
+    def _ensure_owner_organization_assignments(self, incident):
+        """Sincroniza como miembros activos las unidades de la organizacion responsable."""
+        if not incident.owner_organization_id:
+            return
+
+        organization_users = User.objects.filter(
+            is_active=True,
+            profile__organization_id=incident.owner_organization_id,
+            profile__role__in=["OPERATIVE", "SUPERVISOR"],
+        ).only("id")
+
+        existing_user_ids = set(
+            IncidentMember.objects.filter(incident=incident, user__in=organization_users)
+            .values_list("user_id", flat=True)
+        )
+
+        members_to_create = [
+            IncidentMember(
+                incident=incident,
+                user=user,
+                role_in_incident=getattr(user.profile, "role", None) or "OPERATIVE",
+                is_active=True,
+            )
+            for user in organization_users
+            if user.id not in existing_user_ids
+        ]
+
+        if members_to_create:
+            IncidentMember.objects.bulk_create(members_to_create, ignore_conflicts=True)
+
+        IncidentMember.objects.filter(
+            incident=incident,
+            user__in=organization_users,
+            is_active=False,
+        ).update(is_active=True, left_at=None)
 
     @action(detail=True, methods=['post'])
     def join(self, request, pk=None):
@@ -162,3 +198,77 @@ class IncidentViewSet(viewsets.ModelViewSet):
         incidents = Incidente.objects.filter(status='OPEN')
         serializer = IncidenteSerializer(incidents, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get", "post"])
+    def assignments(self, request, pk=None):
+        """Obtener o crear asignaciones de un incidente"""
+        incident = self.get_object()
+
+        if request.method.lower() == "get":
+            self._ensure_owner_organization_assignments(incident)
+            members = incident.incident_members.select_related(
+                'user', 'user__profile', 'user__profile__organization'
+            ).filter(is_active=True)
+            serializer = IncidentMemberSerializer(members, many=True)
+            return Response(serializer.data)
+
+        # POST: Crear nueva asignación
+        user_id = request.data.get('user')
+        role = request.data.get('role', 'OPERATIVE')
+
+        if not user_id:
+            return Response(
+                {'error': 'user field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Verificar si ya existe la asignación
+        member, created = IncidentMember.objects.get_or_create(
+            incident=incident,
+            user=user,
+            defaults={'role_in_incident': role, 'is_active': True}
+        )
+
+        if not created:
+            # Si ya existe, activarlo si está inactivo
+            if not member.is_active:
+                member.is_active = True
+                member.save()
+            else:
+                return Response(
+                    {'error': 'User already assigned to this incident'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        serializer = IncidentMemberSerializer(member)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["delete"])
+    def remove_assignment(self, request, pk=None):
+        """Eliminar asignación de un incidente"""
+        incident = self.get_object()
+        assignment_id = request.data.get('assignment_id')
+
+        if not assignment_id:
+            return Response(
+                {'error': 'assignment_id field is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            member = IncidentMember.objects.get(id=assignment_id, incident=incident)
+            member.delete()
+            return Response({'status': 'assignment removed'})
+        except IncidentMember.DoesNotExist:
+            return Response(
+                {'error': 'Assignment not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
