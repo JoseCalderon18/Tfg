@@ -20,6 +20,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def configure_windows_gis_paths():
+    if os.name != "nt":
+        return
+
+    gdal_library_path = os.environ.get("GDAL_LIBRARY_PATH")
+    if not gdal_library_path:
+        return
+
+    gdal_library = Path(gdal_library_path)
+    if gdal_library.parent.name.lower() != "bin":
+        return
+
+    osgeo_root = gdal_library.parent.parent
+    proj_path = osgeo_root / "share" / "proj"
+    gdal_data_path = osgeo_root / "apps" / "gdal" / "share" / "gdal"
+    geos_library_path = osgeo_root / "bin" / "geos_c.dll"
+
+    if proj_path.exists():
+        os.environ["PROJ_LIB"] = str(proj_path)
+        os.environ["PROJ_DATA"] = str(proj_path)
+
+    if gdal_data_path.exists():
+        os.environ["GDAL_DATA"] = str(gdal_data_path)
+
+    if geos_library_path.exists() and not os.environ.get("GEOS_LIBRARY_PATH"):
+        os.environ["GEOS_LIBRARY_PATH"] = str(geos_library_path)
+
+
+configure_windows_gis_paths()
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
