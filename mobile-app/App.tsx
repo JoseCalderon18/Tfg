@@ -28,6 +28,7 @@ import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 import LocationPermissionsScreen from './src/components/LocationPermissionsScreen';
+import BatteryAlertMonitor from './src/components/BatteryAlertMonitor';
 
 // Creamos el stack navigator para la navegacion entre pantallas
 const Stack = createStackNavigator();
@@ -166,6 +167,7 @@ function OperativeNavigator() {
             component={SettingsScreen}
           />
         </Stack.Navigator>
+        <BatteryAlertMonitor />
         <LocationPermissionsScreen />
         <GeofenceLockScreen />
       </>

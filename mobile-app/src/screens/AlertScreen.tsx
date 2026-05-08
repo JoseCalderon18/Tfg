@@ -99,6 +99,7 @@ export default function AlertScreen({ navigation, route }: any) {
                 <Picker.Item label="Operativo perdido/desorientado" value="LOST" />
                 <Picker.Item label="Fuera de zona segura" value="GEOFENCE" />
                 <Picker.Item label="Anomalia detectada" value="ANOMALY" />
+                <Picker.Item label="Bateria baja" value="BATERY" />
                 <Picker.Item label="Otro" value="OTHER" />
               </Picker>
             </View>
@@ -176,19 +177,25 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   title: {
-    ...typography.heading2,
+    fontSize: typography.heading2.fontSize,
+    fontWeight: '700',
+    lineHeight: typography.heading2.lineHeight,
     color: colors.text,
     marginBottom: spacing.sm,
   },
   subtitle: {
-    ...typography.body,
+    fontSize: typography.body.fontSize,
+    fontWeight: '400',
+    lineHeight: typography.body.lineHeight,
     color: colors.textMuted,
   },
   formSection: {
     marginBottom: spacing.xxl,
   },
   label: {
-    ...typography.subtitle,
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.subtitle.lineHeight,
     color: colors.text,
     marginBottom: spacing.md,
   },
@@ -213,7 +220,9 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     color: colors.text,
-    ...typography.body,
+    fontSize: typography.body.fontSize,
+    fontWeight: '400',
+    lineHeight: typography.body.lineHeight,
     ...shadows.sm,
   },
   inputFocused: {
@@ -241,7 +250,9 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   severityLabel: {
-    ...typography.subtitle,
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.subtitle.lineHeight,
     color: colors.text,
   },
   severityLabelActive: {
@@ -252,7 +263,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   severityText: {
-    ...typography.label,
+    fontSize: typography.label.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.label.lineHeight,
     color: colors.textMuted,
   },
   submitButton: {
@@ -267,7 +280,9 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: colors.white,
-    ...typography.subtitle,
+    fontSize: typography.subtitle.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.subtitle.lineHeight,
   },
   button: {
     backgroundColor: colors.danger,

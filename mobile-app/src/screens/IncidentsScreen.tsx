@@ -70,6 +70,10 @@ const ALERT_STATUS_LABELS: Record<string, string> = {
   CLOSED: 'Cerrada',
 };
 
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  BATERY: 'Bateria baja',
+};
+
 function getLabel(value: string | null | undefined, labels: Record<string, string>) {
   if (!value) {
     return 'Sin definir';
@@ -430,7 +434,7 @@ export default function IncidentsScreen({ navigation }: any) {
           </View>
           {latestAlert ? (
             <Text style={styles.alertSummaryMeta}>
-              Ultima: {latestAlert.title || getLabel(latestAlert.alert_type, {})} |{' '}
+              Ultima: {latestAlert.title || getLabel(latestAlert.alert_type, ALERT_TYPE_LABELS)} |{' '}
               {getLabel(latestAlert.status, ALERT_STATUS_LABELS)} | Severidad {latestAlert.severity ?? '-'}
             </Text>
           ) : (

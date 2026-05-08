@@ -52,6 +52,7 @@ class Alerta(models.Model):
         ('LOST', 'Operativo Perdido/Desorientado'),
         ('GEOFENCE', 'Fuera de Zona Segura'),
         ('ANOMALY', 'Anomalía Detectada'),
+        ('BATERY', 'Bateria baja'),
         ('OTHER', 'Otro'),
     ]
 
