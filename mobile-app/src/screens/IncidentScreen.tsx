@@ -63,7 +63,7 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelado',
 };
 
-const TYPE_LABELS: Record<string, string> = {
+const LABEL_TIPOS: Record<string, string> = {
   FIRE: 'Incendio',
   MEDICAL: 'Sanitario',
   WILDFIRE: 'Incendio forestal',
@@ -71,6 +71,36 @@ const TYPE_LABELS: Record<string, string> = {
   RESCUE: 'Rescate',
   SECURITY: 'Seguridad',
   OTHER: 'Otro',
+};
+
+const LABEL_TIPO_ALERTA: Record<string, string> = {
+  SOS: 'SOS Emergencia',
+  MAN_DOWN: 'Operativo caido',
+  FIRE_SPREAD: 'Cambio de fuego',
+  SMOKE: 'Humo en incidente',
+  INJURY: 'Operativo herido',
+  DEATH: 'Operativo fallecido',
+  EVACUATION: 'Evacuacion',
+  MEDICAL: 'Emergencia medica',
+  TRAPPED: 'Operativo atrapado',
+  VEHICLE: 'Incidente vehicular',
+  ANIMAL: 'Animal peligroso',
+  ANIMAL_INJURY: 'Animal herido',
+  LOW_SUPPLIES: 'Recursos bajos',
+  COMM_LOSS: 'Perdida de comunicacion',
+  HAZARD: 'Peligro ambiental',
+  FATIGUE: 'Fatiga extrema',
+  WEATHER: 'Clima peligroso',
+  LOST: 'Operativo perdido',
+  GEOFENCE: 'Fuera de zona segura',
+  ANOMALY: 'Anomalia detectada',
+  OTHER: 'Otra alerta',
+};
+
+const ALERT_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Abierta',
+  ACK: 'Reconocida',
+  CLOSED: 'Cerrada',
 };
 
 function normalizeList<T>(payload: ListResponse<T>) {
@@ -195,6 +225,26 @@ function getAlertStatusStyle(status: string | null | undefined) {
   return styles.inactiveBadge;
 }
 
+function getEstiloSeveridad(severity: number | null | undefined) {
+  if ((severity ?? 0) >= 4) {
+    return styles.severityHigh;
+  }
+
+  if ((severity ?? 0) >= 3) {
+    return styles.severityMedium;
+  }
+
+  return styles.severityLow;
+}
+
+function sortAlertasPorFecha(alerts: IncidentAlert[]) {
+  return [...alerts].sort((left, right) => {
+    const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0;
+    const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0;
+    return rightTime - leftTime;
+  });
+}
+
 function parsePolygonCoordinates(value: unknown): Point[] {
   const rawRing =
     Array.isArray(value) && Array.isArray(value[0]) && Array.isArray(value[0][0])
@@ -278,6 +328,7 @@ export default function IncidentScreen({ navigation, route }: any) {
     () => alerts.filter((alert) => alert.status === 'OPEN' || alert.status === 'ACK'),
     [alerts]
   );
+  const sortedAlerts = useMemo(() => sortAlertasPorFecha(alerts), [alerts]);
   const activeWorkareas = useMemo(() => workareas.filter((workarea) => workarea.active !== false), [workareas]);
   const mapRegion = useMemo(() => buildMapRegion(coordinates, activeWorkareas), [activeWorkareas, coordinates]);
 
@@ -379,7 +430,7 @@ export default function IncidentScreen({ navigation, route }: any) {
               <Text style={styles.statusBadgeText}>{getLabel(incident.status, STATUS_LABELS)}</Text>
             </View>
           </View>
-          <Text style={styles.incidentType}>{getLabel(incident.incident_type, TYPE_LABELS)}</Text>
+          <Text style={styles.incidentType}>{getLabel(incident.incident_type, LABEL_TIPOS)}</Text>
           {incident.description ? <Text style={styles.description}>{incident.description}</Text> : null}
         </View>
 
@@ -458,21 +509,28 @@ export default function IncidentScreen({ navigation, route }: any) {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Alertas</Text>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Alertas relacionadas</Text>
+            <Text style={styles.cardCount}>{alerts.length}</Text>
+          </View>
           {alerts.length === 0 ? (
             <Text style={styles.cardValue}>No hay alertas registradas para este incidente.</Text>
           ) : (
-            alerts.slice(0, 5).map((alert) => (
-              <View key={alert.id} style={styles.listItem}>
+            sortedAlerts.map((alert) => (
+              <View key={alert.id} style={[styles.listItem, styles.alertItem]}>
                 <View style={styles.listHeader}>
-                  <Text style={styles.listTitle}>{alert.title || getLabel(alert.alert_type, {})}</Text>
+                  <Text style={styles.listTitle}>{alert.title || getLabel(alert.alert_type, LABEL_TIPO_ALERTA)}</Text>
                   <View style={[styles.smallBadge, getAlertStatusStyle(alert.status)]}>
-                    <Text style={styles.smallBadgeText}>{alert.status || 'Sin estado'}</Text>
+                    <Text style={styles.smallBadgeText}>{getLabel(alert.status, ALERT_STATUS_LABELS)}</Text>
                   </View>
                 </View>
-                <Text style={styles.listMeta}>
-                  Severidad {alert.severity ?? '-'} | {formatDate(alert.created_at)}
-                </Text>
+                <View style={styles.alertMetaRow}>
+                  <Text style={[styles.severityPill, getEstiloSeveridad(alert.severity)]}>
+                    Severidad {alert.severity ?? '-'}
+                  </Text>
+                  <Text style={styles.alertDate}>{formatDate(alert.created_at)}</Text>
+                </View>
+                <Text style={styles.listMeta}>{getLabel(alert.alert_type, LABEL_TIPO_ALERTA)}</Text>
                 {alert.description ? <Text style={styles.listDescription}>{alert.description}</Text> : null}
               </View>
             ))
@@ -485,7 +543,10 @@ export default function IncidentScreen({ navigation, route }: any) {
             <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Map')}>
               <Text style={styles.secondaryButtonText}>Ver mapa</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Alert')}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => navigation.navigate('Alert', { incidentId: incident.id, incidentName: incident.name })}
+            >
               <Text style={styles.secondaryButtonText}>Crear alerta</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Chat')}>
@@ -754,6 +815,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 10,
   },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
+  cardCount: {
+    minWidth: 28,
+    borderRadius: 999,
+    backgroundColor: colors.primarySoft,
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    textAlign: 'center',
+  },
   cardValue: {
     color: colors.textSoft,
     fontSize: 14,
@@ -784,6 +864,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 12,
   },
+  alertItem: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    padding: 12,
+  },
   listHeader: {
     flexDirection: 'row',
     gap: 10,
@@ -807,6 +894,36 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     fontSize: 13,
     lineHeight: 19,
+  },
+  alertMetaRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
+  },
+  severityPill: {
+    borderRadius: 999,
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  severityHigh: {
+    backgroundColor: colors.danger,
+  },
+  severityMedium: {
+    backgroundColor: colors.warning,
+  },
+  severityLow: {
+    backgroundColor: colors.success,
+  },
+  alertDate: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   actionsRow: {
     flexDirection: 'row',

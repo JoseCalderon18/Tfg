@@ -6,8 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
-export default function AlertScreen({ navigation }: any) {
+export default function AlertScreen({ navigation, route }: any) {
   // Estado del formulario de alertas en campo.
+  const incidentId = route?.params?.incidentId as string | undefined;
+  const incidentName = route?.params?.incidentName as string | undefined;
   const [tipoAlerta, setTipoAlerta] = useState('SOS');
   const [severidad, setSeveridad] = useState(3);
   const [descripcion, setDescripcion] = useState('');
@@ -30,6 +32,7 @@ export default function AlertScreen({ navigation }: any) {
       }
 
       const result = await queueAlert({
+        ...(incidentId ? { incident: incidentId } : {}),
         alert_type: tipoAlerta,
         severity: severidad,
         title: `Alerta ${tipoAlerta}`,
@@ -60,7 +63,11 @@ export default function AlertScreen({ navigation }: any) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Enviar alerta</Text>
-            <Text style={styles.subtitle}>Documenta la situacion de emergencia</Text>
+            <Text style={styles.subtitle}>
+              {incidentId
+                ? `Se asociara al incidente ${incidentName ?? incidentId}`
+                : 'Documenta la situacion de emergencia'}
+            </Text>
           </View>
 
           {/* Form Sections */}

@@ -29,6 +29,24 @@ type Incident = {
 
 type IncidentListResponse = Incident[] | { results?: Incident[] };
 
+type IncidentAlert = {
+  id: string;
+  incident?: string | null;
+  alert_type?: string | null;
+  severity?: number | null;
+  status?: string | null;
+  title?: string | null;
+  created_at?: string | null;
+};
+
+type AlertListResponse = IncidentAlert[] | { results?: IncidentAlert[] };
+
+type AlertSummary = {
+  total: number;
+  active: number;
+  latest?: IncidentAlert;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Abierto',
   CLOSED: 'Cerrado',
@@ -44,6 +62,12 @@ const TYPE_LABELS: Record<string, string> = {
   RESCUE: 'Rescate',
   SECURITY: 'Seguridad',
   OTHER: 'Otro',
+};
+
+const ALERT_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Abierta',
+  ACK: 'Reconocida',
+  CLOSED: 'Cerrada',
 };
 
 function getLabel(value: string | null | undefined, labels: Record<string, string>) {
@@ -90,12 +114,28 @@ function getStatusBadgeStyle(status: string | null | undefined, isActive?: boole
   return styles.defaultBadge;
 }
 
-function normalizeIncidentList(payload: IncidentListResponse) {
+function normalizeList<T>(payload: T[] | { results?: T[] }) {
   if (Array.isArray(payload)) {
     return payload;
   }
 
   return payload.results ?? [];
+}
+
+function normalizeIncidentList(payload: IncidentListResponse) {
+  return normalizeList(payload);
+}
+
+function isActiveAlert(alert: IncidentAlert) {
+  return alert.status === 'OPEN' || alert.status === 'ACK';
+}
+
+function getLatestAlert(alerts: IncidentAlert[]) {
+  return [...alerts].sort((left, right) => {
+    const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0;
+    const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0;
+    return rightTime - leftTime;
+  })[0];
 }
 
 function extractCoordinates(location: unknown): [number, number] | null {
@@ -196,6 +236,7 @@ async function readErrorMessage(response: Response) {
 export default function IncidentsScreen({ navigation }: any) {
   const { token, user, updateUser } = useAuth();
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [alertSummaries, setAlertSummaries] = useState<Record<string, AlertSummary>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -248,8 +289,37 @@ export default function IncidentsScreen({ navigation }: any) {
         throw new Error(await readErrorMessage(response));
       }
 
-      const payload = (await response.json()) as IncidentListResponse;
-      setIncidents(normalizeIncidentList(payload));
+      const payload = await parseJsonResponse<IncidentListResponse>(response);
+      const nextIncidents = normalizeIncidentList(payload);
+      setIncidents(nextIncidents);
+
+      if (nextIncidents.length === 0) {
+        setAlertSummaries({});
+        return;
+      }
+
+      const summaries = await Promise.all(
+        nextIncidents.map(async (incident) => {
+          const incidentId = encodeURIComponent(incident.id);
+          const alertsResponse = await apiFetch(`/alerts/?incident=${incidentId}`, { token, timeoutMs: 12000 });
+
+          if (!alertsResponse.ok) {
+            return [incident.id, { total: 0, active: 0 } satisfies AlertSummary] as const;
+          }
+
+          const alerts = normalizeList(await parseJsonResponse<AlertListResponse>(alertsResponse));
+          return [
+            incident.id,
+            {
+              total: alerts.length,
+              active: alerts.filter(isActiveAlert).length,
+              latest: getLatestAlert(alerts),
+            } satisfies AlertSummary,
+          ] as const;
+        })
+      );
+
+      setAlertSummaries(Object.fromEntries(summaries));
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'No se pudieron cargar los incidentes.');
     } finally {
@@ -314,7 +384,11 @@ export default function IncidentsScreen({ navigation }: any) {
       );
     }
 
-    return incidents.map((incident) => (
+    return incidents.map((incident) => {
+      const alertSummary = alertSummaries[incident.id] ?? { total: 0, active: 0 };
+      const latestAlert = alertSummary.latest;
+
+      return (
       <View key={incident.id} style={styles.incidentCard}>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleGroup}>
@@ -347,6 +421,23 @@ export default function IncidentsScreen({ navigation }: any) {
           <Text style={styles.description}>{incident.description}</Text>
         ) : null}
 
+        <View style={styles.alertSummaryBox}>
+          <View style={styles.alertSummaryHeader}>
+            <Text style={styles.alertSummaryTitle}>Alertas relacionadas</Text>
+            <Text style={[styles.alertSummaryCount, alertSummary.active > 0 && styles.alertSummaryCountActive]}>
+              {alertSummary.active} activas / {alertSummary.total} total
+            </Text>
+          </View>
+          {latestAlert ? (
+            <Text style={styles.alertSummaryMeta}>
+              Ultima: {latestAlert.title || getLabel(latestAlert.alert_type, {})} |{' '}
+              {getLabel(latestAlert.status, ALERT_STATUS_LABELS)} | Severidad {latestAlert.severity ?? '-'}
+            </Text>
+          ) : (
+            <Text style={styles.alertSummaryMeta}>Este incidente no tiene alertas registradas.</Text>
+          )}
+        </View>
+
         <TouchableOpacity
           style={styles.openIncidentButton}
           onPress={() => navigation.navigate('Incident', { incidentId: incident.id })}
@@ -355,7 +446,8 @@ export default function IncidentsScreen({ navigation }: any) {
         </TouchableOpacity>
 
       </View>
-    ));
+      );
+    });
   };
 
   return (
@@ -547,6 +639,40 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     fontSize: 14,
     lineHeight: 21,
+  },
+  alertSummaryBox: {
+    marginTop: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    padding: 12,
+  },
+  alertSummaryHeader: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  alertSummaryTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  alertSummaryCount: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  alertSummaryCountActive: {
+    color: colors.danger,
+  },
+  alertSummaryMeta: {
+    marginTop: 7,
+    color: colors.textSoft,
+    fontSize: 13,
+    lineHeight: 18,
   },
   openIncidentButton: {
     marginTop: 16,

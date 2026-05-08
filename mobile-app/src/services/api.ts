@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const DEPLOYED_API_BASE_URL = 'https://tfg-backend-jrrn.onrender.com/api';
+const DEFAULT_LOCAL_API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 const LOCAL_API_HOST =
   Platform.OS === 'android'
@@ -29,7 +29,7 @@ function getExpoHostApiUrl() {
 }
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? (LOCAL_API_HOST ? `${LOCAL_API_HOST}/api` : DEPLOYED_API_BASE_URL);
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? (LOCAL_API_HOST ? `${LOCAL_API_HOST}/api` : DEFAULT_LOCAL_API_BASE_URL);
 
 type ApiAuthHandlers = {
   refreshAccessToken: () => Promise<string | null>;
