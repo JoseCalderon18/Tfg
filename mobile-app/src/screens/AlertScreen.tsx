@@ -100,6 +100,7 @@ export default function AlertScreen({ navigation, route }: any) {
                 <Picker.Item label="Fuera de zona segura" value="GEOFENCE" />
                 <Picker.Item label="Anomalia detectada" value="ANOMALY" />
                 <Picker.Item label="Bateria baja" value="BATERY" />
+                <Picker.Item label="Inmovilidad prolongada" value="MOVEMENT" />
                 <Picker.Item label="Otro" value="OTHER" />
               </Picker>
             </View>

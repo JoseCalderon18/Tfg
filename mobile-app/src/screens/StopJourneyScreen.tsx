@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
+import { registrarFinJornadaActividad } from '../services/journeyActivity';
 
 type JourneyApi = {
   id: number;
@@ -577,6 +578,7 @@ export default function StopJourneyScreen({ navigation }: any) {
 
       const updatedJourney = await parseJsonResponse<JourneyApi>(response);
       setJourney(updatedJourney);
+      await registrarFinJornadaActividad();
 
       Alert.alert('Exito', 'Jornada finalizada correctamente.', [
         {

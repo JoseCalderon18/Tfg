@@ -53,6 +53,7 @@ class Alerta(models.Model):
         ('GEOFENCE', 'Fuera de Zona Segura'),
         ('ANOMALY', 'Anomalía Detectada'),
         ('BATERY', 'Bateria baja'),
+        ('MOVEMENT', 'Inmobilidad prolongada'),
         ('OTHER', 'Otro'),
     ]
 

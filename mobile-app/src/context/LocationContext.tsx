@@ -7,6 +7,10 @@ import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
+import {
+  procesarInmovilidadSegundoPlano,
+  registrarPuntoMovimientoJornada,
+} from '../services/journeyActivity';
 
 const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
 
@@ -57,6 +61,7 @@ TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
 
   if (lastLocation) {
     void sendBackgroundLocationUpdate(lastLocation).catch(() => undefined);
+    void procesarInmovilidadSegundoPlano(lastLocation).catch(() => undefined);
   }
 });
 
@@ -274,9 +279,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     if (result.queued) {
       setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
+      void registrarPuntoMovimientoJornada({
+        latitude: nextLocation.coords.latitude,
+        longitude: nextLocation.coords.longitude,
+      }).catch(() => undefined);
       return;
     }
 
+    void registrarPuntoMovimientoJornada({
+      latitude: nextLocation.coords.latitude,
+      longitude: nextLocation.coords.longitude,
+    }).catch(() => undefined);
     setErrorMsg(null);
   };
 

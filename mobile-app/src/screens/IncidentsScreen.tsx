@@ -72,6 +72,7 @@ const ALERT_STATUS_LABELS: Record<string, string> = {
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
   BATERY: 'Bateria baja',
+  MOVEMENT: 'Inmovilidad prolongada',
 };
 
 function getLabel(value: string | null | undefined, labels: Record<string, string>) {
