@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import Alerta
 from ..serializers import (
     AlertaSerializer, AlertaCreateSerializer,
@@ -26,7 +27,23 @@ class AlertaViewSet(viewsets.ModelViewSet):
         return AlertaSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        alert = serializer.save(created_by=self.request.user)
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo la alerta '{alert.title}' ({alert.alert_type}) con severidad {alert.severity}.",
+        )
+
+    def perform_update(self, serializer):
+        alert = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico la alerta '{alert.title}' ({alert.alert_type}).",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino la alerta '{instance.title}' ({instance.alert_type})."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)
 
     @action(detail=True, methods=['post'])
     def acknowledge(self, request, pk=None):
@@ -46,6 +63,7 @@ class AlertaViewSet(viewsets.ModelViewSet):
             alert.acked_at = timezone.now()
             alert.ack_notes = serializer.validated_data.get('ack_notes', '')
             alert.save()
+            registrar_auditoria(request.user, f"{nombre_usuario(request.user)} reconocio la alerta '{alert.title}'.")
 
             return Response(AlertaSerializer(alert).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -68,6 +86,7 @@ class AlertaViewSet(viewsets.ModelViewSet):
             alert.closed_at = timezone.now()
             alert.close_notes = serializer.validated_data.get('close_notes', '')
             alert.save()
+            registrar_auditoria(request.user, f"{nombre_usuario(request.user)} cerro la alerta '{alert.title}'.")
 
             return Response(AlertaSerializer(alert).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -38,6 +38,7 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   GEOFENCE: "Fuera de zona segura",
   ANOMALY: "Anomalia detectada",
   BATERY: "Bateria baja",
+  MOVEMENT: "Inmovilidad prolongada",
   OTHER: "Otro",
 };
 
@@ -50,7 +51,7 @@ function obtenerBadgeAlerta(type?: string | null) {
   if (type === "SOS") return "cm-badge-danger";
   if (type === "MAN_DOWN" || type === "INJURY" || type === "DEATH" || type === "TRAPPED") return "cm-badge-alert";
   if (type === "GEOFENCE" || type === "FIRE_SPREAD" || type === "SMOKE" || type === "WEATHER" || type === "HAZARD") return "cm-badge-warning";
-  if (type === "BATERY") return "cm-badge-warning";
+  if (type === "BATERY" || type === "MOVEMENT") return "cm-badge-warning";
   if (type === "OTHER") return "cm-badge-special";
   return "cm-badge-info";
 }

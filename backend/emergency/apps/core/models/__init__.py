@@ -24,6 +24,7 @@ from .risk_report import RiskReport
 from .password_reset import CodigoResetPassword
 from .journey import Journey
 from .point_of_interest import PointOfInterest
+from .audit import Auditoria
 
 __all__ = [
     'User',
@@ -47,4 +48,5 @@ __all__ = [
     'CodigoResetPassword',
     'Journey',
     'PointOfInterest',
+    'Auditoria',
 ]
