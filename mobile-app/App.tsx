@@ -20,6 +20,7 @@ import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
 import StartJourneyScreen from './src/screens/StartJourneyScreen';
 import StopJourneyScreen from './src/screens/StopJourneyScreen';
 import StartBreakScreen from './src/screens/StartBreakScreen';
+import EditJourneysScreen from './src/screens/EditJourneysScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
@@ -136,6 +137,10 @@ function OperativeNavigator() {
           <Stack.Screen
             name="StartBreak"
             component={StartBreakScreen}
+          />
+          <Stack.Screen
+            name="EditJourneys"
+            component={EditJourneysScreen}
           />
           <Stack.Screen name="StopJourney" 
                 component={StopJourneyScreen}

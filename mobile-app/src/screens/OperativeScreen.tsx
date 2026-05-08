@@ -393,6 +393,16 @@ export default function OperativeScreen({ navigation }: any) {
                 style={styles.menuOption}
                 onPress={() => {
                   setMenuVisible(false);
+                  navigation.navigate('EditJourneys');
+                }}
+              >
+                <Text style={styles.menuOptionText}>Editar jornadas</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
                   navigation.navigate('StopJourney');
                 }}
               >

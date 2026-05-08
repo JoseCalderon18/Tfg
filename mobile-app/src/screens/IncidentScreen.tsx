@@ -561,9 +561,6 @@ export default function IncidentScreen({ navigation, route }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.title}>Detalle de incidente</Text>
           <Text style={styles.subtitle}>{incident?.name ?? incidentId ?? 'Sin identificador'}</Text>
