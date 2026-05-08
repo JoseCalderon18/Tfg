@@ -58,7 +58,7 @@ export default function SettingsScreen({ navigation }: any) {
         <Text style={styles.cardTitle}>Buenas practicas</Text>
         <View style={styles.tipsContainer}>
           <Text style={styles.tip}>- Activa el GPS antes de iniciar jornada.</Text>
-          <Text style={styles.tip}>- En Android por USB usa adb reverse tcp:8000 tcp:8000.</Text>
+          <Text style={styles.tip}>- Verifica que la URL detectada apunte al backend desplegado.</Text>
           <Text style={styles.tip}>- Registra descansos para que queden reflejados en la ruta.</Text>
           <Text style={styles.tip}>- Manten la app en primer plano durante operaciones criticas.</Text>
         </View>

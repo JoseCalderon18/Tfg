@@ -1,14 +1,12 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// En Android fisico por USB + `adb reverse`, 127.0.0.1 apunta al backend del PC.
-// Para emulador se puede usar EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
-const DEFAULT_LOCAL_API_HOST = 'http://127.0.0.1:8000';
+const DEPLOYED_API_BASE_URL = 'https://tfg-backend-jrrn.onrender.com/api';
 
-const DEFAULT_API_HOST =
+const LOCAL_API_HOST =
   Platform.OS === 'android'
-    ? process.env.EXPO_PUBLIC_ANDROID_API_HOST ?? DEFAULT_LOCAL_API_HOST
-    : process.env.EXPO_PUBLIC_IOS_API_HOST ?? 'http://localhost:8000';
+    ? process.env.EXPO_PUBLIC_ANDROID_API_HOST
+    : process.env.EXPO_PUBLIC_IOS_API_HOST;
 
 function getExpoHostApiUrl() {
   const hostUri =
@@ -30,7 +28,8 @@ function getExpoHostApiUrl() {
   return `http://${host}:8000/api`;
 }
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? `${DEFAULT_API_HOST}/api`;
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? (LOCAL_API_HOST ? `${LOCAL_API_HOST}/api` : DEPLOYED_API_BASE_URL);
 
 type ApiAuthHandlers = {
   refreshAccessToken: () => Promise<string | null>;
@@ -50,6 +49,26 @@ export class ApiConnectionError extends Error {
     super(message);
     this.name = 'ApiConnectionError';
     this.attemptedUrls = attemptedUrls;
+  }
+}
+
+export class ApiResponseParseError extends Error {
+  status: number;
+  contentType: string;
+  bodyPreview: string;
+
+  constructor(response: Response, bodyText: string) {
+    const contentType = response.headers.get('Content-Type') ?? '';
+    const bodyPreview = bodyText.replace(/\s+/g, ' ').trim().slice(0, 180);
+    super(
+      `La API respondio con un formato no valido (HTTP ${response.status}).` +
+        (contentType ? ` Content-Type: ${contentType}.` : '') +
+        (bodyPreview ? ` Respuesta: ${bodyPreview}` : '')
+    );
+    this.name = 'ApiResponseParseError';
+    this.status = response.status;
+    this.contentType = contentType;
+    this.bodyPreview = bodyPreview;
   }
 }
 
@@ -74,17 +93,14 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 function getFallbackApiUrls() {
   const urls: string[] = [];
 
-  if (
-    Platform.OS === 'android' &&
-    !process.env.EXPO_PUBLIC_API_BASE_URL &&
-    !process.env.EXPO_PUBLIC_ANDROID_API_HOST &&
-    DEFAULT_API_HOST === DEFAULT_LOCAL_API_HOST
-  ) {
-    urls.push('http://10.0.2.2:8000/api');
-  }
-
   const expoHostApiUrl = getExpoHostApiUrl();
-  if (expoHostApiUrl && expoHostApiUrl !== API_BASE_URL && !urls.includes(expoHostApiUrl)) {
+  if (
+    !process.env.EXPO_PUBLIC_API_BASE_URL &&
+    LOCAL_API_HOST &&
+    expoHostApiUrl &&
+    expoHostApiUrl !== API_BASE_URL &&
+    !urls.includes(expoHostApiUrl)
+  ) {
     urls.push(expoHostApiUrl);
   }
 
@@ -155,5 +171,13 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 // Utilidad para parsear respuestas JSON con manejo uniforme de errores.
 export async function parseJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
-  return text ? (JSON.parse(text) as T) : ({} as T);
+  if (!text) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new ApiResponseParseError(response, text);
+  }
 }

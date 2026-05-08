@@ -136,21 +136,28 @@ flowchart TB
 Variables utiles en `mobile-app/.env`:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api
-EXPO_PUBLIC_ANDROID_API_HOST=http://127.0.0.1:8000
-EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
+EXPO_PUBLIC_API_BASE_URL=https://tfg-backend-jrrn.onrender.com/api
 ```
 
-Android fisico por USB:
+La app usa ese backend desplegado por defecto si no existe `.env`.
+
+Android fisico por USB con backend local:
 
 ```bash
+EXPO_PUBLIC_ANDROID_API_HOST=http://127.0.0.1:8000
 adb reverse tcp:8000 tcp:8000
 ```
 
-Emulador Android:
+Emulador Android con backend local:
 
 ```bash
 EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
+```
+
+iPhone simulador con backend local:
+
+```bash
+EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
 ```
 
 ### 2. Instalar dependencias

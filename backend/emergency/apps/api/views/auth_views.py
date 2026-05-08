@@ -971,6 +971,6 @@ class JWTLoginView(APIView):
             {
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "user": UserSerializer(user).data,
+                "user": _serializar_usuario_mobile(user, request),
             }
         )

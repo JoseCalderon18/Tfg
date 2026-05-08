@@ -283,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : '';
 
       throw new Error(
-        `${detalle} Comprueba que el backend esta levantado en el puerto 8000 y ejecutandose en 0.0.0.0:8000 si accedes desde red local.${urlsProbadas} Si usas un movil Android por USB, ejecuta "adb reverse tcp:8000 tcp:8000". Si usas el emulador de Android, configura EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000.`
+        `${detalle} Comprueba que el backend desplegado esta disponible y que EXPO_PUBLIC_API_BASE_URL apunta a la URL correcta.${urlsProbadas} Para pruebas locales, puedes configurar EXPO_PUBLIC_ANDROID_API_HOST o EXPO_PUBLIC_IOS_API_HOST.`
       );
     }
 

@@ -2,14 +2,14 @@
   "expo": {
     "name": "Emergency Mobile",
     "slug": "app-emergencias",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
       "package": "com.emergency.mobile",
-      "versionCode": 4,
+      "versionCode": 5,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
