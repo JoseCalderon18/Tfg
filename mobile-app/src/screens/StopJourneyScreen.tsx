@@ -3,13 +3,14 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -44,6 +45,15 @@ type PausePoint = PointCoordinates & {
   id: string;
   title: string;
   description?: string;
+};
+
+type JourneyMapProps = {
+  mapRegion: ReturnType<typeof buildRegion>;
+  startPoint: PointCoordinates | null;
+  pausePoints: PausePoint[];
+  operativePoint: PointCoordinates | null;
+  stopPoint: PointCoordinates | null;
+  routeCoordinates: PointCoordinates[];
 };
 
 function isValidCoordinates(latitude: number, longitude: number) {
@@ -203,12 +213,163 @@ function buildRegion(points: PointCoordinates[]) {
   };
 }
 
+function buildMapHtml(
+  mapRegion: ReturnType<typeof buildRegion>,
+  markers: Array<PointCoordinates & { title: string; color: string }>,
+  routeCoordinates: PointCoordinates[]
+) {
+  const serializedRegion = JSON.stringify(mapRegion);
+  const serializedMarkers = JSON.stringify(markers);
+  const serializedRoute = JSON.stringify(routeCoordinates);
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+      html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; background: #E2E8F0; }
+      .leaflet-container { font-family: Arial, sans-serif; }
+      .fallback {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #334155;
+        font: 14px Arial, sans-serif;
+        text-align: center;
+        padding: 18px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"><div class="fallback">Cargando mapa de la jornada...</div></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      (function () {
+        var region = ${serializedRegion};
+        var markers = ${serializedMarkers};
+        var route = ${serializedRoute};
+
+        if (!window.L) {
+          document.getElementById('map').innerHTML = '<div class="fallback">No se pudo cargar el mapa.</div>';
+          return;
+        }
+
+        var map = L.map('map', {
+          attributionControl: false,
+          zoomControl: false,
+          dragging: false,
+          scrollWheelZoom: false,
+          doubleClickZoom: false,
+          boxZoom: false,
+          keyboard: false,
+          tap: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          crossOrigin: true
+        }).addTo(map);
+
+        var bounds = [];
+
+        markers.forEach(function (marker) {
+          var point = [marker.latitude, marker.longitude];
+          bounds.push(point);
+          L.circleMarker(point, {
+            radius: 8,
+            color: marker.color,
+            fillColor: marker.color,
+            fillOpacity: 1,
+            weight: 2
+          }).addTo(map).bindPopup(marker.title);
+        });
+
+        if (route.length > 1) {
+          var routePoints = route.map(function (point) {
+            return [point.latitude, point.longitude];
+          });
+          routePoints.forEach(function (point) {
+            bounds.push(point);
+          });
+          L.polyline(routePoints, { color: '#2563EB', weight: 4, opacity: 0.9 }).addTo(map);
+        }
+
+        if (bounds.length > 1) {
+          map.fitBounds(bounds, { padding: [28, 28], maxZoom: 16 });
+        } else {
+          map.setView([region.latitude, region.longitude], 14);
+        }
+      })();
+    </script>
+  </body>
+</html>`;
+}
+
+function JourneyMap({
+  mapRegion,
+  startPoint,
+  pausePoints,
+  operativePoint,
+  stopPoint,
+  routeCoordinates,
+}: JourneyMapProps) {
+  const mapHtml = useMemo(() => {
+    const markers: Array<PointCoordinates & { title: string; color: string }> = [];
+
+    if (startPoint) {
+      markers.push({ ...startPoint, title: 'Inicio de jornada', color: '#16A34A' });
+    }
+
+    pausePoints.forEach((pausePoint) => {
+      markers.push({
+        latitude: pausePoint.latitude,
+        longitude: pausePoint.longitude,
+        title: pausePoint.title,
+        color: '#F59E0B',
+      });
+    });
+
+    if (operativePoint) {
+      markers.push({ ...operativePoint, title: 'Ubicacion actual', color: '#2563EB' });
+    } else if (stopPoint) {
+      markers.push({ ...stopPoint, title: 'Fin de jornada', color: '#DC2626' });
+    }
+
+    return buildMapHtml(mapRegion, markers, routeCoordinates);
+  }, [mapRegion, operativePoint, pausePoints, routeCoordinates, startPoint, stopPoint]);
+
+  return (
+    <WebView
+      style={styles.map}
+      originWhitelist={['*']}
+      source={{ html: mapHtml, baseUrl: 'https://localhost' }}
+      javaScriptEnabled
+      domStorageEnabled
+      scrollEnabled={false}
+      showsHorizontalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
+      startInLoadingState
+      renderLoading={() => (
+        <View style={styles.stateBox}>
+          <ActivityIndicator color="#2563EB" />
+          <Text style={styles.stateText}>Cargando mapa de la jornada...</Text>
+        </View>
+      )}
+      onError={() => undefined}
+    />
+  );
+}
+
 export default function StopJourneyScreen({ navigation }: any) {
   const [journey, setJourney] = useState<JourneyApi | null>(null);
   const [loading, setLoading] = useState(false);
   const [screenLoading, setScreenLoading] = useState(true);
   const [screenError, setScreenError] = useState('');
   const [locationPermission, setLocationPermission] = useState(false);
+  const [mapReadyToMount, setMapReadyToMount] = useState(false);
   const { token, user } = useAuth();
   const { location: trackedLocation, stopTracking } = useLocation();
   const [manualLocation, setManualLocation] = useState<Location.LocationObject | null>(null);
@@ -225,6 +386,20 @@ export default function StopJourneyScreen({ navigation }: any) {
       setScreenError('No hay una sesion activa para consultar la jornada.');
     }
   }, [token, user]);
+
+  useEffect(() => {
+    setMapReadyToMount(false);
+
+    if (screenLoading) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setMapReadyToMount(true);
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [screenLoading, journey?.id]);
 
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -314,7 +489,8 @@ export default function StopJourneyScreen({ navigation }: any) {
   const startPoint = useMemo(() => parsePoint(journey?.location_start), [journey?.location_start]);
   const stopPoint = useMemo(() => parsePoint(journey?.location_stop), [journey?.location_stop]);
   const pausePoints = useMemo(() => parsePausePoints(journey?.notes), [journey?.notes]);
-  const operativePoint = currentLocation
+  const operativePoint =
+    currentLocation && isValidCoordinates(currentLocation.coords.latitude, currentLocation.coords.longitude)
     ? {
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
@@ -337,6 +513,7 @@ export default function StopJourneyScreen({ navigation }: any) {
 
   const mapRegion = useMemo(() => buildRegion(routeCoordinates), [routeCoordinates]);
   const canRenderMap = routeCoordinates.length > 0;
+  const shouldMountMap = canRenderMap && mapReadyToMount;
   const canStopJourney = Boolean(journey && !journey.end_date);
 
   // Calorias estimadas y sugerencias
@@ -418,7 +595,7 @@ export default function StopJourneyScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         {!screenLoading && !canStopJourney ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No hay jornadas iniciadas</Text>
@@ -448,46 +625,16 @@ export default function StopJourneyScreen({ navigation }: any) {
                 <ActivityIndicator color="#2563EB" />
                 <Text style={styles.stateText}>Cargando datos de la jornada...</Text>
               </View>
-            ) : canRenderMap ? (
+            ) : shouldMountMap ? (
               <>
-                <MapView
-                  style={styles.map}
-                  initialRegion={mapRegion}
-                  mapType="standard"
-                  toolbarEnabled={false}
-                  showsCompass
-                  showsScale
-                  rotateEnabled
-                  pitchEnabled={false}
-                  loadingEnabled={false}
-                  moveOnMarkerPress={false}
-                >
-                  {startPoint ? (
-                    <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
-                  ) : null}
-
-                  {pausePoints.map((pausePoint) => (
-                    <Marker
-                      key={pausePoint.id}
-                      coordinate={{ latitude: pausePoint.latitude, longitude: pausePoint.longitude }}
-                      title={pausePoint.title}
-                      description={pausePoint.description}
-                      pinColor="#F59E0B"
-                    />
-                  ))}
-
-                  {operativePoint ? (
-                    <Marker coordinate={operativePoint} title="Ubicacion actual" pinColor="#2563EB" />
-                  ) : null}
-
-                  {stopPoint && !operativePoint ? (
-                    <Marker coordinate={stopPoint} title="Fin de jornada" pinColor="#DC2626" />
-                  ) : null}
-
-                  {routeCoordinates.length >= 2 ? (
-                    <Polyline coordinates={routeCoordinates} strokeColor="#2563EB" strokeWidth={4} />
-                  ) : null}
-                </MapView>
+                <JourneyMap
+                  mapRegion={mapRegion}
+                  startPoint={startPoint}
+                  pausePoints={pausePoints}
+                  operativePoint={operativePoint}
+                  stopPoint={stopPoint}
+                  routeCoordinates={routeCoordinates}
+                />
 
                 <View style={styles.legend}>
                   <View style={styles.legendItem}>
@@ -504,6 +651,11 @@ export default function StopJourneyScreen({ navigation }: any) {
                   </View>
                 </View>
               </>
+            ) : canRenderMap ? (
+              <View style={styles.stateBox}>
+                <ActivityIndicator color="#2563EB" />
+                <Text style={styles.stateText}>Preparando mapa de la jornada...</Text>
+              </View>
             ) : (
               <View style={styles.stateBox}>
                 <Text style={styles.stateTitle}>Sin coordenadas para mostrar</Text>
@@ -542,7 +694,7 @@ export default function StopJourneyScreen({ navigation }: any) {
         </TouchableOpacity>
           </>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -553,7 +705,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 24,
@@ -595,7 +747,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emptyCard: {
-    flex: 1,
+    minHeight: 420,
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
     borderWidth: 1,
@@ -623,7 +775,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   mapCard: {
-    flex: 1,
+    minHeight: 360,
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
     borderWidth: 1,
@@ -654,7 +806,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   mapWrapper: {
-    flex: 1,
+    height: 300,
     position: 'relative',
     backgroundColor: '#E5E7EB',
   },
