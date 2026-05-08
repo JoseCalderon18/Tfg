@@ -652,14 +652,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <Text style={styles.title}>Puntos de Interes</Text>
-        <View style={{ width: 60 }} />
       </View>
 
       {activeSection === 'add' ? (
@@ -723,15 +716,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.primary,
   },
   title: {
     fontSize: 20,

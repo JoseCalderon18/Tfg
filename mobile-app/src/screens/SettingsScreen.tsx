@@ -11,10 +11,6 @@ export default function SettingsScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Volver</Text>
-      </TouchableOpacity>
-
       <View style={styles.header}>
         <Text style={styles.title}>Configuracion operativa</Text>
         <Text style={styles.subtitle}>Referencia rapida para conexion y uso en terreno.</Text>
@@ -75,21 +71,6 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.xl,
     paddingBottom: spacing.xxxl,
-  },
-  backButton: {
-    alignSelf: 'flex-end',
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButtonText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text,
-    fontWeight: '700',
   },
   header: {
     marginBottom: spacing.xxl,

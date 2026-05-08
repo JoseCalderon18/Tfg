@@ -99,22 +99,6 @@ export default function StartJourneyScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1, padding: 20, justifyContent: 'center', backgroundColor: colors.background }}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={{
-          position: 'absolute',
-          top: 40,
-          right: 20,
-          zIndex: 10,
-          backgroundColor: colors.surfaceMuted,
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          borderRadius: 999,
-        }}
-      >
-        <Text style={{ color: colors.text, fontWeight: '700' }}>Volver</Text>
-      </TouchableOpacity>
-
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 30, color: colors.text }}>Iniciar jornada</Text>
 
       <View

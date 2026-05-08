@@ -626,17 +626,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  backButton: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
   headerText: {
     flex: 1,
   },

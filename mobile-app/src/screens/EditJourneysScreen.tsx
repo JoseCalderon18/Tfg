@@ -424,9 +424,6 @@ export default function PantallaEditarJornadas({ navigation }: any) {
   return (
     <View style={estilos.container}>
       <View style={estilos.header}>
-        <TouchableOpacity style={estilos.backButton} onPress={() => navigation.goBack()}>
-          <Text style={estilos.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <View style={estilos.headerText}>
           <Text style={estilos.title}>Editar jornadas</Text>
           <Text style={estilos.subtitle}>{usuario?.username ?? 'Operativo'}</Text>
@@ -460,17 +457,6 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-  },
-  backButton: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
   },
   headerText: {
     flex: 1,
@@ -667,5 +653,4 @@ const estilos = StyleSheet.create({
     fontWeight: '800',
   },
 });
-
 

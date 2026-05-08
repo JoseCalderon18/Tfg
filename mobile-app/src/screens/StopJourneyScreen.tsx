@@ -419,13 +419,6 @@ export default function StopJourneyScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerSpacer} />
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>Volver</Text>
-          </TouchableOpacity>
-        </View>
-
         {!screenLoading && !canStopJourney ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No hay jornadas iniciadas</Text>
@@ -565,26 +558,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 24,
     gap: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  backButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  backButtonText: {
-    color: '#0F172A',
-    fontWeight: '700',
   },
   dateCard: {
     backgroundColor: '#FFFFFF',

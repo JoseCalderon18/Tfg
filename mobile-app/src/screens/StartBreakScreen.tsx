@@ -127,10 +127,6 @@ export default function StartBreakScreen({ navigation }: any) {
 
   return (
     <View style={styles.screen}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Volver</Text>
-      </TouchableOpacity>
-
       <View style={styles.card}>
         <Text style={styles.eyebrow}>Pausa operativa</Text>
         <Text style={styles.title}>Registrar descanso</Text>
@@ -167,19 +163,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: 20,
     justifyContent: 'center',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 48,
-    right: 20,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    color: colors.text,
-    fontWeight: '700',
   },
   card: {
     borderRadius: 24,

@@ -500,9 +500,6 @@ export default function ProfileScreen({ navigation }: any) {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Volver</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.logoutButton} onPress={() => void logout()}>
               <Text style={styles.logoutButtonText}>Cerrar sesion</Text>
             </TouchableOpacity>
@@ -767,16 +764,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-  },
-  secondaryButton: {
-    borderRadius: 12,
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  secondaryButtonText: {
-    color: '#0F172A',
-    fontWeight: '800',
   },
   logoutButton: {
     borderRadius: 12,
