@@ -36,7 +36,14 @@ type DetalleIncidenteResponse = {
   description?: string | null;
   location?: unknown;
   location_address?: string | null;
+  created_by?: string | null;
   owner_organization?: string | { id?: string; name?: string } | null;
+  owner_organization_id?: string | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  is_active?: boolean | null;
 };
 
 type MensajeIncidente = {
@@ -49,6 +56,63 @@ type MensajeIncidente = {
   content: string;
   created_at: string;
   updated_at: string;
+};
+
+type DetalleUsuarioAsignado = {
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  organization_name?: string | null;
+};
+
+type AsignacionIncidente = {
+  id: string;
+  user?: string | null;
+  user_id?: string | null;
+  user_detail?: DetalleUsuarioAsignado | null;
+  role_in_incident?: string | null;
+  role?: string | null;
+  joined_at?: string | null;
+  left_at?: string | null;
+  is_active?: boolean | null;
+};
+
+type AlertaTimeline = {
+  id: string;
+  incident?: string | null;
+  alert_type?: string | null;
+  severity?: string | null;
+  status?: string | null;
+  title?: string | null;
+  description?: string | null;
+  created_by?: string | null;
+  acked_by?: string | null;
+  acked_at?: string | null;
+  ack_notes?: string | null;
+  closed_by?: string | null;
+  closed_at?: string | null;
+  close_notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type AuditoriaTimeline = {
+  id: string;
+  created_at?: string | null;
+  description?: string | null;
+  created_username?: string | null;
+};
+
+type EventoTimeline = {
+  id: string;
+  fecha: string;
+  tipo: "incidente" | "alerta" | "mensaje" | "unidad" | "auditoria";
+  titulo: string;
+  descripcion?: string;
+  actor?: string | null;
+  tono: "rojo" | "ambar" | "azul" | "verde" | "violeta" | "gris";
 };
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
@@ -65,6 +129,30 @@ const opcionesEstado: Array<{ value: EstadoIncidente; label: string }> = [
   { value: "TRIAGE", label: "En evaluacion" },
   { value: "CLOSED", label: "Cerrado" },
 ];
+
+const etiquetasAlertas: Record<string, string> = {
+  FIRE: "Fuego",
+  MEDICAL: "Sanitaria",
+  RESCUE: "Rescate",
+  SECURITY: "Seguridad",
+  WEATHER: "Meteorologica",
+  OTHER: "Otra",
+};
+
+const etiquetasSeveridad: Record<string, string> = {
+  LOW: "Baja",
+  MEDIUM: "Media",
+  HIGH: "Alta",
+  CRITICAL: "Critica",
+};
+
+function normalizarArray<T>(raw: unknown): T[] {
+  if (Array.isArray(raw)) return raw as T[];
+  if (raw && typeof raw === "object" && Array.isArray((raw as { results?: unknown }).results)) {
+    return (raw as { results: T[] }).results;
+  }
+  return [];
+}
 
 function extraerCoordenadas(location: unknown): LatLngTuple | null {
   // Tratamos de entender la ubicación de varias formas que puede venir
@@ -116,6 +204,265 @@ function normalizarOrganizaciones(raw: unknown): Organizacion[] {
     .filter((org) => org.id && org.name);
 }
 
+function formatearFechaTimeline(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatearMomentoTimeline(value?: string | null) {
+  if (!value) return { fecha: "", hora: "" };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { fecha: "", hora: "" };
+
+  return {
+    fecha: new Intl.DateTimeFormat("es-ES", {
+      day: "2-digit",
+      month: "short",
+    })
+      .format(date)
+      .replace(".", ""),
+    hora: new Intl.DateTimeFormat("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date),
+  };
+}
+
+function obtenerNombreAsignado(asignacion: AsignacionIncidente) {
+  const detalle = asignacion.user_detail;
+  const nombreCompleto = `${detalle?.first_name ?? ""} ${detalle?.last_name ?? ""}`.trim();
+  return nombreCompleto || detalle?.username || asignacion.user || detalle?.email || "Unidad sin identificar";
+}
+
+function obtenerEtiquetaRol(rol?: string | null) {
+  if (!rol) return "Asignacion operativa";
+  const etiquetas: Record<string, string> = {
+    LEAD: "Responsable",
+    OPERATIVE: "Operativo",
+    MEDIC: "Sanitario",
+    SUPPORT: "Apoyo",
+  };
+  return etiquetas[rol] ?? rol;
+}
+
+function obtenerEtiquetaAlerta(alerta: AlertaTimeline) {
+  const tipo = alerta.alert_type ? etiquetasAlertas[alerta.alert_type] ?? alerta.alert_type : "Alerta";
+  const severidad = alerta.severity ? etiquetasSeveridad[alerta.severity] ?? alerta.severity : "";
+  return severidad ? `${tipo} (${severidad})` : tipo;
+}
+
+function fechasDistintas(a?: string | null, b?: string | null) {
+  if (!a || !b) return Boolean(a || b);
+  const fechaA = new Date(a).getTime();
+  const fechaB = new Date(b).getTime();
+  if (Number.isNaN(fechaA) || Number.isNaN(fechaB)) return a !== b;
+  return Math.abs(fechaA - fechaB) > 1500;
+}
+
+function descripcionPerteneceAIncidente(auditoria: AuditoriaTimeline, incidenteId?: string, nombreIncidente?: string) {
+  const descripcion = (auditoria.description ?? "").toLowerCase();
+  const nombre = (nombreIncidente ?? "").trim().toLowerCase();
+  const idNormalizado = (incidenteId ?? "").trim().toLowerCase();
+
+  if (!descripcion) return false;
+  if (idNormalizado && descripcion.includes(idNormalizado)) return true;
+  if (nombre && descripcion.includes(nombre)) return true;
+  return false;
+}
+
+function crearEventosTimeline({
+  incidente,
+  incidenteId,
+  nombreIncidente,
+  mensajes,
+  asignaciones,
+  alertas,
+  auditorias,
+}: {
+  incidente: DetalleIncidenteResponse | null;
+  incidenteId?: string;
+  nombreIncidente: string;
+  mensajes: MensajeIncidente[];
+  asignaciones: AsignacionIncidente[];
+  alertas: AlertaTimeline[];
+  auditorias: AuditoriaTimeline[];
+}) {
+  const eventos: EventoTimeline[] = [];
+
+  if (incidente?.created_at) {
+    eventos.push({
+      id: `incidente-creado-${incidente.id}`,
+      fecha: incidente.created_at,
+      tipo: "incidente",
+      titulo: "Incidente creado",
+      descripcion: nombreIncidente || incidente.name || "Incidente registrado en el panel.",
+      actor: incidente.created_by,
+      tono: "rojo",
+    });
+  }
+
+  if (incidente?.started_at && fechasDistintas(incidente.started_at, incidente.created_at)) {
+    eventos.push({
+      id: `incidente-iniciado-${incidente.id}`,
+      fecha: incidente.started_at,
+      tipo: "incidente",
+      titulo: "Incidente iniciado",
+      descripcion: "Se marco el inicio operativo del incidente.",
+      actor: incidente.created_by,
+      tono: "ambar",
+    });
+  }
+
+  if (incidente?.updated_at && fechasDistintas(incidente.updated_at, incidente.created_at)) {
+    eventos.push({
+      id: `incidente-actualizado-${incidente.id}`,
+      fecha: incidente.updated_at,
+      tipo: "incidente",
+      titulo: "Incidente actualizado",
+      descripcion: "Se modificaron los datos principales del incidente.",
+      actor: null,
+      tono: "azul",
+    });
+  }
+
+  if (incidente?.ended_at) {
+    eventos.push({
+      id: `incidente-cerrado-${incidente.id}`,
+      fecha: incidente.ended_at,
+      tipo: "incidente",
+      titulo: "Incidente cerrado",
+      descripcion: "El incidente quedo marcado como cerrado.",
+      actor: null,
+      tono: "verde",
+    });
+  }
+
+  asignaciones.forEach((asignacion) => {
+    if (asignacion.joined_at) {
+      eventos.push({
+        id: `asignacion-${asignacion.id}-alta`,
+        fecha: asignacion.joined_at,
+        tipo: "unidad",
+        titulo: "Unidad asignada",
+        descripcion: `${obtenerNombreAsignado(asignacion)} - ${obtenerEtiquetaRol(asignacion.role_in_incident ?? asignacion.role)}`,
+        actor: null,
+        tono: "verde",
+      });
+    }
+    if (asignacion.left_at) {
+      eventos.push({
+        id: `asignacion-${asignacion.id}-baja`,
+        fecha: asignacion.left_at,
+        tipo: "unidad",
+        titulo: "Unidad retirada",
+        descripcion: obtenerNombreAsignado(asignacion),
+        actor: null,
+        tono: "gris",
+      });
+    }
+  });
+
+  alertas
+    .filter((alerta) => !incidenteId || String(alerta.incident ?? "") === String(incidenteId))
+    .forEach((alerta) => {
+      if (alerta.created_at) {
+        eventos.push({
+          id: `alerta-${alerta.id}-creada`,
+          fecha: alerta.created_at,
+          tipo: "alerta",
+          titulo: `Alerta lanzada: ${alerta.title || obtenerEtiquetaAlerta(alerta)}`,
+          descripcion: alerta.description || obtenerEtiquetaAlerta(alerta),
+          actor: alerta.created_by,
+          tono: alerta.severity === "CRITICAL" || alerta.severity === "HIGH" ? "rojo" : "ambar",
+        });
+      }
+      if (alerta.acked_at) {
+        eventos.push({
+          id: `alerta-${alerta.id}-reconocida`,
+          fecha: alerta.acked_at,
+          tipo: "alerta",
+          titulo: "Alerta reconocida",
+          descripcion: alerta.ack_notes || alerta.title || obtenerEtiquetaAlerta(alerta),
+          actor: alerta.acked_by,
+          tono: "azul",
+        });
+      }
+      if (alerta.closed_at) {
+        eventos.push({
+          id: `alerta-${alerta.id}-cerrada`,
+          fecha: alerta.closed_at,
+          tipo: "alerta",
+          titulo: "Alerta cerrada",
+          descripcion: alerta.close_notes || alerta.title || obtenerEtiquetaAlerta(alerta),
+          actor: alerta.closed_by,
+          tono: "verde",
+        });
+      }
+    });
+
+  mensajes.forEach((mensaje) => {
+    eventos.push({
+      id: `mensaje-${mensaje.id}`,
+      fecha: mensaje.created_at,
+      tipo: "mensaje",
+      titulo: "Mensaje en el incidente",
+      descripcion: mensaje.content,
+      actor: mensaje.author_name || mensaje.author_username,
+      tono: "violeta",
+    });
+  });
+
+  auditorias
+    .filter((auditoria) => descripcionPerteneceAIncidente(auditoria, incidenteId, nombreIncidente || incidente?.name || ""))
+    .forEach((auditoria) => {
+      if (!auditoria.created_at) return;
+      eventos.push({
+        id: `auditoria-${auditoria.id}`,
+        fecha: auditoria.created_at,
+        tipo: "auditoria",
+        titulo: "Accion registrada",
+        descripcion: auditoria.description ?? "",
+        actor: auditoria.created_username,
+        tono: "gris",
+      });
+    });
+
+  return eventos
+    .filter((evento) => Boolean(evento.fecha) && !Number.isNaN(new Date(evento.fecha).getTime()))
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+}
+
+function obtenerClaseEventoTimeline(tono: EventoTimeline["tono"]) {
+  const clases: Record<EventoTimeline["tono"], string> = {
+    rojo: "border-red-500/50 bg-red-500/10 text-red-100",
+    ambar: "border-amber-500/50 bg-amber-500/10 text-amber-100",
+    azul: "border-sky-500/50 bg-sky-500/10 text-sky-100",
+    verde: "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",
+    violeta: "border-violet-500/50 bg-violet-500/10 text-violet-100",
+    gris: "border-slate-600 bg-slate-900/70 text-slate-100",
+  };
+  return clases[tono];
+}
+
+function obtenerEtiquetaTipoEvento(tipo: EventoTimeline["tipo"]) {
+  const etiquetas: Record<EventoTimeline["tipo"], string> = {
+    incidente: "Incidente",
+    alerta: "Alerta",
+    mensaje: "Mensaje",
+    unidad: "Unidad",
+    auditoria: "Auditoria",
+  };
+  return etiquetas[tipo];
+}
+
 function SelectorMapaEditable({
   coords,
   editable,
@@ -147,11 +494,17 @@ export default function EditIncidentPage() {
 
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([]);
   const [usuarioActual, setUsuarioActual] = useState<RespuestaUsuario | null>(null);
+  const [detalleIncidente, setDetalleIncidente] = useState<DetalleIncidenteResponse | null>(null);
   const [mensajes, setMensajes] = useState<MensajeIncidente[]>([]);
   const [cargandoMensajes, setCargandoMensajes] = useState(true);
   const [errorMensajes, setErrorMensajes] = useState("");
   const [mensajeNuevo, setMensajeNuevo] = useState("");
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
+  const [alertasTimeline, setAlertasTimeline] = useState<AlertaTimeline[]>([]);
+  const [asignacionesTimeline, setAsignacionesTimeline] = useState<AsignacionIncidente[]>([]);
+  const [auditoriasTimeline, setAuditoriasTimeline] = useState<AuditoriaTimeline[]>([]);
+  const [cargandoTimeline, setCargandoTimeline] = useState(true);
+  const [errorTimeline, setErrorTimeline] = useState("");
 
   const [nombre, setNombre] = useState("");
   const [tipoIncidente, setTipoIncidente] = useState<TipoIncidente>("WILDFIRE");
@@ -173,6 +526,29 @@ export default function EditIncidentPage() {
     }
     return null;
   }, [latitud, longitud]);
+
+  const eventosTimeline = useMemo(
+    () =>
+      crearEventosTimeline({
+        incidente: detalleIncidente,
+        incidenteId: id,
+        nombreIncidente: nombre,
+        mensajes,
+        asignaciones: asignacionesTimeline,
+        alertas: alertasTimeline,
+        auditorias: auditoriasTimeline,
+      }),
+    [alertasTimeline, asignacionesTimeline, auditoriasTimeline, detalleIncidente, id, mensajes, nombre],
+  );
+
+  const resumenTimeline = useMemo(
+    () => ({
+      alertas: eventosTimeline.filter((evento) => evento.tipo === "alerta").length,
+      unidades: eventosTimeline.filter((evento) => evento.tipo === "unidad").length,
+      mensajes: eventosTimeline.filter((evento) => evento.tipo === "mensaje").length,
+    }),
+    [eventosTimeline],
+  );
 
   useEffect(() => {
     (async () => {
@@ -205,6 +581,7 @@ export default function EditIncidentPage() {
       const incident = (await incidentRes.json()) as DetalleIncidenteResponse;
       const listaOrganizaciones = orgRes.ok ? normalizarOrganizaciones((await orgRes.json()) as unknown) : [];
       setOrganizaciones(listaOrganizaciones);
+      setDetalleIncidente(incident);
 
       setNombre(String(incident.name ?? ""));
 
@@ -266,6 +643,47 @@ export default function EditIncidentPage() {
     }
   }
 
+  async function cargarDatosTimeline(options?: { silent?: boolean }) {
+    if (!id) return;
+
+    if (!options?.silent) {
+      setCargandoTimeline(true);
+    }
+
+    const cargarEndpoint = async <T,>(url: string) => {
+      const res = await apiFetch(url);
+      if (!res.ok) {
+        throw new Error(url);
+      }
+      return normalizarArray<T>((await res.json()) as unknown);
+    };
+
+    try {
+      const [alertasRes, asignacionesRes, auditoriasRes] = await Promise.allSettled([
+        cargarEndpoint<AlertaTimeline>(`/alerts/?incident=${encodeURIComponent(id)}`),
+        cargarEndpoint<AsignacionIncidente>(`/incidents/${id}/assignments/`),
+        cargarEndpoint<AuditoriaTimeline>("/auditoria/"),
+      ]);
+
+      if (alertasRes.status === "fulfilled") {
+        setAlertasTimeline(alertasRes.value);
+      }
+      if (asignacionesRes.status === "fulfilled") {
+        setAsignacionesTimeline(asignacionesRes.value);
+      }
+      if (auditoriasRes.status === "fulfilled") {
+        setAuditoriasTimeline(auditoriasRes.value);
+      }
+
+      const fallos = [alertasRes, asignacionesRes, auditoriasRes].filter((resultado) => resultado.status === "rejected");
+      setErrorTimeline(fallos.length === 3 ? "No se pudo cargar la linea temporal del incidente." : "");
+    } finally {
+      if (!options?.silent) {
+        setCargandoTimeline(false);
+      }
+    }
+  }
+
   useEffect(() => {
     if (!id) return;
 
@@ -273,6 +691,17 @@ export default function EditIncidentPage() {
     const intervalId = window.setInterval(() => {
       void cargarMensajes({ silent: true });
     }, 8000);
+
+    return () => window.clearInterval(intervalId);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    void cargarDatosTimeline();
+    const intervalId = window.setInterval(() => {
+      void cargarDatosTimeline({ silent: true });
+    }, 15000);
 
     return () => window.clearInterval(intervalId);
   }, [id]);
@@ -367,8 +796,33 @@ export default function EditIncidentPage() {
         return;
       }
 
+      let incidenteActualizado: DetalleIncidenteResponse | null = null;
+      try {
+        incidenteActualizado = (await res.json()) as DetalleIncidenteResponse;
+      } catch {
+        incidenteActualizado = null;
+      }
+
       setExitoMensaje("Incidente actualizado correctamente.");
+      setDetalleIncidente((prev) =>
+        incidenteActualizado
+          ? incidenteActualizado
+          : prev
+          ? {
+              ...prev,
+              name: datosEnvio.name as string,
+              incident_type: datosEnvio.incident_type as TipoIncidente,
+              status: datosEnvio.status as EstadoIncidente,
+              description: datosEnvio.description as string | null,
+              location_address: datosEnvio.location_address as string | null,
+              location: datosEnvio.location ?? prev.location,
+              owner_organization_id: organizacionResponsable || null,
+              updated_at: new Date().toISOString(),
+            }
+          : prev,
+      );
       setMapaEditable(false);
+      void cargarDatosTimeline({ silent: true });
     } finally {
       setGuardando(false);
     }
@@ -459,7 +913,7 @@ export default function EditIncidentPage() {
           </button>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.75fr)_24rem]">
+        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_30rem]">
           <div className="rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
             {errorMensaje ? (
               <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{errorMensaje}</div>
@@ -696,8 +1150,104 @@ export default function EditIncidentPage() {
 </form>
           </div>
 
-          <aside className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800 shadow-2xl xl:sticky xl:top-6 xl:h-[calc(100vh-5rem)] xl:max-h-[52rem]">
-            <div className="flex h-full flex-col">
+          <aside className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800 shadow-2xl xl:sticky xl:top-6 xl:self-start">
+            <div className="flex flex-col">
+              <section className="mb-5 shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/50 shadow-inner">
+                <div className="border-b border-slate-800/80 bg-slate-900/40 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-[0.22em] text-red-300/80">Timeline</p>
+                    <h2 className="mt-2 text-xl font-bold leading-tight text-slate-100">Acciones del incidente</h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Ultimos movimientos, alertas, unidades y mensajes asociados.
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100 ring-1 ring-red-500/30">
+                    {eventosTimeline.length}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                    <p className="text-lg font-bold text-amber-100">{resumenTimeline.alertas}</p>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Alertas</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                    <p className="text-lg font-bold text-emerald-100">{resumenTimeline.unidades}</p>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Unidades</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                    <p className="text-lg font-bold text-violet-100">{resumenTimeline.mensajes}</p>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Mensajes</p>
+                  </div>
+                </div>
+                </div>
+
+                {errorTimeline ? (
+                  <div className="mx-4 mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
+                    {errorTimeline}
+                  </div>
+                ) : null}
+
+                <div className="max-h-[28rem] overflow-y-auto overflow-x-hidden p-4">
+                  {cargandoTimeline ? (
+                    <div className="grid min-h-40 place-items-center rounded-2xl bg-slate-950/40 text-sm text-slate-400 ring-1 ring-slate-800">
+                      Cargando linea temporal...
+                    </div>
+                  ) : eventosTimeline.length === 0 ? (
+                    <div className="grid min-h-40 place-items-center rounded-2xl bg-slate-950/40 px-6 text-center text-sm text-slate-400 ring-1 ring-slate-800">
+                      Todavia no hay acciones registradas para este incidente.
+                    </div>
+                  ) : (
+                    <ol className="relative space-y-4 border-l border-slate-800 pl-5">
+                      {eventosTimeline.slice(0, 80).map((evento) => {
+                        const momento = formatearMomentoTimeline(evento.fecha);
+                        return (
+                        <li key={evento.id} className="relative min-w-0">
+                          <span
+                            className={`absolute -left-[1.68rem] top-4 h-3.5 w-3.5 rounded-full border-2 ring-4 ring-slate-950 ${obtenerClaseEventoTimeline(
+                              evento.tono,
+                            )}`}
+                          />
+                          <article
+                            className={`min-w-0 overflow-hidden rounded-2xl border p-4 shadow-sm ${obtenerClaseEventoTimeline(evento.tono)}`}
+                          >
+                            <div className="flex min-w-0 items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full bg-slate-950/50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300 ring-1 ring-white/10">
+                                    {obtenerEtiquetaTipoEvento(evento.tipo)}
+                                  </span>
+                                  {evento.actor ? (
+                                    <span className="max-w-full truncate text-[11px] text-slate-400">{evento.actor}</span>
+                                  ) : null}
+                                </div>
+                                <p className="mt-2 break-words text-sm font-semibold leading-5 text-slate-50">
+                                  {evento.titulo}
+                                </p>
+                              </div>
+                              <time
+                                className="shrink-0 rounded-xl bg-slate-950/50 px-2.5 py-1.5 text-right ring-1 ring-white/10"
+                                title={formatearFechaTimeline(evento.fecha)}
+                              >
+                                <span className="block text-[11px] font-semibold text-slate-200">{momento.fecha}</span>
+                                <span className="block text-[11px] text-slate-500">{momento.hora}</span>
+                              </time>
+                            </div>
+                            {evento.descripcion ? (
+                              <p className="mt-3 max-h-28 overflow-hidden break-words text-sm leading-6 text-slate-200">
+                                {evento.descripcion}
+                              </p>
+                            ) : null}
+                          </article>
+                        </li>
+                      );
+                      })}
+                    </ol>
+                  )}
+                </div>
+              </section>
+
               <div className="border-b border-slate-800 pb-4">
                 <p className="text-xs uppercase tracking-[0.22em] text-sky-300/80">Mensajeria</p>
                 <h2 className="mt-2 text-xl font-bold text-slate-100">Chat del incidente</h2>
@@ -714,7 +1264,7 @@ export default function EditIncidentPage() {
 
               <div
                 ref={panelMensajesRef}
-                className="mt-4 min-h-[20rem] flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-950/40 p-3 ring-1 ring-slate-800"
+                className="mt-4 h-72 min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl bg-slate-950/40 p-3 ring-1 ring-slate-800"
               >
                 {cargandoMensajes ? (
                   <div className="grid h-full min-h-[16rem] place-items-center text-sm text-slate-400">
