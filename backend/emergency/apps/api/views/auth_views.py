@@ -567,15 +567,162 @@ class PanelCreateOperativeUserView(APIView):
         if not _has_panel_full_access(request.user):
             return Response({"detail": "No autorizado para crear usuarios."}, status=status.HTTP_403_FORBIDDEN)
 
-        payload = dict(request.data)
+        payload = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
         payload["role"] = "OPERATIVE"
-        payload.pop("organization_id", None)
 
         serializer = UserCreateSerializer(data=payload)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        organizacion_validada = None
+        organization_id = str(payload.get("organization_id", "") or "").strip()
+        if organization_id:
+            organizacion_validada = Organizacion.objects.filter(id=organization_id).first()
+            if organizacion_validada is None:
+                return Response({"organization_id": ["Organizacion no valida."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        dispositivo_validado = None
+        device_id = str(payload.get("device_id", "") or "").strip()
+        if device_id:
+            dispositivo_validado = Dispositivo.objects.filter(id=device_id).first()
+            if dispositivo_validado is None:
+                return Response({"device_id": ["Dispositivo no valido."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        supervisor_validado = None
+        assigned_supervisor_id = str(payload.get("assigned_supervisor_id", "") or "").strip()
+        if assigned_supervisor_id:
+            supervisor_validado = User.objects.filter(id=assigned_supervisor_id, profile__role="SUPERVISOR").first()
+            if supervisor_validado is None:
+                return Response(
+                    {"assigned_supervisor_id": ["Supervisor no valido."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        ubicacion_validada = None
+        limpiar_ubicacion = False
+        if "location_lat" in payload or "location_lng" in payload:
+            raw_lat = payload.get("location_lat")
+            raw_lng = payload.get("location_lng")
+            if raw_lat in ("", None) or raw_lng in ("", None):
+                limpiar_ubicacion = True
+            else:
+                try:
+                    lat = float(raw_lat)
+                    lng = float(raw_lng)
+                except (TypeError, ValueError):
+                    return Response({"location": ["Coordenadas no validas."]}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                    return Response({"location": ["Latitud o longitud fuera de rango."]}, status=status.HTTP_400_BAD_REQUEST)
+                ubicacion_validada = Point(lng, lat, srid=4326)
+
+        operative_status_validado = None
+        if "operative_status" in payload:
+            operative_status_validado = str(payload.get("operative_status", "")).strip()
+            status_choices = {choice[0] for choice in Profile.OPERATIVE_STATUSES}
+            if operative_status_validado not in status_choices:
+                return Response({"operative_status": ["Estado operativo no valido."]}, status=status.HTTP_400_BAD_REQUEST)
+
         user = serializer.save()
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            profile = Profile.objects.create(user=user, role="OPERATIVE")
+
+        user_updated_fields = []
+        profile_updated_fields = []
+
+        if "is_active" in payload:
+            user.is_active = _normalizar_booleano(payload.get("is_active"))
+            user_updated_fields.append("is_active")
+
+        if "emergency_contact" in payload:
+            profile.emergency_contact = str(payload.get("emergency_contact", "")).strip()
+            profile_updated_fields.append("emergency_contact")
+
+        if "emergency_phone" in payload:
+            profile.emergency_phone = str(payload.get("emergency_phone", "")).strip()
+            profile_updated_fields.append("emergency_phone")
+
+        if "location_lat" in payload or "location_lng" in payload:
+            if limpiar_ubicacion:
+                profile.location = None
+            else:
+                profile.location = ubicacion_validada
+
+            profile_updated_fields.append("location")
+
+        if "medical_notes" in payload:
+            profile.medical_notes = _normalizar_lista(payload.get("medical_notes"))
+            profile_updated_fields.append("medical_notes")
+
+        if "organization_id" in payload:
+            profile.organization = organizacion_validada
+            profile_updated_fields.append("organization")
+
+        if "dni" in payload:
+            profile.dni = str(payload.get("dni", "")).strip()
+            profile_updated_fields.append("dni")
+
+        if "language" in payload:
+            profile.language = str(payload.get("language", "")).strip()
+            profile_updated_fields.append("language")
+
+        if "city" in payload:
+            profile.city = str(payload.get("city", "")).strip()
+            profile_updated_fields.append("city")
+
+        if "province" in payload:
+            profile.province = str(payload.get("province", "")).strip()
+            profile_updated_fields.append("province")
+
+        if "country" in payload:
+            profile.country = str(payload.get("country", "")).strip()
+            profile_updated_fields.append("country")
+
+        if "birth_date" in payload:
+            birth_date = str(payload.get("birth_date", "")).strip()
+            profile.birth_date = birth_date or None
+            profile_updated_fields.append("birth_date")
+
+        if "specialties" in payload:
+            profile.specialties = _normalizar_lista(payload.get("specialties"))
+            profile_updated_fields.append("specialties")
+
+        if "operative_schedule" in payload:
+            profile.operative_schedule = str(payload.get("operative_schedule", "")).strip()
+            profile_updated_fields.append("operative_schedule")
+
+        if "operative_status" in payload:
+            profile.operative_status = operative_status_validado
+            profile_updated_fields.append("operative_status")
+
+        if "blood_type" in payload:
+            profile.blood_type = str(payload.get("blood_type", "")).strip()
+            profile_updated_fields.append("blood_type")
+
+        if "nutrition_preference" in payload:
+            profile.nutrition_preference = str(payload.get("nutrition_preference", "")).strip()
+            profile_updated_fields.append("nutrition_preference")
+
+        if "device_id" in payload:
+            if dispositivo_validado:
+                profile.device = dispositivo_validado
+                if dispositivo_validado.user_id != user.id:
+                    dispositivo_validado.user = user
+                    dispositivo_validado.save(update_fields=["user"])
+            else:
+                profile.device = None
+            profile_updated_fields.append("device")
+
+        if "assigned_supervisor_id" in payload:
+            profile.assigned_supervisor = supervisor_validado
+            profile_updated_fields.append("assigned_supervisor")
+
+        if user_updated_fields:
+            user.save(update_fields=user_updated_fields)
+        if profile_updated_fields:
+            profile.save(update_fields=[*dict.fromkeys(profile_updated_fields), "updated_at"])
+
         registrar_auditoria(
             request.user,
             f"{nombre_usuario(request.user)} creo el usuario operativo '{user.username}'.",
