@@ -58,6 +58,17 @@ type MensajeIncidente = {
   updated_at: string;
 };
 
+type ChecklistIncidente = {
+  id: number;
+  created_at?: string | null;
+  checklist: string;
+  user_id?: string | null;
+  user_username?: string | null;
+  user_name?: string | null;
+  incident?: string | null;
+  is_completed: number | boolean;
+};
+
 type DetalleUsuarioAsignado = {
   username?: string | null;
   first_name?: string | null;
@@ -500,6 +511,12 @@ export default function EditIncidentPage() {
   const [errorMensajes, setErrorMensajes] = useState("");
   const [mensajeNuevo, setMensajeNuevo] = useState("");
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
+  const [checklist, setChecklist] = useState<ChecklistIncidente[]>([]);
+  const [checklistNuevo, setChecklistNuevo] = useState("");
+  const [cargandoChecklist, setCargandoChecklist] = useState(true);
+  const [errorChecklist, setErrorChecklist] = useState("");
+  const [guardandoChecklist, setGuardandoChecklist] = useState(false);
+  const [checklistActualizandoId, setChecklistActualizandoId] = useState<number | null>(null);
   const [alertasTimeline, setAlertasTimeline] = useState<AlertaTimeline[]>([]);
   const [asignacionesTimeline, setAsignacionesTimeline] = useState<AsignacionIncidente[]>([]);
   const [auditoriasTimeline, setAuditoriasTimeline] = useState<AuditoriaTimeline[]>([]);
@@ -549,6 +566,16 @@ export default function EditIncidentPage() {
     }),
     [eventosTimeline],
   );
+
+  const resumenChecklist = useMemo(() => {
+    const completados = checklist.filter((item) => Boolean(Number(item.is_completed))).length;
+    return {
+      total: checklist.length,
+      completados,
+      pendientes: Math.max(0, checklist.length - completados),
+      porcentaje: checklist.length ? Math.round((completados / checklist.length) * 100) : 0,
+    };
+  }, [checklist]);
 
   useEffect(() => {
     (async () => {
@@ -643,6 +670,38 @@ export default function EditIncidentPage() {
     }
   }
 
+  async function cargarChecklist(options?: { silent?: boolean }) {
+    if (!id) return;
+
+    if (!options?.silent) {
+      setCargandoChecklist(true);
+    }
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/checklist/`);
+      if (!res.ok) {
+        let detail = "No se pudo cargar el checklist del incidente.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string" && data.detail.trim()) {
+            detail = data.detail;
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        throw new Error(detail);
+      }
+      setChecklist(normalizarArray<ChecklistIncidente>((await res.json()) as unknown));
+      setErrorChecklist("");
+    } catch (error) {
+      setErrorChecklist(error instanceof Error ? error.message : "No se pudo cargar el checklist del incidente.");
+    } finally {
+      if (!options?.silent) {
+        setCargandoChecklist(false);
+      }
+    }
+  }
+
   async function cargarDatosTimeline(options?: { silent?: boolean }) {
     if (!id) return;
 
@@ -688,8 +747,10 @@ export default function EditIncidentPage() {
     if (!id) return;
 
     void cargarMensajes();
+    void cargarChecklist();
     const intervalId = window.setInterval(() => {
       void cargarMensajes({ silent: true });
+      void cargarChecklist({ silent: true });
     }, 8000);
 
     return () => window.clearInterval(intervalId);
@@ -866,6 +927,105 @@ export default function EditIncidentPage() {
       setMensajeNuevo("");
     } finally {
       setEnviandoMensaje(false);
+    }
+  }
+
+  async function manejarCrearChecklist(event: FormEvent) {
+    event.preventDefault();
+    if (!id || guardandoChecklist) return;
+
+    const texto = checklistNuevo.trim();
+    if (!texto) return;
+
+    setGuardandoChecklist(true);
+    setErrorChecklist("");
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/checklist/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklist: texto }),
+      });
+
+      if (!res.ok) {
+        let detail = "No se pudo crear el checklist.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          } else if (Array.isArray(data.checklist) && typeof data.checklist[0] === "string") {
+            detail = data.checklist[0];
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorChecklist(detail);
+        return;
+      }
+
+      const nuevoItem = (await res.json()) as ChecklistIncidente;
+      setChecklist((prev) => [...prev, nuevoItem]);
+      setChecklistNuevo("");
+      void cargarDatosTimeline({ silent: true });
+    } finally {
+      setGuardandoChecklist(false);
+    }
+  }
+
+  async function manejarCambioChecklist(item: ChecklistIncidente, completado: boolean) {
+    if (!id || checklistActualizandoId != null) return;
+
+    setChecklistActualizandoId(item.id);
+    setErrorChecklist("");
+
+    const estadoAnterior = checklist;
+    setChecklist((prev) =>
+      prev.map((actual) => (actual.id === item.id ? { ...actual, is_completed: completado ? 1 : 0 } : actual)),
+    );
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/checklist/${item.id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_completed: completado }),
+      });
+
+      if (!res.ok) {
+        throw new Error("No se pudo actualizar el checklist.");
+      }
+
+      const actualizado = (await res.json()) as ChecklistIncidente;
+      setChecklist((prev) => prev.map((actual) => (actual.id === actualizado.id ? actualizado : actual)));
+      void cargarDatosTimeline({ silent: true });
+    } catch (error) {
+      setChecklist(estadoAnterior);
+      setErrorChecklist(error instanceof Error ? error.message : "No se pudo actualizar el checklist.");
+    } finally {
+      setChecklistActualizandoId(null);
+    }
+  }
+
+  async function manejarBorrarChecklist(item: ChecklistIncidente) {
+    if (!id || checklistActualizandoId != null) return;
+
+    setChecklistActualizandoId(item.id);
+    setErrorChecklist("");
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/checklist/${item.id}/`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("No se pudo borrar el checklist.");
+      }
+
+      setChecklist((prev) => prev.filter((actual) => actual.id !== item.id));
+      void cargarDatosTimeline({ silent: true });
+    } catch (error) {
+      setErrorChecklist(error instanceof Error ? error.message : "No se pudo borrar el checklist.");
+    } finally {
+      setChecklistActualizandoId(null);
     }
   }
 
@@ -1152,6 +1312,133 @@ export default function EditIncidentPage() {
 
           <aside className="rounded-2xl bg-slate-900/60 p-5 ring-1 ring-slate-800 shadow-2xl xl:sticky xl:top-6 xl:self-start">
             <div className="flex flex-col">
+              <section className="mb-5 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/50 shadow-inner">
+                <div className="border-b border-slate-800/80 bg-slate-900/40 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-[0.22em] text-emerald-300/80">Checklist</p>
+                      <h2 className="mt-2 text-xl font-bold leading-tight text-slate-100">Checklist operativo</h2>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Tareas del incidente.
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-500/30">
+                      {resumenChecklist.porcentaje}%
+                    </span>
+                  </div>
+
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-950 ring-1 ring-slate-800">
+                    <div
+                      className="h-full rounded-full bg-emerald-400 transition-all"
+                      style={{ width: `${resumenChecklist.porcentaje}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                      <p className="text-lg font-bold text-slate-100">{resumenChecklist.total}</p>
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Total</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                      <p className="text-lg font-bold text-emerald-100">{resumenChecklist.completados}</p>
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Hechos</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
+                      <p className="text-lg font-bold text-amber-100">{resumenChecklist.pendientes}</p>
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">Pendientes</p>
+                    </div>
+                  </div>
+                </div>
+
+                {errorChecklist ? (
+                  <div className="mx-4 mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+                    {errorChecklist}
+                  </div>
+                ) : null}
+
+                <div className="max-h-80 overflow-y-auto overflow-x-hidden p-4">
+                  {cargandoChecklist ? (
+                    <div className="grid min-h-32 place-items-center rounded-2xl bg-slate-950/40 text-sm text-slate-400 ring-1 ring-slate-800">
+                      Cargando checklist...
+                    </div>
+                  ) : checklist.length === 0 ? (
+                    <div className="grid min-h-32 place-items-center rounded-2xl bg-slate-950/40 px-5 text-center text-sm text-slate-400 ring-1 ring-slate-800">
+                      Todavia no hay checks para este incidente.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {checklist.map((item) => {
+                        const completado = Boolean(Number(item.is_completed));
+                        const actualizando = checklistActualizandoId === item.id;
+                        return (
+                          <article
+                            key={item.id}
+                            className={`rounded-2xl border p-3 transition ${
+                              completado
+                                ? "border-emerald-500/30 bg-emerald-500/10"
+                                : "border-slate-800 bg-slate-950/50"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={completado}
+                                disabled={actualizando}
+                                onChange={(event) => {
+                                  void manejarCambioChecklist(item, event.target.checked);
+                                }}
+                                className="mt-1 h-4 w-4 shrink-0 rounded border-slate-700 bg-slate-950"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className={`break-words text-sm font-semibold leading-5 ${
+                                    completado ? "text-emerald-100 line-through decoration-emerald-300/70" : "text-slate-100"
+                                  }`}
+                                >
+                                  {item.checklist}
+                                </p>
+                                <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                                  {item.user_name || item.user_username || "Usuario"} · {formatearFechaMensaje(item.created_at ?? "")}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={actualizando}
+                                onClick={() => {
+                                  void manejarBorrarChecklist(item);
+                                }}
+                                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50"
+                              >
+                                Borrar
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={manejarCrearChecklist} className="border-t border-slate-800 p-4">
+                  <textarea
+                    value={checklistNuevo}
+                    onChange={(event) => setChecklistNuevo(event.target.value)}
+                    rows={3}
+                    placeholder="Añade una tarea: confirmar ubicación, asignar unidades, revisar comunicaciones..."
+                    className="w-full rounded-2xl bg-slate-950/50 px-4 py-3 text-sm text-slate-100 ring-1 ring-slate-800 outline-none transition focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <div className="mt-3 flex items-center justify-end">
+                    <button
+                      type="submit"
+                      disabled={guardandoChecklist || !checklistNuevo.trim()}
+                      className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {guardandoChecklist ? "Añadiendo..." : "Añadir check"}
+                    </button>
+                  </div>
+                </form>
+              </section>
+
               <section className="mb-5 shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/50 shadow-inner">
                 <div className="border-b border-slate-800/80 bg-slate-900/40 p-4">
                 <div className="flex items-start justify-between gap-3">

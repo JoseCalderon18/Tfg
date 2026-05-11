@@ -5,10 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Max
 from django.utils import timezone
 
 from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
-from emergency.apps.core.models import Incidente, IncidentMember, IncidentMessage, User
+from emergency.apps.core.models import Incidente, IncidentChecklist, IncidentMember, IncidentMessage, User
 from .auth_views import _has_panel_full_access
 from ..serializers import (
     IncidenteSerializer,
@@ -16,6 +17,8 @@ from ..serializers import (
     IncidentMemberSerializer,
     IncidentMessageSerializer,
     IncidentMessageCreateSerializer,
+    IncidentChecklistSerializer,
+    IncidentChecklistCreateSerializer,
 )
 
 
@@ -201,6 +204,75 @@ class IncidentViewSet(viewsets.ModelViewSet):
         )
         output = IncidentMessageSerializer(message)
         return Response(output.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get", "post"])
+    def checklist(self, request, pk=None):
+        """Listar o crear checks operativos de un incidente."""
+        incident = self.get_object()
+
+        if request.method.lower() == "get":
+            items = (
+                IncidentChecklist.objects.filter(incident=incident)
+                .select_related("user", "user__user")
+                .order_by("created_at", "id")
+            )
+            return Response(IncidentChecklistSerializer(items, many=True).data)
+
+        serializer = IncidentChecklistCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile = getattr(request.user, "profile", None)
+        if profile is None:
+            return Response({"detail": "El usuario no tiene perfil asociado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        siguiente_id = (IncidentChecklist.objects.aggregate(max_id=Max("id")).get("max_id") or 0) + 1
+        item = IncidentChecklist.objects.create(
+            id=siguiente_id,
+            incident=incident,
+            user=profile,
+            checklist=serializer.validated_data["checklist"],
+            is_completed=0,
+        )
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} anadio el checklist '{item.checklist}' al incidente '{incident.name}'.",
+        )
+        return Response(IncidentChecklistSerializer(item).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["patch", "delete"], url_path=r"checklist/(?P<checklist_id>\d+)")
+    def checklist_item(self, request, pk=None, checklist_id=None):
+        """Actualizar o eliminar un check del incidente."""
+        incident = self.get_object()
+
+        try:
+            item = IncidentChecklist.objects.select_related("user", "user__user").get(id=checklist_id, incident=incident)
+        except IncidentChecklist.DoesNotExist:
+            return Response({"detail": "Checklist no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method.lower() == "delete":
+            texto = item.checklist
+            item.delete()
+            registrar_auditoria(
+                request.user,
+                f"{nombre_usuario(request.user)} elimino el checklist '{texto}' del incidente '{incident.name}'.",
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if "checklist" in request.data:
+            text = str(request.data.get("checklist") or "").strip()
+            if not text:
+                return Response({"checklist": ["El checklist no puede estar vacio."]}, status=status.HTTP_400_BAD_REQUEST)
+            item.checklist = text
+
+        if "is_completed" in request.data:
+            item.is_completed = 1 if bool(request.data.get("is_completed")) else 0
+
+        item.save(update_fields=["checklist", "is_completed"])
+        estado = "marco como completado" if item.is_completed else "marco como pendiente"
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} {estado} el checklist '{item.checklist}' del incidente '{incident.name}'.",
+        )
+        return Response(IncidentChecklistSerializer(item).data)
 
     @action(detail=False, methods=['get'])
     def my_incidents(self, request):
