@@ -12,7 +12,7 @@ from ..serializers import JourneyCreateSerializer, JourneySerializer, JourneySto
 
 
 class JourneyViewSet(viewsets.ModelViewSet):
-    queryset = Journey.objects.select_related("user").all()
+    queryset = Journey.objects.select_related("user", "user__user").all()
     serializer_class = JourneySerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [SessionAuthentication, JWTAuthentication]
@@ -20,6 +20,13 @@ class JourneyViewSet(viewsets.ModelViewSet):
     filterset_fields = ["user", "created_at", "start_date", "end_date"]
     ordering_fields = ["created_at", "start_date", "end_date"]
     ordering = ["-created_at"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        account_user_id = self.request.query_params.get("account_user")
+        if account_user_id:
+            queryset = queryset.filter(user__user_id=account_user_id)
+        return queryset
 
     def get_serializer_class(self):
         if self.action in {"create", "update", "partial_update"}:

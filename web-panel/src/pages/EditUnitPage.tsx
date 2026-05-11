@@ -2,6 +2,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
+import MapaCalorUnidadJornadas from "../components/MapaCalorUnidadJornadas";
 
 
 const OPCIONES_ROL = [
@@ -437,6 +438,11 @@ export default function EditUnitPage() {
         OPCIONES_ESTADO.find((opcion) => opcion.value === estadoOperativo)?.label ?? "Sin estado",
     };
   }, [rol, estadoOperativo]);
+
+  const posicionActualUnidad = useMemo(() => {
+    if (latitudUbicacionActual == null || longitudUbicacionActual == null) return null;
+    return [latitudUbicacionActual, longitudUbicacionActual] as [number, number];
+  }, [latitudUbicacionActual, longitudUbicacionActual]);
 
   const opcionesProvincia = useMemo(() => {
     switch (pais) {
@@ -1168,6 +1174,21 @@ export default function EditUnitPage() {
               <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Direccion legible</p>
                 <p className="mt-1 font-medium">{direccionLegible || "No hay direccion disponible"}</p>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <h2 className="mt-2 text-lg font-bold">Mapa de calor operativo</h2>
+              <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
+                Lectura visual de por donde se mueve la unidad, donde inicia jornadas y donde suele finalizar o descansar.
+              </p>
+
+              <div className="mt-4">
+                <MapaCalorUnidadJornadas
+                  unidadId={id}
+                  nombreUnidad={nombreReal || nombreUsuario}
+                  posicionActual={posicionActualUnidad}
+                />
               </div>
             </section>
 
