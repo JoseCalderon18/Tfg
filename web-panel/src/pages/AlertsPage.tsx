@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
 import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
@@ -14,6 +18,33 @@ type FilaAlerta = {
   description?: string | null;
   created_by?: string | null;
   created_at?: string | null;
+  location?: unknown;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+type IncidenteAlerta = {
+  id: string;
+  name?: string | null;
+  status?: string | null;
+  location?: unknown;
+};
+
+type IncidenteNormalizado = {
+  id: string;
+  name: string;
+  status: string;
+  coords: LatLngTuple | null;
+};
+
+type FormularioAlerta = {
+  incident: string;
+  alert_type: string;
+  severity: number;
+  title: string;
+  description: string;
+  latitude: string;
+  longitude: string;
 };
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
@@ -40,6 +71,26 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   BATERY: "Bateria baja",
   MOVEMENT: "Inmovilidad prolongada",
   OTHER: "Otro",
+};
+
+const ALERT_TYPE_OPTIONS = Object.entries(ALERT_TYPE_LABELS).map(([value, label]) => ({ value, label }));
+
+const SEVERITY_OPTIONS = [
+  { value: 1, label: "Critica" },
+  { value: 2, label: "Alta" },
+  { value: 3, label: "Media" },
+  { value: 4, label: "Baja" },
+  { value: 5, label: "Informativa" },
+];
+
+const FORMULARIO_ALERTA_INICIAL: FormularioAlerta = {
+  incident: "",
+  alert_type: "SOS",
+  severity: 3,
+  title: "",
+  description: "",
+  latitude: "",
+  longitude: "",
 };
 
 function obtenerEtiquetaTipoAlerta(type?: string | null) {
@@ -70,27 +121,133 @@ function obtenerEtiquetaSeveridad(severity?: number | null) {
 
 const ALERTAS_POR_PAGINA = 10;
 
+function normalizarArray<T>(payload: unknown): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && typeof payload === "object" && Array.isArray((payload as { results?: unknown }).results)) {
+    return (payload as { results: T[] }).results;
+  }
+  return [];
+}
+
+function esLatLngValido(lat: number, lng: number) {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+function extraerCoordenadas(location: unknown, latValue?: number | null, lngValue?: number | null): LatLngTuple | null {
+  if (latValue != null && lngValue != null && esLatLngValido(latValue, lngValue)) return [latValue, lngValue];
+
+  if (!location) return null;
+  if (Array.isArray(location) && location.length >= 2) {
+    const lng = Number(location[0]);
+    const lat = Number(location[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng) && esLatLngValido(lat, lng)) return [lat, lng];
+  }
+  if (typeof location === "object") {
+    const candidate = location as { coordinates?: unknown; x?: unknown; y?: unknown; lat?: unknown; lng?: unknown };
+    if (Array.isArray(candidate.coordinates) && candidate.coordinates.length >= 2) {
+      const lng = Number(candidate.coordinates[0]);
+      const lat = Number(candidate.coordinates[1]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && esLatLngValido(lat, lng)) return [lat, lng];
+    }
+    if (candidate.x !== undefined && candidate.y !== undefined) {
+      const lng = Number(candidate.x);
+      const lat = Number(candidate.y);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && esLatLngValido(lat, lng)) return [lat, lng];
+    }
+    if (candidate.lat !== undefined && candidate.lng !== undefined) {
+      const lat = Number(candidate.lat);
+      const lng = Number(candidate.lng);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && esLatLngValido(lat, lng)) return [lat, lng];
+    }
+  }
+  if (typeof location === "string") {
+    const match = location.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
+    if (match) {
+      const lng = Number(match[1]);
+      const lat = Number(match[3]);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && esLatLngValido(lat, lng)) return [lat, lng];
+    }
+  }
+  return null;
+}
+
+function normalizarIncidentes(payload: unknown): IncidenteNormalizado[] {
+  return normalizarArray<IncidenteAlerta>(payload)
+    .filter((incidente) => Boolean(incidente.id))
+    .map((incidente) => ({
+      id: String(incidente.id),
+      name: String(incidente.name ?? "Incidente sin nombre"),
+      status: String(incidente.status ?? "OPEN"),
+      coords: extraerCoordenadas(incidente.location),
+    }));
+}
+
+function SelectorMapaAlerta({ value, onPick }: { value: LatLngTuple | null; onPick: (coords: LatLngTuple) => void }) {
+  useMapEvents({
+    click(event) {
+      onPick([event.latlng.lat, event.latlng.lng]);
+    },
+  });
+
+  return value ? (
+    <CircleMarker center={value} radius={9} pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.85, weight: 3 }}>
+      <Popup>Ubicacion seleccionada para la alerta</Popup>
+    </CircleMarker>
+  ) : null;
+}
+
+function AjustarMapa({ points }: { points: LatLngTuple[] }) {
+  const map = useMap();
+  useEffect(() => {
+    window.setTimeout(() => {
+      map.invalidateSize();
+      if (points.length === 1) {
+        map.setView(points[0], 13);
+      } else if (points.length > 1) {
+        map.fitBounds(L.latLngBounds(points), { padding: [26, 26], maxZoom: 13 });
+      }
+    }, 80);
+  }, [map, points]);
+  return null;
+}
+
 export default function AlertsPage() {
   const navegar = useNavigate();
   const [alertas, setAlertas] = useState<FilaAlerta[]>([]);
+  const [incidentes, setIncidentes] = useState<IncidenteNormalizado[]>([]);
   const [consulta, setConsulta] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [creandoAlerta, setCreandoAlerta] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [errorMensaje, setErrorMensaje] = useState("");
+  const [exitoMensaje, setExitoMensaje] = useState("");
+  const [formularioAlerta, setFormularioAlerta] = useState<FormularioAlerta>(FORMULARIO_ALERTA_INICIAL);
   const [alertaPendienteEliminarId, setAlertaPendienteEliminarId] = useState("");
   const [alertaEliminandoId, setAlertaEliminandoId] = useState("");
   const [alertaActualizandoId, setAlertaActualizandoId] = useState("");
 
   useEffect(() => {
     (async () => {
-      const response = await apiFetch("/alerts/");
-      if (!response.ok) {
-        setErrorMensaje("No se pudieron cargar las alertas.");
+      const [alertasResponse, incidentesResponse] = await Promise.all([apiFetch("/alerts/"), apiFetch("/incidents/")]);
+      if (!alertasResponse.ok || !incidentesResponse.ok) {
+        setErrorMensaje("No se pudieron cargar las alertas o incidentes.");
         setCargando(false);
         return;
       }
-      const payload = (await response.json()) as { results?: FilaAlerta[] } | FilaAlerta[];
-      setAlertas(Array.isArray(payload) ? payload : payload.results ?? []);
+      const alertasPayload = (await alertasResponse.json()) as { results?: FilaAlerta[] } | FilaAlerta[];
+      const incidentesNormalizados = normalizarIncidentes((await incidentesResponse.json()) as unknown);
+      setAlertas(Array.isArray(alertasPayload) ? alertasPayload : alertasPayload.results ?? []);
+      setIncidentes(incidentesNormalizados);
+      setFormularioAlerta((prev) => {
+        if (prev.incident || incidentesNormalizados.length === 0) return prev;
+        const incidente = incidentesNormalizados[0];
+        return {
+          ...prev,
+          incident: incidente.id,
+          latitude: incidente.coords ? String(incidente.coords[0]) : "",
+          longitude: incidente.coords ? String(incidente.coords[1]) : "",
+        };
+      });
       setErrorMensaje("");
       setCargando(false);
     })();
@@ -101,6 +258,7 @@ export default function AlertsPage() {
     if (!normalized) return alertas;
     return alertas.filter((alerta) =>
       `${alerta.alert_type ?? ""} ${obtenerEtiquetaTipoAlerta(alerta.alert_type)} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
+        .concat(` ${alerta.description ?? ""}`)
         .toLowerCase()
         .includes(normalized)
     );
@@ -143,6 +301,97 @@ export default function AlertsPage() {
   }, [alertaPendienteEliminarId, alertaEliminandoId]);
 
   const alertaPendienteEliminar = alertas.find((alerta) => alerta.id === alertaPendienteEliminarId) ?? null;
+  const coordenadasFormulario = useMemo(() => {
+    const lat = Number(formularioAlerta.latitude);
+    const lng = Number(formularioAlerta.longitude);
+    if (!formularioAlerta.latitude || !formularioAlerta.longitude || Number.isNaN(lat) || Number.isNaN(lng)) return null;
+    if (!esLatLngValido(lat, lng)) return null;
+    return [lat, lng] as LatLngTuple;
+  }, [formularioAlerta.latitude, formularioAlerta.longitude]);
+
+  const centroMapaFormulario =
+    coordenadasFormulario ?? incidentes.find((incidente) => incidente.coords)?.coords ?? ([40.4168, -3.7038] as LatLngTuple);
+
+  function actualizarFormularioAlerta(parcial: Partial<FormularioAlerta>) {
+    setFormularioAlerta((prev) => ({ ...prev, ...parcial }));
+  }
+
+  function seleccionarIncidente(incidentId: string) {
+    const incidente = incidentes.find((item) => item.id === incidentId);
+    setFormularioAlerta((prev) => ({
+      ...prev,
+      incident: incidentId,
+      latitude: incidente?.coords ? String(incidente.coords[0]) : prev.latitude,
+      longitude: incidente?.coords ? String(incidente.coords[1]) : prev.longitude,
+    }));
+  }
+
+  async function crearAlerta(event: FormEvent) {
+    event.preventDefault();
+    if (creandoAlerta) return;
+
+    setErrorMensaje("");
+    setExitoMensaje("");
+
+    const lat = Number(formularioAlerta.latitude);
+    const lng = Number(formularioAlerta.longitude);
+
+    if (!formularioAlerta.title.trim()) {
+      setErrorMensaje("El titulo de la alerta es obligatorio.");
+      return;
+    }
+    if (Number.isNaN(lat) || Number.isNaN(lng) || !esLatLngValido(lat, lng)) {
+      setErrorMensaje("Selecciona una ubicacion valida en el mapa o escribe coordenadas validas.");
+      return;
+    }
+
+    setCreandoAlerta(true);
+    try {
+      const response = await apiFetch("/alerts/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          incident: formularioAlerta.incident || null,
+          alert_type: formularioAlerta.alert_type,
+          severity: formularioAlerta.severity,
+          title: formularioAlerta.title.trim(),
+          description: formularioAlerta.description.trim(),
+          latitude: lat,
+          longitude: lng,
+        }),
+      });
+
+      if (!response.ok) {
+        let detail = "No se pudo crear la alerta.";
+        try {
+          const data = (await response.json()) as Record<string, unknown>;
+          const firstKey = Object.keys(data)[0];
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          } else if (firstKey) {
+            const value = data[firstKey];
+            detail = Array.isArray(value) ? `${firstKey}: ${String(value[0])}` : `${firstKey}: ${String(value)}`;
+          }
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorMensaje(detail);
+        return;
+      }
+
+      const nuevaAlerta = (await response.json()) as FilaAlerta;
+      setAlertas((prev) => [nuevaAlerta, ...prev]);
+      setFormularioAlerta((prev) => ({
+        ...FORMULARIO_ALERTA_INICIAL,
+        incident: prev.incident,
+        latitude: prev.latitude,
+        longitude: prev.longitude,
+      }));
+      setExitoMensaje("Alerta creada correctamente.");
+    } finally {
+      setCreandoAlerta(false);
+    }
+  }
 
   async function prepararEliminarAlerta(alertId: string) {
     setAlertaPendienteEliminarId(alertId);
@@ -240,6 +489,140 @@ export default function AlertsPage() {
           <MetricCard label="Cerradas" value={indicadores.cerradas} />
         </div>
 
+        {exitoMensaje ? <div className="cm-badge-success mt-4 rounded-xl p-3 text-sm">{exitoMensaje}</div> : null}
+        {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
+
+        <section className="mt-5 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Nueva alerta</p>
+              <h2 className="mt-2 text-xl font-bold">Crear alerta desde el panel</h2>
+              <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
+                Registra una alerta manual con descripcion y ubicacion operativa.
+              </p>
+            </div>
+            <span className={`${obtenerBadgeAlerta(formularioAlerta.alert_type)} rounded-full px-3 py-1 text-xs`}>
+              {obtenerEtiquetaTipoAlerta(formularioAlerta.alert_type)}
+            </span>
+          </div>
+
+          <form onSubmit={crearAlerta} className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Incidente relacionado</label>
+                <select
+                  value={formularioAlerta.incident}
+                  onChange={(event) => seleccionarIncidente(event.target.value)}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                >
+                  <option value="">Sin incidente</option>
+                  {incidentes.map((incidente) => (
+                    <option key={incidente.id} value={incidente.id}>
+                      {incidente.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Tipo de alerta</label>
+                <select
+                  value={formularioAlerta.alert_type}
+                  onChange={(event) => actualizarFormularioAlerta({ alert_type: event.target.value })}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                >
+                  {ALERT_TYPE_OPTIONS.map((opcion) => (
+                    <option key={opcion.value} value={opcion.value}>
+                      {opcion.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Titulo</label>
+                <input
+                  value={formularioAlerta.title}
+                  onChange={(event) => actualizarFormularioAlerta({ title: event.target.value })}
+                  placeholder="Ej. Humo denso en ladera norte"
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Severidad</label>
+                <select
+                  value={formularioAlerta.severity}
+                  onChange={(event) => actualizarFormularioAlerta({ severity: Number(event.target.value) })}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                >
+                  {SEVERITY_OPTIONS.map((opcion) => (
+                    <option key={opcion.value} value={opcion.value}>
+                      {opcion.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium">Descripcion</label>
+                <textarea
+                  value={formularioAlerta.description}
+                  onChange={(event) => actualizarFormularioAlerta({ description: event.target.value })}
+                  rows={4}
+                  placeholder="Describe lo que ocurre, unidades afectadas, zona concreta o instrucciones para el equipo..."
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Latitud</label>
+                <input
+                  value={formularioAlerta.latitude}
+                  onChange={(event) => actualizarFormularioAlerta({ latitude: event.target.value })}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Longitud</label>
+                <input
+                  value={formularioAlerta.longitude}
+                  onChange={(event) => actualizarFormularioAlerta({ longitude: event.target.value })}
+                  className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none focus:border-[color:var(--cm-info)]"
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div className="flex items-end md:col-span-2">
+                <button type="submit" disabled={creandoAlerta} className="cm-btn cm-btn-danger w-full md:w-auto">
+                  {creandoAlerta ? "Creando alerta..." : "Crear alerta"}
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[color:var(--cm-border)]">
+              <MapContainer center={centroMapaFormulario} zoom={coordenadasFormulario ? 13 : 6} scrollWheelZoom style={{ height: "360px", width: "100%" }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <AjustarMapa points={coordenadasFormulario ? [coordenadasFormulario] : []} />
+                <SelectorMapaAlerta
+                  value={coordenadasFormulario}
+                  onPick={(coords) =>
+                    actualizarFormularioAlerta({
+                      latitude: coords[0].toFixed(6),
+                      longitude: coords[1].toFixed(6),
+                    })
+                  }
+                />
+              </MapContainer>
+            </div>
+          </form>
+        </section>
+
         <SearchBar
           value={consulta}
           onChange={(event) => setConsulta(event.target.value)}
@@ -247,8 +630,6 @@ export default function AlertsPage() {
           placeholder="Buscar por tipo, título, estado o creador..."
           resultLabel={`${alertasFiltradas.length} de ${alertas.length} alertas`}
         />
-
-        {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
 
         {alertasFiltradas.length === 0 ? (
           <EmptyState
@@ -278,6 +659,9 @@ export default function AlertsPage() {
                     {obtenerEtiquetaSeveridad(alerta.severity)}
                   </span>
                 </div>
+                {alerta.description ? (
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[color:var(--cm-text-muted)]">{alerta.description}</p>
+                ) : null}
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => navegar(`/editAlert/${alerta.id}`)} className="cm-btn cm-btn-primary">
                     Ver
@@ -316,6 +700,7 @@ export default function AlertsPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Titulo</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Descripcion</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Severidad</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Creada por</th>
@@ -332,6 +717,9 @@ export default function AlertsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
+                  <td className="max-w-md px-4 py-3.5 text-[color:var(--cm-text-muted)]">
+                    <p className="line-clamp-2">{alerta.description || "-"}</p>
+                  </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
                       {obtenerEtiquetaSeveridad(alerta.severity)}
@@ -394,7 +782,7 @@ export default function AlertsPage() {
                   </td>
                 </tr>
               ))}
-              {alertasFiltradas.length === 0 ? <EmptyState colSpan={7} title="No hay alertas para mostrar" /> : null}
+              {alertasFiltradas.length === 0 ? <EmptyState colSpan={8} title="No hay alertas para mostrar" /> : null}
             </tbody>
           </DataTable>
 
