@@ -1,9 +1,10 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import RiskReport
 from ..serializers import RiskReportSerializer, RiskReportCreateSerializer
 
@@ -16,11 +17,14 @@ class RiskReportViewSet(viewsets.ModelViewSet):
     - Alert = Emergencia urgente (SOS, man down)
     - RiskReport = Observación de peligro (humo, ramas, zona insegura)
     """
-    queryset = RiskReport.objects.all()
+    queryset = RiskReport.objects.select_related("incident", "reported_by").all()
     serializer_class = RiskReportSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['incident', 'severity', 'is_active', 'reported_by']
+    search_fields = ['description', 'incident__name', 'reported_by__username']
+    ordering_fields = ['created_at', 'updated_at', 'severity', 'is_active']
+    ordering = ['-created_at']
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -28,14 +32,46 @@ class RiskReportViewSet(viewsets.ModelViewSet):
         return RiskReportSerializer
 
     def perform_create(self, serializer):
-        serializer.save(reported_by=self.request.user)
+        report = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo un reporte de riesgo {report.severity} en el incidente '{report.incident.name}'.",
+        )
+
+    def perform_update(self, serializer):
+        report = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico el reporte de riesgo '{report.id}'.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino el reporte de riesgo '{instance.id}'."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, pk=None):
         """Desactivar un reporte de riesgo (ya no está vigente)"""
         risk_report = self.get_object()
         risk_report.is_active = False
-        risk_report.save()
+        risk_report.save(update_fields=["is_active", "updated_at"])
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} desactivo el reporte de riesgo '{risk_report.id}'.",
+        )
+        return Response(RiskReportSerializer(risk_report).data)
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Reactivar un reporte de riesgo"""
+        risk_report = self.get_object()
+        risk_report.is_active = True
+        risk_report.save(update_fields=["is_active", "updated_at"])
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} reactivo el reporte de riesgo '{risk_report.id}'.",
+        )
         return Response(RiskReportSerializer(risk_report).data)
 
     @action(detail=False, methods=['get'])
