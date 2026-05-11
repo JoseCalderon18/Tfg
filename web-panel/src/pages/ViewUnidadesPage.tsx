@@ -403,6 +403,13 @@ export function ViewUnidadesPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={() => navigate("/openmap")}
+              className="rounded-xl bg-[color:var(--cm-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              Abrir mapa de unidades
+            </button>
+            <button
+              type="button"
               onClick={() => navigate("/viewusers")}
               className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
             >

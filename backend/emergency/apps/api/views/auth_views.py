@@ -592,20 +592,27 @@ class PanelUsersListView(APIView):
             return Response({"detail": "No autorizado para visualizar usuarios."}, status=status.HTTP_403_FORBIDDEN)
 
         users = (
-            User.objects.select_related("profile")
+            User.objects.select_related("profile", "profile__organization")
             .order_by("username")
-            .values("id", "username", "email", "is_active", "created_at", "profile__role", "profile__id")
         )
 
         data = [
             {
-                "id": str(usuario["id"]),
-                "profile_id": str(usuario["profile__id"]) if usuario["profile__id"] else "",
-                "username": usuario["username"],
-                "email": usuario["email"],
-                "is_active": usuario["is_active"],
-                "created_at": usuario["created_at"],
-                "role": usuario["profile__role"],
+                "id": str(usuario.id),
+                "profile_id": str(usuario.profile.id) if getattr(usuario, "profile", None) else "",
+                "username": usuario.username,
+                "email": usuario.email,
+                "first_name": usuario.first_name,
+                "last_name": usuario.last_name,
+                "is_active": usuario.is_active,
+                "created_at": usuario.created_at,
+                "role": getattr(usuario.profile, "role", None) if getattr(usuario, "profile", None) else None,
+                "organization_id": str(getattr(usuario.profile, "organization_id", "") or "") if getattr(usuario, "profile", None) else "",
+                "organization_name": getattr(getattr(usuario.profile, "organization", None), "name", "") if getattr(usuario, "profile", None) else "",
+                "specialties": getattr(usuario.profile, "specialties", []) if getattr(usuario, "profile", None) else [],
+                "operative_status": getattr(usuario.profile, "operative_status", "") if getattr(usuario, "profile", None) else "",
+                "location_lat": getattr(usuario.profile.location, "y", None) if getattr(usuario, "profile", None) and getattr(usuario.profile, "location", None) else None,
+                "location_lng": getattr(usuario.profile.location, "x", None) if getattr(usuario, "profile", None) and getattr(usuario.profile, "location", None) else None,
             }
             for usuario in users
         ]
