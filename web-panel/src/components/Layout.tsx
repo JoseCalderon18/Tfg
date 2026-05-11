@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuthStore } from "../store/authStore";
+import PanelNotifications from "./PanelNotifications";
 
 type NavigationItem = {
   label: string;
@@ -246,6 +247,7 @@ export default function Layout() {
       <main className="h-[calc(100vh-4rem)] overflow-auto lg:h-screen lg:flex-1">
         <Outlet />
       </main>
+      <PanelNotifications />
     </div>
   );
 }
