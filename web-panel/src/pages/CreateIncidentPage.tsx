@@ -1,5 +1,8 @@
+import "leaflet/dist/leaflet.css";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import type { LatLngTuple } from "leaflet";
 import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
 
@@ -52,6 +55,27 @@ const opcionesEstado: Array<{ value: EstadoIncidente; label: string }> = [
   { value: "CLOSED", label: "Cerrado" },
 ];
 
+function SelectorMapaEditable({
+  coords,
+  editable,
+  onPick,
+}: {
+  coords: LatLngTuple | null;
+  editable: boolean;
+  onPick: (value: LatLngTuple) => void;
+}) {
+  useMapEvents({
+    click(event) {
+      if (!editable) return;
+      onPick([event.latlng.lat, event.latlng.lng]);
+    },
+  });
+
+  return coords ? (
+    <CircleMarker center={coords} radius={8} pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.85 }} />
+  ) : null;
+}
+
 export default function CreateIncidentPage() {
   const navegar = useNavigate();
 
@@ -67,6 +91,7 @@ export default function CreateIncidentPage() {
   const [direccionUbicacion, setDireccionUbicacion] = useState("");
   const [latitud, setLatitud] = useState("");
   const [longitud, setLongitud] = useState("");
+  const [mapaEditable, setMapaEditable] = useState(false);
   const [organizacionResponsable, setOrganizacionResponsable] = useState("");
 
   const [enviando, setEnviando] = useState(false);
@@ -129,6 +154,19 @@ export default function CreateIncidentPage() {
   }, [navegar]);
 
   const tieneCoordenadas = useMemo(() => latitud.trim() !== "" || longitud.trim() !== "", [latitud, longitud]);
+  const coordenadas = useMemo<LatLngTuple | null>(() => {
+    const lat = Number(latitud);
+    const lon = Number(longitud);
+    if (!Number.isNaN(lat) && !Number.isNaN(lon) && latitud.trim() && longitud.trim()) {
+      return [lat, lon];
+    }
+    return null;
+  }, [latitud, longitud]);
+
+  function manejarSeleccionMapa(value: LatLngTuple) {
+    setLatitud(value[0].toFixed(6));
+    setLongitud(value[1].toFixed(6));
+  }
 
   async function manejarEnvio(event: FormEvent) {
     event.preventDefault();
@@ -223,6 +261,7 @@ export default function CreateIncidentPage() {
       setDireccionUbicacion("");
       setLatitud("");
       setLongitud("");
+      setMapaEditable(false);
       setOrganizacionResponsable("");
     } finally {
       setEnviando(false);
@@ -341,6 +380,47 @@ export default function CreateIncidentPage() {
                 />
               </div>
             </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-[1.6fr_0.8fr]">
+              <div className="h-72 overflow-hidden rounded-xl ring-1 ring-slate-800">
+                <MapContainer
+                  center={coordenadas ?? [40.4168, -3.7038]}
+                  zoom={coordenadas ? 13 : 6}
+                  scrollWheelZoom={mapaEditable}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <SelectorMapaEditable coords={coordenadas} editable={mapaEditable} onPick={manejarSeleccionMapa} />
+                </MapContainer>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl bg-slate-950/40 p-4 ring-1 ring-slate-800">
+                <div className="space-y-2 text-sm text-slate-300">
+                  <p className="font-medium text-slate-100">Ubicacion del incidente</p>
+                  <p>
+                    {coordenadas
+                      ? `Latitud ${coordenadas[0].toFixed(6)} · Longitud ${coordenadas[1].toFixed(6)}`
+                      : "Sin coordenadas actuales."}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {mapaEditable
+                      ? "Mapa desbloqueado: haz clic en una zona para fijar la ubicacion."
+                      : "Mapa bloqueado: pulsa el boton para habilitar la seleccion por mapa."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMapaEditable((prev) => !prev)}
+                  className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                >
+                  Editar ubicacion en mapa
+                </button>
+              </div>
+            </div>
+
             <div className="mt-4 rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)] p-3 text-xs text-[color:var(--cm-text-muted)]">
               {tieneCoordenadas
                 ? "Se enviarán coordenadas geográficas para generar el Point en backend."

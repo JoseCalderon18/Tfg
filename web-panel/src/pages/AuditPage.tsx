@@ -167,11 +167,6 @@ export default function AuditPage() {
           eyebrow="Administracion"
           title="Auditoria"
           description="Registro cronologico de creaciones, modificaciones y acciones relevantes realizadas en el sistema."
-          actions={
-            <button type="button" className="cm-btn cm-btn-secondary" onClick={() => window.location.reload()}>
-              Actualizar
-            </button>
-          }
         />
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

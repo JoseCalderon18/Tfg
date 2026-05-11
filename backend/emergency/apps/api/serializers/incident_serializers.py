@@ -79,7 +79,7 @@ class IncidentCreateSerializer(serializers.ModelSerializer):
         latitude = validated_data.pop('latitude', None)
         longitude = validated_data.pop('longitude', None)
 
-        if latitude and longitude:
+        if latitude is not None and longitude is not None:
             from django.contrib.gis.geos import Point
             validated_data['location'] = Point(longitude, latitude, srid=4326)
 
