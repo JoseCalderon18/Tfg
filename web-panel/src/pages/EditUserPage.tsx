@@ -46,13 +46,13 @@ export default function EditUserPage() {
 
       const respuestaYo = await apiFetch("/auth/panel/me/");
       if (!respuestaYo.ok) {
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
 
       const datosYo = (await respuestaYo.json()) as RespuestaYo;
       if (!datosYo.has_panel_full_access) {
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
 

@@ -408,13 +408,13 @@ export default function IncidentsPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navegar("/login", { replace: true });
+        navegar("/", { replace: true });
         return;
       }
 
       const meData = (await meRes.json()) as RespuestaUsuario;
       if (!meData.has_panel_full_access) {
-        navegar("/login", { replace: true });
+        navegar("/", { replace: true });
         return;
       }
 

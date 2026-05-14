@@ -32,12 +32,12 @@ export default function NewUserPage() {
     (async () => {
       const res = await apiFetch("/auth/panel/me/");
       if (!res.ok) {
-        navegar("/login", { replace: true });
+        navegar("/", { replace: true });
         return;
       }
       const data = (await res.json()) as MeResponse;
       if (!data.has_panel_full_access) {
-        navegar("/login", { replace: true });
+        navegar("/", { replace: true });
         return;
       }
       setCargando(false);

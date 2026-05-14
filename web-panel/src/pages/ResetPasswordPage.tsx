@@ -167,7 +167,7 @@ export default function ResetPasswordPage() {
       setNuevaPassword("");
       setConfirmacionPassword("");
       setTimeout(() => {
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
       }, 1200);
     } finally {
       setReseteandoPassword(false);
@@ -224,7 +224,7 @@ export default function ResetPasswordPage() {
 
         <div className="mt-5 text-center text-sm text-[color:var(--cm-text-muted)]">
           <p>Si ya recuerdas tu acceso, vuelve al login.</p>
-          <Link to="/login" className="text-[color:var(--cm-info)] hover:underline">
+          <Link to="/" className="text-[color:var(--cm-info)] hover:underline">
           Ir a iniciar sesión
           </Link>
         </div>
