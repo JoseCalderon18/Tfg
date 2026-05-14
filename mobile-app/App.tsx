@@ -10,6 +10,7 @@ import { colors } from './src/theme';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
 import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 
 // Importamos las pantallas de la aplicación
 import LoginScreen from './src/screens/LoginScreen';
@@ -160,11 +161,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <RootErrorBoundary>
-        <AuthProvider>
-          <OfflineSyncProvider>
-            <AppNavigator />
-          </OfflineSyncProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <OfflineSyncProvider>
+              <AppNavigator />
+            </OfflineSyncProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </RootErrorBoundary>
     </GestureHandlerRootView>
   );
