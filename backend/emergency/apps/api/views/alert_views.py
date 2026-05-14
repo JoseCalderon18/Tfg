@@ -41,8 +41,12 @@ class AlertaViewSet(viewsets.ModelViewSet):
             "incident_id": dispatch_result.incident_id,
             "incident_message_id": dispatch_result.incident_message_id,
             "message_created": dispatch_result.message_created,
-            "central_notified": True,
-            "team_notified": dispatch_result.message_created,
+            "central_notified": dispatch_result.central_sent,
+            "team_notified": dispatch_result.team_sent,
+            "central_targets": dispatch_result.central_targets,
+            "team_targets": dispatch_result.team_targets,
+            "push_enabled": dispatch_result.push_enabled,
+            "push_error": dispatch_result.error,
         }
 
         headers = self.get_success_headers(response_data)

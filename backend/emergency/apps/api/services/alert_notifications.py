@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from emergency.apps.core.models import IncidentMember, IncidentMessage, Alerta
+from .push_notifications import send_sos_push_notifications
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,12 @@ class AlertDispatchResult:
     incident_id: str | None
     incident_message_id: str | None
     message_created: bool
+    push_enabled: bool = False
+    central_targets: int = 0
+    team_targets: int = 0
+    central_sent: bool = False
+    team_sent: bool = False
+    error: str | None = None
 
 
 def _find_active_incident_for_user(user):
@@ -54,8 +61,16 @@ def dispatch_sos_alert(alert: Alerta) -> AlertDispatchResult:
             content=message_content,
         )
 
+    push_summary = send_sos_push_notifications(alert)
+
     return AlertDispatchResult(
         incident_id=str(incident.id),
         incident_message_id=str(incident_message.id),
         message_created=True,
+        push_enabled=push_summary.push_enabled,
+        central_targets=push_summary.central_targets,
+        team_targets=push_summary.team_targets,
+        central_sent=push_summary.central_sent,
+        team_sent=push_summary.team_sent,
+        error=push_summary.error,
     )
