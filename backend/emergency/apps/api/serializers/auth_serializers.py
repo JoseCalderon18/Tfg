@@ -227,3 +227,9 @@ class DispositivoSerializer(serializers.ModelSerializer):
         model = Dispositivo
         fields = ['id', 'fcm_token', 'device_name', 'platform', 'is_active', 'last_used']
         read_only_fields = ['id', 'last_used']
+
+
+class DispositivoRegistroSerializer(serializers.Serializer):
+    fcm_token = serializers.CharField(max_length=255)
+    device_name = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
+    platform = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=20)

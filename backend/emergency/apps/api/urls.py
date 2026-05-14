@@ -41,6 +41,7 @@ router.register(r"points-of-interest", point_of_interest_views.PointOfInterestVi
 urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="register"),
     path("auth/me/", auth_views.CurrentUserView.as_view(), name="current_user"),
+    path("auth/devices/register/", auth_views.DeviceRegistrationView.as_view(), name="device_register"),
     path("auth/me/profile/", auth_views.ProfileView.as_view(), name="profile"),
     path("auth/login/", JWTLoginView.as_view(), name="login"),
     path("auth/password-reset/request/", PasswordResetRequestView.as_view(), name="password_reset_request"),

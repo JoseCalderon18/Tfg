@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import Iterable
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from django.conf import settings
 
-from emergency.apps.core.models import Alerta, Dispositivo, IncidentMember
+from emergency.apps.core.models import Alerta, Dispositivo, IncidentMember, User
 
 
 @dataclass(frozen=True)
@@ -19,33 +21,7 @@ class PushDispatchSummary:
     error: str | None = None
 
 
-def _load_firebase_admin():
-    try:
-        import firebase_admin
-        from firebase_admin import credentials, messaging
-    except Exception:
-        return None, None, None
-
-    if firebase_admin._apps:  # type: ignore[attr-defined]
-        return firebase_admin, credentials, messaging
-
-    credentials_path = (
-        getattr(settings, "FIREBASE_SERVICE_ACCOUNT_FILE", None)
-        or getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", None)
-        or getattr(settings, "FCM_SERVICE_ACCOUNT_FILE", None)
-    )
-
-    if not credentials_path:
-        return firebase_admin, credentials, messaging
-
-    firebase_admin.initialize_app(credentials.Certificate(credentials_path))
-    return firebase_admin, credentials, messaging
-
-
-@lru_cache(maxsize=1)
-def _firebase_messaging_module():
-    _, _, messaging = _load_firebase_admin()
-    return messaging
+EXPO_PUSH_ENDPOINT = getattr(settings, "EXPO_PUSH_ENDPOINT", "https://exp.host/--/api/v2/push/send")
 
 
 def _unique_tokens(dispositivos: Iterable[Dispositivo]) -> list[str]:
@@ -60,6 +36,11 @@ def _unique_tokens(dispositivos: Iterable[Dispositivo]) -> list[str]:
         tokens.append(token)
 
     return tokens
+
+
+def _chunks(values: list[str], size: int = 100) -> Iterable[list[str]]:
+    for index in range(0, len(values), size):
+        yield values[index : index + size]
 
 
 def _collect_target_tokens(alert: Alerta) -> tuple[list[str], list[str]]:
@@ -80,7 +61,7 @@ def _collect_target_tokens(alert: Alerta) -> tuple[list[str], list[str]]:
     central_user_ids = []
     if incident is not None and incident.owner_organization_id:
         central_user_ids = list(
-            alert.created_by.__class__.objects.filter(  # type: ignore[attr-defined]
+            User.objects.filter(
                 is_active=True,
                 profile__organization_id=incident.owner_organization_id,
                 profile__role__in=["ADMIN", "SUPERVISOR"],
@@ -103,23 +84,56 @@ def _collect_target_tokens(alert: Alerta) -> tuple[list[str], list[str]]:
     return central_tokens, team_tokens
 
 
-def send_sos_push_notifications(alert: Alerta) -> PushDispatchSummary:
-    messaging = _firebase_messaging_module()
-    central_tokens, team_tokens = _collect_target_tokens(alert)
+def _build_expo_messages(tokens: list[str], title: str, body: str, data: dict[str, str], audience: str) -> list[dict[str, object]]:
+    messages: list[dict[str, object]] = []
 
-    if messaging is None:
-        return PushDispatchSummary(
-            central_targets=len(central_tokens),
-            team_targets=len(team_tokens),
-            central_sent=False,
-            team_sent=False,
-            push_enabled=False,
-            error="Firebase Admin no esta disponible en el entorno.",
+    for token in tokens:
+        messages.append(
+            {
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": {**data, "audience": audience},
+            }
         )
 
-    central_sent = False
-    team_sent = False
+    return messages
 
+
+def _send_expo_messages(messages: list[dict[str, object]]) -> tuple[int, int]:
+    if not messages:
+        return 0, 0
+
+    request = Request(
+        EXPO_PUSH_ENDPOINT,
+        data=json.dumps(messages).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+
+    with urlopen(request, timeout=10) as response:
+        payload = json.loads(response.read().decode("utf-8") or "{}")
+
+    data = payload.get("data", []) if isinstance(payload, dict) else []
+    successes = 0
+    failures = 0
+
+    if isinstance(data, list):
+        for item in data:
+            if not isinstance(item, dict):
+                failures += 1
+                continue
+            if item.get("status") == "ok":
+                successes += 1
+            else:
+                failures += 1
+
+    return successes, failures
+
+
+def send_sos_push_notifications(alert: Alerta) -> PushDispatchSummary:
+    central_tokens, team_tokens = _collect_target_tokens(alert)
     title = f"SOS: {alert.title}"
     body = alert.description or "Nueva alerta critica en curso."
     data = {
@@ -135,24 +149,28 @@ def send_sos_push_notifications(alert: Alerta) -> PushDispatchSummary:
         if not tokens:
             return False
 
-        message = messaging.MulticastMessage(
-            notification=messaging.Notification(title=title, body=body),
-            data={**data, "audience": audience},
-            tokens=tokens,
-        )
-        response = messaging.send_each_for_multicast(message)
-        return response.success_count > 0
+        successes = 0
+        failures = 0
+
+        for batch in _chunks(tokens):
+            batch_successes, batch_failures = _send_expo_messages(
+                _build_expo_messages(batch, title, body, data, audience)
+            )
+            successes += batch_successes
+            failures += batch_failures
+
+        return successes > 0 and failures == 0
 
     try:
         central_sent = _send(central_tokens, "central")
         team_sent = _send(team_tokens, "team")
-    except Exception as error:
+    except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as error:
         return PushDispatchSummary(
             central_targets=len(central_tokens),
             team_targets=len(team_tokens),
-            central_sent=central_sent,
-            team_sent=team_sent,
-            push_enabled=True,
+            central_sent=False,
+            team_sent=False,
+            push_enabled=False,
             error=str(error),
         )
 

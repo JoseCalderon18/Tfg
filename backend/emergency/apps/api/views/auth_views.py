@@ -26,7 +26,7 @@ from emergency.apps.core.forms import SupervisorLoginForm
 from emergency.apps.core.location_utils import obtener_direccion_legible
 from emergency.apps.core.models import CodigoResetPassword, Dispositivo, Organizacion, Profile, User
 
-from ..serializers import ProfileSerializer, UserCreateSerializer, UserSerializer
+from ..serializers import DispositivoRegistroSerializer, ProfileSerializer, UserCreateSerializer, UserSerializer
 
 
 def _has_panel_full_access(user):
@@ -310,6 +310,52 @@ class CurrentUserView(APIView):
 
         user.refresh_from_db()
         return Response(_serializar_usuario_mobile(user, request), status=status.HTTP_200_OK)
+
+
+class DeviceRegistrationView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    @transaction.atomic
+    def post(self, request):
+        serializer = DispositivoRegistroSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        fcm_token = serializer.validated_data["fcm_token"].strip()
+        device_name = str(serializer.validated_data.get("device_name", "") or "").strip()
+        platform = str(serializer.validated_data.get("platform", "") or "").strip().upper() or "ANDROID"
+
+        device, _ = Dispositivo.objects.update_or_create(
+            user=request.user,
+            fcm_token=fcm_token,
+            defaults={
+                "device_name": device_name,
+                "platform": platform,
+                "is_active": True,
+            },
+        )
+
+        profile = getattr(request.user, "profile", None)
+        if profile is None:
+            profile = Profile.objects.create(user=request.user)
+
+        profile.device = device
+        profile.save(update_fields=["device", "updated_at"])
+
+        return Response(
+            {
+                "device": {
+                    "id": str(device.id),
+                    "fcm_token": device.fcm_token,
+                    "device_name": device.device_name,
+                    "platform": device.platform,
+                    "is_active": device.is_active,
+                    "last_used": device.last_used,
+                },
+                "device_id": str(device.id),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class ProfileView(APIView):
