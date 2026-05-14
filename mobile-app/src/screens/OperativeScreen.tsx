@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors } from '../theme';
 
 const { height } = Dimensions.get('window');
@@ -52,7 +53,7 @@ export default function OperativeScreen({ navigation }: any) {
     setIsSendingSos(false);
   };
 
-  const sendSosAlert = async () => {
+  const handleSendSosAlert = async () => {
     try {
       if (!token) {
         Alert.alert('Error', 'No hay sesion activa.');
@@ -65,25 +66,28 @@ export default function OperativeScreen({ navigation }: any) {
       }
 
       setIsSendingSos(true);
-      const result = await queueAlert({
-        incident: null,
-        alert_type: 'SOS',
-        severity: 1,
-        title: 'SOS operativo',
-        description: 'SOS enviado desde el boton principal del operativo.',
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
+      const result = await dispatchSosAlert({
+        queueAlert,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
 
       if (!result.ok) {
         throw new Error(result.error ?? 'No se pudo registrar la alerta SOS.');
       }
 
+      const avisos = [
+        result.notification?.central_notified ? 'central operativa' : null,
+        result.notification?.team_notified ? 'compañeros del incidente' : null,
+      ].filter(Boolean);
+
       Alert.alert(
         result.queued ? 'SOS en cola' : 'SOS enviado',
         result.queued
           ? 'El SOS se ha guardado sin conexion y se enviara automaticamente al incidente asignado cuando vuelva la red.'
-          : 'El SOS se ha enviado correctamente al incidente asignado.'
+          : avisos.length > 0
+            ? `El SOS se ha enviado correctamente y ha avisado a ${avisos.join(' y ')}.`
+            : 'El SOS se ha enviado correctamente al incidente asignado.'
       );
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo enviar la alerta SOS.');
@@ -113,7 +117,7 @@ export default function OperativeScreen({ navigation }: any) {
 
     if (sosCountdown <= 0) {
       if (!sosCancelledRef.current) {
-        void sendSosAlert();
+        void handleSendSosAlert();
       }
       return;
     }

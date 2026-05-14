@@ -6,6 +6,7 @@ import { STATUS_COLOR, getAlertSeverityBadge, getAlertStatusBadge } from "../uti
 type FilaAlerta = {
   id: string;
   incident?: string | null;
+  incident_name?: string | null;
   alert_type?: string | null;
   severity?: number | null;
   status?: string | null;
@@ -67,7 +68,7 @@ export default function AlertsPage() {
     const normalized = consulta.trim().toLowerCase();
     if (!normalized) return alertas;
     return alertas.filter((alerta) =>
-      `${alerta.alert_type ?? ""} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
+      `${alerta.alert_type ?? ""} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""} ${alerta.incident_name ?? ""}`
         .toLowerCase()
         .includes(normalized)
     );
@@ -235,6 +236,7 @@ export default function AlertsPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Titulo</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Incidente</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Severidad</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Creada por</th>
@@ -263,6 +265,9 @@ export default function AlertsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
+                  <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
+                    {alerta.incident_name || alerta.incident || "Sin incidente"}
+                  </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
                       {obtenerEtiquetaSeveridad(alerta.severity)}
@@ -327,7 +332,7 @@ export default function AlertsPage() {
               ))}
               {alertasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
+                  <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
                     No hay alertas para mostrar con ese filtro.
                   </td>
                 </tr>

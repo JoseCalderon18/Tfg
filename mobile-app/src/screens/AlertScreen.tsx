@@ -4,6 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function AlertScreen({ navigation }: any) {
@@ -29,14 +30,24 @@ export default function AlertScreen({ navigation }: any) {
         return;
       }
 
-      const result = await queueAlert({
-        alert_type: tipoAlerta,
-        severity: severidad,
-        title: `Alerta ${tipoAlerta}`,
-        description: descripcion,
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
+      const result =
+        tipoAlerta === 'SOS'
+          ? await dispatchSosAlert({
+              queueAlert,
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              severity: severidad,
+              title: 'SOS operativo',
+              description: descripcion || 'SOS enviado desde el formulario de alerta.',
+            })
+          : await queueAlert({
+              alert_type: tipoAlerta,
+              severity: severidad,
+              title: `Alerta ${tipoAlerta}`,
+              description: descripcion,
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
+            });
 
       if (!result.ok) {
         throw new Error(result.error ?? 'No se pudo registrar la alerta.');

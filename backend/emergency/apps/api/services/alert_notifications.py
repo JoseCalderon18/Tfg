@@ -28,14 +28,6 @@ def _find_active_incident_for_user(user):
 
 
 def dispatch_sos_alert(alert: Alerta) -> AlertDispatchResult:
-    alert = (
-        Alerta.objects.select_related("created_by__profile", "incident")
-        .filter(pk=alert.pk)
-        .first()
-    )
-    if alert is None:
-        return AlertDispatchResult(incident_id=None, incident_message_id=None, message_created=False)
-
     incident = alert.incident or _find_active_incident_for_user(alert.created_by)
 
     if incident is None or alert.alert_type != "SOS":
