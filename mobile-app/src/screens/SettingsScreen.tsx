@@ -2,49 +2,58 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView, SafeAreaView } from 'react-native';
 
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { useThemeColors } from '../hooks/useThemeColors';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { getApiDebugUrls } from '../services/api';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function SettingsScreen({ navigation }: any) {
   const urls = getApiDebugUrls();
   const { pendingCount, isSyncing, lastSyncedAt, lastError, flushQueue } = useOfflineSync();
+  const themeColors = useThemeColors();
 
   return (
-    <View style={styles.screen}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Volver</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Configuracion operativa</Text>
-      <Text style={styles.subtitle}>Referencia rapida para conexion y uso en terreno.</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Estado de sincronizacion</Text>
-        <Text style={styles.cardValue}>Pendientes: {pendingCount}</Text>
-        <Text style={styles.cardValue}>Estado: {isSyncing ? 'Sincronizando...' : 'En espera'}</Text>
-        <Text style={styles.cardValue}>
-          Ultima sincronizacion: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
-        </Text>
-        {lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
-        <TouchableOpacity style={styles.syncButton} onPress={() => void flushQueue()}>
-          <Text style={styles.syncButtonText}>Sincronizar ahora</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.background }}>
+      <ScrollView style={[styles.screen, { backgroundColor: themeColors.background }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: themeColors.surfaceMuted }]}>
+          <Text style={[styles.backButtonText, { color: themeColors.text }]}>Volver</Text>
         </TouchableOpacity>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>URLs de API detectadas</Text>
-        {urls.map((url) => (
-          <Text key={url} style={styles.cardValue}>{url}</Text>
-        ))}
-      </View>
+        <Text style={[styles.title, { color: themeColors.text }]}>Configuracion operativa</Text>
+        <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>Referencia rapida para conexion y uso en terreno.</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Buenas practicas</Text>
-        <Text style={styles.tip}>- Activa el GPS antes de iniciar jornada.</Text>
-        <Text style={styles.tip}>- En Android por USB usa `adb reverse tcp:8000 tcp:8000`.</Text>
-        <Text style={styles.tip}>- Registra descansos para que queden reflejados en la ruta.</Text>
-      </View>
-    </View>
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <ThemeToggle />
+        </View>
+
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>Estado de sincronizacion</Text>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>Pendientes: {pendingCount}</Text>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>Estado: {isSyncing ? 'Sincronizando...' : 'En espera'}</Text>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>
+            Ultima sincronizacion: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
+          </Text>
+          {lastError ? <Text style={[styles.errorText, { color: themeColors.danger }]}>{lastError}</Text> : null}
+          <TouchableOpacity style={[styles.syncButton, { backgroundColor: themeColors.primary }]} onPress={() => void flushQueue()}>
+            <Text style={[styles.syncButtonText, { color: '#fff' }]}>Sincronizar ahora</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>URLs de API detectadas</Text>
+          {urls.map((url) => (
+            <Text key={url} style={[styles.cardValue, { color: themeColors.textMuted }]}>{url}</Text>
+          ))}
+        </View>
+
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>Buenas practicas</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- Activa el GPS antes de iniciar jornada.</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- En Android por USB usa `adb reverse tcp:8000 tcp:8000`.</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- Registra descansos para que queden reflejados en la ruta.</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

@@ -10,7 +10,8 @@ import { colors } from './src/theme';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
 import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
-import { ThemeProvider } from './src/context/ThemeContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { useThemeColors } from './src/hooks/useThemeColors';
 
 // Importamos las pantallas de la aplicación
 import LoginScreen from './src/screens/LoginScreen';
@@ -137,11 +138,12 @@ function OperativeNavigator() {
 
 function AppNavigator() {
   const { token, user, isLoading } = useAuth();
+  const themeColors = useThemeColors();
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Preparando acceso...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <Text style={[styles.loadingText, { color: themeColors.text }]}>Preparando acceso...</Text>
       </View>
     );
   }
