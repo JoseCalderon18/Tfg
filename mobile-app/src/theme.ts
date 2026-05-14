@@ -1,4 +1,4 @@
-export const colors = {
+export const lightColors = {
   background: '#F8FAFC',
   surface: '#FFFFFF',
   surfaceMuted: '#F1F5F9',
@@ -16,6 +16,31 @@ export const colors = {
   overlay: 'rgba(15, 23, 42, 0.55)',
   white: '#FFFFFF',
 };
+
+export const darkColors = {
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceMuted: '#334155',
+  border: '#475569',
+  borderStrong: '#64748B',
+  text: '#F1F5F9',
+  textMuted: '#94A3B8',
+  textSoft: '#CBD5E1',
+  primary: '#3B82F6',
+  primarySoft: '#1E3A8A',
+  success: '#22C55E',
+  warning: '#FACC15',
+  danger: '#EF4444',
+  dangerSoft: '#7F1D1D',
+  overlay: 'rgba(255, 255, 255, 0.15)',
+  white: '#FFFFFF',
+};
+
+export const colors = lightColors;
+
+export function getColors(isDark: boolean) {
+  return isDark ? darkColors : lightColors;
+}
 
 export const spacing = {
   xs: 4,
