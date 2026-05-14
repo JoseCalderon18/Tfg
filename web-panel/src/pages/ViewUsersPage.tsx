@@ -34,13 +34,13 @@ export default function ViewUsersPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 
       const meData = (await meRes.json()) as MeResponse;
       if (!meData.has_panel_full_access) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 

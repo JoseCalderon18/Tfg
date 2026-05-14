@@ -184,13 +184,13 @@ export default function EditIncidentPage() {
 
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navegar("/", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
       const meData = (await meRes.json()) as RespuestaUsuario;
       setUsuarioActual(meData);
       if (!meData.has_panel_full_access) {
-        navegar("/", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 

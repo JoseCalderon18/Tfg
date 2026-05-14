@@ -88,13 +88,13 @@ export default function EditOrganizationPage() {
 
       const respuestaYo = await apiFetch("/auth/panel/me/");
       if (!respuestaYo.ok) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 
       const datosYo = await respuestaYo.json();
       if (!datosYo.has_panel_full_access) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 

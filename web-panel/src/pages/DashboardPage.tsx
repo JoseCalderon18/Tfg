@@ -858,14 +858,14 @@ export default function DashboardPage() {
     (async () => {
       const res = await apiFetch("/auth/panel/me/");
       if (!res.ok) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 
       const data = (await res.json()) as MeResponse;
 
       if (!data.has_panel_full_access) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 
@@ -982,7 +982,7 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await apiFetch("/auth/panel/logout/", { method: "POST" });
-    navigate("/", { replace: true });
+    navigate("/login", { replace: true });
   }
 
   if (loading) {

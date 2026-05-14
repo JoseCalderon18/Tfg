@@ -67,13 +67,13 @@ export default function NewOrganizationPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 
       const me = (await meRes.json()) as MeResponse;
       if (!me.has_panel_full_access) {
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
         return;
       }
 

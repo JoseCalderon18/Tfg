@@ -92,13 +92,13 @@ export default function CreateIncidentPage() {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
       if (!meRes.ok) {
-        navegar("/", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 
       const me = (await meRes.json()) as RespuestaUsuario;
       if (!me.has_panel_full_access) {
-        navegar("/", { replace: true });
+        navegar("/login", { replace: true });
         return;
       }
 

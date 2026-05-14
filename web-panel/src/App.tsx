@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 
 // Aquí están todas las páginas de la app
+import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
 import AlertsPage from './pages/AlertsPage';
@@ -45,7 +46,7 @@ function App() {
   return (
     <Routes>
       {/* Página de login, abierta a todos */}
-      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* Páginas que necesitan login, con menú lateral */}

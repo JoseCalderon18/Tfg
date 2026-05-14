@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuthStore } from "../store/authStore";
 
@@ -71,7 +71,7 @@ function getDefaultOpenSections(pathname: string) {
 }
 
 export default function Layout() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAuthenticated, isCheckingAuth } = useAuthStore();
   const location = useLocation();
   const [openSections, setOpenSections] = useState<string[]>(() => getDefaultOpenSections(location.pathname));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -85,6 +85,21 @@ export default function Layout() {
       ).map((section) => section.id),
     [location.pathname]
   );
+
+  if (isCheckingAuth) {
+    return (
+      <div className="cm-loading-state">
+        <div className="cm-loading-inline">
+          <span className="cm-spinner" />
+          <p>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   const toggleSection = (sectionId: string) => {
     setOpenSections((current) =>
