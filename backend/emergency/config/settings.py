@@ -204,8 +204,12 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
+def _csv_env(name, default=""):
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
 # CORS Configuration - Orígenes permitidos para conexión desde frontend
-CORS_ALLOWED_ORIGINS = [
+DEFAULT_FRONTEND_ORIGINS = [
     "http://localhost:3000",   # React web panel
     "http://localhost:3001",   # Vite alternativo si 3000 esta ocupado
     "http://localhost:5173",   # Vite por defecto
@@ -213,22 +217,18 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "http://127.0.0.1:5173",
+    "https://tfg-virid-nine.vercel.app",
 ]
+
+CORS_ALLOWED_ORIGINS = DEFAULT_FRONTEND_ORIGINS + _csv_env("CORS_ALLOWED_ORIGINS")
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://127.0.0.1:5173",
-]
+CSRF_TRUSTED_ORIGINS = DEFAULT_FRONTEND_ORIGINS + _csv_env("CSRF_TRUSTED_ORIGINS")
 
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
+CSRF_COOKIE_SAMESITE = os.environ.get("CSRF_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
