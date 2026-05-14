@@ -13,6 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import generics, permissions, status
 from rest_framework.authentication import SessionAuthentication
@@ -342,7 +343,7 @@ class PanelLoginView(APIView):
     authentication_classes = [SessionAuthentication]
 
     def get(self, request):
-        return Response({"ok": True}, status=status.HTTP_200_OK)
+        return Response({"ok": True, "csrfToken": get_token(request)}, status=status.HTTP_200_OK)
 
     def post(self, request):
         form = SupervisorLoginForm(request.data)

@@ -19,6 +19,10 @@ interface PanelMeResponse {
   has_panel_full_access?: boolean;
 }
 
+interface PanelCsrfResponse {
+  csrfToken?: string;
+}
+
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -41,6 +45,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, isAuthenticated: false });
       return false;
     }
+    const csrfData = (await csrfBootstrap.json().catch(() => ({}))) as PanelCsrfResponse;
+    const csrfToken = csrfData.csrfToken ?? "";
 
     // Después, mandamos el email y contraseña del supervisor
     const body = new URLSearchParams();
@@ -49,7 +55,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const loginRes = await apiFetch("/auth/panel/login/", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+      },
       body,
     });
 
