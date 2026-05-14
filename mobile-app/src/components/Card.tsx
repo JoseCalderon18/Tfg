@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { colors, shadows, borderRadius, spacing } from '../theme';
+import { View, TouchableOpacity, ViewStyle } from 'react-native';
+import { shadows, borderRadius, spacing } from '../theme';
+import { useThemeColors } from '../hooks/useThemeColors';
+import { useTheme } from '../context/ThemeContext';
 
 interface CardProps {
   children: React.ReactNode;
@@ -19,30 +21,54 @@ export function Card({
   elevated = true,
   active = false,
 }: CardProps) {
+  const colors = useThemeColors();
+  const { isDark } = useTheme();
   const Component = onPress ? TouchableOpacity : View;
   
   const getVariantStyle = () => {
     switch (variant) {
       case 'success':
-        return styles.cardSuccess;
+        return {
+          borderColor: colors.success,
+          backgroundColor: isDark ? '#1e3a0a' : '#f0fdf4',
+        };
       case 'warning':
-        return styles.cardWarning;
+        return {
+          borderColor: colors.warning,
+          backgroundColor: isDark ? '#3d2700' : '#fffbeb',
+        };
       case 'danger':
-        return styles.cardDanger;
+        return {
+          borderColor: colors.danger,
+          backgroundColor: isDark ? '#7f1d1d' : '#fef2f2',
+        };
       case 'info':
-        return styles.cardInfo;
+        return {
+          borderColor: colors.primary,
+          backgroundColor: isDark ? '#0c1e2e' : '#f0f9ff',
+        };
       default:
-        return styles.cardDefault;
+        return {
+          borderColor: colors.border,
+        };
     }
+  };
+
+  const baseCardStyle = {
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    backgroundColor: colors.surface,
   };
 
   return (
     <Component
       style={[
-        styles.card,
+        baseCardStyle,
         elevated && shadows.md,
         getVariantStyle(),
-        active && styles.cardActive,
+        active && { borderWidth: 2 },
         style,
       ]}
       onPress={onPress}
@@ -52,35 +78,3 @@ export function Card({
     </Component>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    backgroundColor: colors.surface,
-  },
-  cardDefault: {
-    borderColor: colors.border,
-  },
-  cardSuccess: {
-    borderColor: colors.success,
-    backgroundColor: '#f0fdf4',
-  },
-  cardWarning: {
-    borderColor: colors.warning,
-    backgroundColor: '#fffbeb',
-  },
-  cardDanger: {
-    borderColor: colors.danger,
-    backgroundColor: '#fef2f2',
-  },
-  cardInfo: {
-    borderColor: colors.primary,
-    backgroundColor: '#f0f9ff',
-  },
-  cardActive: {
-    borderWidth: 2,
-  },
-});

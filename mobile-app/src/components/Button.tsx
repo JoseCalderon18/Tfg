@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, borderRadius, spacing, typography, shadows } from '../theme';
+import { borderRadius, spacing, typography, shadows } from '../theme';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 interface ButtonProps {
   label: string;
@@ -19,113 +20,94 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
+  const colors = useThemeColors();
+
   const getVariantStyle = () => {
     switch (variant) {
       case 'secondary':
-        return styles.secondaryButton;
+        return {
+          backgroundColor: colors.surfaceMuted,
+          ...shadows.sm,
+        };
       case 'success':
-        return styles.successButton;
+        return {
+          backgroundColor: colors.success,
+          ...shadows.md,
+        };
       case 'danger':
-        return styles.dangerButton;
+        return {
+          backgroundColor: colors.danger,
+          ...shadows.md,
+        };
       case 'warning':
-        return styles.warningButton;
+        return {
+          backgroundColor: colors.warning,
+          ...shadows.md,
+        };
       case 'outline':
-        return styles.outlineButton;
+        return {
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderColor: colors.border,
+        };
       default:
-        return styles.primaryButton;
+        return {
+          backgroundColor: colors.primary,
+          ...shadows.md,
+        };
     }
   };
 
   const getSizeStyle = () => {
     switch (size) {
       case 'small':
-        return styles.smallButton;
+        return {
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          minHeight: 40,
+        };
       case 'large':
-        return styles.largeButton;
+        return {
+          paddingVertical: spacing.lg,
+          paddingHorizontal: spacing.xl,
+          minHeight: 56,
+        };
       default:
-        return styles.mediumButton;
+        return {
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          minHeight: 48,
+        };
     }
+  };
+
+  const baseButtonStyle = {
+    borderRadius: borderRadius.md,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+
+  const buttonTextStyle = {
+    ...typography.subtitle,
+    color: variant === 'outline' ? colors.text : colors.white,
   };
 
   return (
     <TouchableOpacity
       style={[
-        styles.button,
+        baseButtonStyle,
         getVariantStyle(),
         getSizeStyle(),
-        disabled && styles.disabledButton,
+        disabled && { opacity: 0.5 },
         style,
       ]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.85}
     >
-      <Text
-        style={[
-          styles.buttonText,
-          variant === 'outline' && styles.outlineButtonText,
-        ]}
-      >
+      <Text style={buttonTextStyle}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    ...shadows.md,
-  },
-  secondaryButton: {
-    backgroundColor: colors.surfaceMuted,
-    ...shadows.sm,
-  },
-  successButton: {
-    backgroundColor: colors.success,
-    ...shadows.md,
-  },
-  dangerButton: {
-    backgroundColor: colors.danger,
-    ...shadows.md,
-  },
-  warningButton: {
-    backgroundColor: colors.warning,
-    ...shadows.md,
-  },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  smallButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: 40,
-  },
-  mediumButton: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: 48,
-  },
-  largeButton: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    minHeight: 56,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.white,
-    ...typography.subtitle,
-  },
-  outlineButtonText: {
-    color: colors.text,
-  },
-});
