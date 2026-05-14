@@ -319,9 +319,10 @@ class DeviceRegistrationView(APIView):
     @transaction.atomic
     def post(self, request):
         serializer = DispositivoRegistroSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        fcm_token = serializer.validated_data["fcm_token"].strip()
+        fcm_token = serializer.validated_data["fcm_token"]
         device_name = str(serializer.validated_data.get("device_name", "") or "").strip()
         platform = str(serializer.validated_data.get("platform", "") or "").strip().upper() or "ANDROID"
 

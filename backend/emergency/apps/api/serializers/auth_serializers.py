@@ -230,6 +230,11 @@ class DispositivoSerializer(serializers.ModelSerializer):
 
 
 class DispositivoRegistroSerializer(serializers.Serializer):
-    fcm_token = serializers.CharField(max_length=255)
+    fcm_token = serializers.CharField(max_length=255, min_length=1)
     device_name = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
     platform = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=20)
+
+    def validate_fcm_token(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("El token FCM no puede estar vacio.")
+        return value.strip()

@@ -112,8 +112,12 @@ def _send_expo_messages(messages: list[dict[str, object]]) -> tuple[int, int]:
         method="POST",
     )
 
-    with urlopen(request, timeout=10) as response:
-        payload = json.loads(response.read().decode("utf-8") or "{}")
+    try:
+        with urlopen(request, timeout=15) as response:
+            response_data = response.read().decode("utf-8")
+            payload = json.loads(response_data) if response_data else {}
+    except (HTTPError, URLError, TimeoutError) as error:
+        return 0, len(messages)
 
     data = payload.get("data", []) if isinstance(payload, dict) else []
     successes = 0
