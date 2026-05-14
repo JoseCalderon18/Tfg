@@ -6,6 +6,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 
 from emergency.apps.core.models import Alerta
+from ..services.alert_notifications import dispatch_sos_alert
 from ..serializers import (
     AlertaSerializer, AlertaCreateSerializer,
     AlertaAckSerializer, AlertaCloseSerializer
@@ -26,7 +27,8 @@ class AlertaViewSet(viewsets.ModelViewSet):
         return AlertaSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        alert = serializer.save(created_by=self.request.user)
+        dispatch_sos_alert(alert)
 
     @action(detail=True, methods=['post'])
     def acknowledge(self, request, pk=None):
