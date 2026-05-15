@@ -259,6 +259,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshAccessToken]);
 
+  const updateUser = useCallback(async (nextUser: User) => {
+    const normalized = normalizeUser(nextUser as any) as User | null;
+    await writeAuthItem('user', JSON.stringify(normalized));
+    setUser(normalized);
+  }, []);
+
   useEffect(() => {
     if (!token || !user || user.device_id) {
       return;
@@ -351,12 +357,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await clearAuthState();
   };
-
-  const updateUser = useCallback(async (nextUser: User) => {
-    const normalized = normalizeUser(nextUser as any) as User | null;
-    await writeAuthItem('user', JSON.stringify(normalized));
-    setUser(normalized);
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, updateUser, refreshAccessToken, isLoading }}>

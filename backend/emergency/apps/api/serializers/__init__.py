@@ -3,7 +3,12 @@ Paquete de serializers de la API.
 Compatibiliza nombres en espanol e ingles usados en las vistas.
 """
 
-from .auth_serializers import UserSerializer, UserCreateSerializer, ProfileSerializer
+from .auth_serializers import (
+    DispositivoRegistroSerializer,
+    UserSerializer,
+    UserCreateSerializer,
+    ProfileSerializer,
+)
 from .track_serializers import TrackPointSerializer, TrackPointCreateSerializer
 from .journey_serializers import JourneySerializer, JourneyCreateSerializer, JourneyStopSerializer
 from .incident_serializers import (
@@ -44,6 +49,7 @@ __all__ = [
     "UserSerializer",
     "UserCreateSerializer",
     "ProfileSerializer",
+    "DispositivoRegistroSerializer",
     "TrackPointSerializer",
     "TrackPointCreateSerializer",
     "PuntoRastreoSerializer",
