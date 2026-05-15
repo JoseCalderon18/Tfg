@@ -26,6 +26,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import WeatherScreen from './src/screens/WeatherScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 
 // Creamos el stack navigator para la navegación entre pantallas
@@ -112,6 +113,11 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Incidents"
             component={IncidentsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Weather"
+            component={WeatherScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

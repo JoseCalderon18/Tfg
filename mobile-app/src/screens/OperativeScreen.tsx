@@ -143,7 +143,7 @@ export default function OperativeScreen({ navigation }: any) {
         Alert.alert('Companeros', 'Pantalla de companeros (proximamente)');
         break;
       case 'weather':
-        Alert.alert('Meteorologia', 'Informacion meteorologica (proximamente)');
+        navigation.navigate('Weather');
         break;
       case 'incidents':
         navigation.navigate('Incidents');
@@ -307,7 +307,7 @@ export default function OperativeScreen({ navigation }: any) {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
-                <Text style={styles.menuOptionText}>⛅ Meteorologia</Text>
+                <Text style={styles.menuOptionText}>🌤️ Tiempo</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
                 <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
