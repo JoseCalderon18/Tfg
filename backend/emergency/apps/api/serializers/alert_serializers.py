@@ -5,11 +5,12 @@ from emergency.apps.core.models import Alert
 class AlertSerializer(serializers.ModelSerializer):
     """Serializer para leer alertas"""
     created_by = serializers.StringRelatedField()
+    incident_name = serializers.CharField(source='incident.name', read_only=True)
 
     class Meta:
         model = Alert
         fields = [
-            'id', 'created_by', 'incident', 'alert_type',
+            'id', 'created_by', 'incident', 'incident_name', 'alert_type',
             'severity', 'status', 'title', 'description',
             'location', 'acked_by', 'acked_at', 'ack_notes',
             'closed_by', 'closed_at', 'close_notes',

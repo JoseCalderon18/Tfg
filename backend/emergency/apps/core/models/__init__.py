@@ -24,6 +24,14 @@ from .risk_report import RiskReport
 from .password_reset import CodigoResetPassword
 from .journey import Journey
 from .point_of_interest import PointOfInterest
+from .unit import Unidad
+from .unit import Unidad as Unit
+from .unit_status_history import EstadoUnidad
+from .unit_status_history import EstadoUnidad as UnitStatusHistory
+from .location_audit import AuditoriaUbicacion
+from .location_audit import AuditoriaUbicacion as LocationAudit
+from .resource_consumption import ConsumoRecursos
+from .resource_consumption import ConsumoRecursos as ResourceConsumption
 
 __all__ = [
     'User',
@@ -47,4 +55,12 @@ __all__ = [
     'CodigoResetPassword',
     'Journey',
     'PointOfInterest',
+    'Unidad',
+    'Unit',
+    'EstadoUnidad',
+    'UnitStatusHistory',
+    'AuditoriaUbicacion',
+    'LocationAudit',
+    'ConsumoRecursos',
+    'ResourceConsumption',
 ]

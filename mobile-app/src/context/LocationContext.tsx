@@ -7,6 +7,10 @@ import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
+import {
+  procesarInmovilidadSegundoPlano,
+  registrarPuntoMovimientoJornada,
+} from '../services/journeyActivity';
 
 const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
 
@@ -57,6 +61,7 @@ TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
 
   if (lastLocation) {
     void sendBackgroundLocationUpdate(lastLocation).catch(() => undefined);
+    void procesarInmovilidadSegundoPlano(lastLocation).catch(() => undefined);
   }
 });
 
@@ -156,6 +161,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const { queueTrackingPoint, queueAlert } = useOfflineSync();
   const fatigueAlertSentRef = useRef(false);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const routeStartTimeRef = useRef<number | null>(null);
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
   const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
@@ -274,9 +280,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     if (result.queued) {
       setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
+      void registrarPuntoMovimientoJornada({
+        latitude: nextLocation.coords.latitude,
+        longitude: nextLocation.coords.longitude,
+      }).catch(() => undefined);
       return;
     }
 
+    void registrarPuntoMovimientoJornada({
+      latitude: nextLocation.coords.latitude,
+      longitude: nextLocation.coords.longitude,
+    }).catch(() => undefined);
     setErrorMsg(null);
   };
 
@@ -363,6 +377,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     if (background.status !== Location.PermissionStatus.GRANTED) {
       setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
+      Alert.alert(
+        'Permiso de ubicacion siempre activa',
+        'Android no siempre muestra este permiso dentro de la app. En la pantalla de ajustes, entra en Permisos > Ubicacion y selecciona "Permitir todo el tiempo".',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir ajustes', onPress: () => void Linking.openSettings() },
+        ],
+      );
       return false;
     }
 
@@ -428,8 +450,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       });
       setLocation(currentLocation);
       // initialize route tracking
+      const startedAtMs = Date.now();
       setRoutePoints([{ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }]);
-      setRouteStartTime(Date.now());
+      setRouteStartTime(startedAtMs);
+      routeStartTimeRef.current = startedAtMs;
       setRouteDistanceKm(0);
       setRouteDurationHours(0);
       setEstimatedKcal(0);
@@ -456,7 +480,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             const dist = computeRouteDistanceKm(next);
             setRouteDistanceKm(dist);
 
-            const start = routeStartTime ?? Date.now();
+            const start = routeStartTimeRef.current ?? Date.now();
             const durationMs = Date.now() - start;
             const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
             setRouteDurationHours(durationH);
@@ -493,6 +517,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     fatigueAlertSentRef.current = false;
     setRoutePoints([]);
     setRouteStartTime(null);
+    routeStartTimeRef.current = null;
     setRouteDistanceKm(0);
     setRouteDurationHours(0);
     setEstimatedKcal(0);

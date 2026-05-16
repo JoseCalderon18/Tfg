@@ -10,8 +10,11 @@ import { colors } from './src/theme';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
 import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
+import { UnitsProvider } from './src/context/UnitsContext';
+import { ThemeProvider } from './src/context/ThemeContext';
+import { useThemeColors } from './src/hooks/useThemeColors';
 
-// Importamos las pantallas de la aplicacion
+// Importamos las pantallas de la aplicación
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AlertScreen from './src/screens/AlertScreen';
@@ -20,17 +23,22 @@ import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
 import StartJourneyScreen from './src/screens/StartJourneyScreen';
 import StopJourneyScreen from './src/screens/StopJourneyScreen';
 import StartBreakScreen from './src/screens/StartBreakScreen';
+import EditJourneysScreen from './src/screens/EditJourneysScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
 import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import WeatherScreen from './src/screens/WeatherScreen';
+import UnitsTrackingScreen from './src/screens/UnitsTrackingScreen';
+import UnitDetailScreen from './src/screens/UnitDetailScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
 import LocationPermissionsScreen from './src/components/LocationPermissionsScreen';
+import BatteryAlertMonitor from './src/components/BatteryAlertMonitor';
+import MovementAlertMonitor from './src/components/MovementAlertMonitor';
 
-// Creamos el stack navigator para la navegacion entre pantallas
+// Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
-
 const MENU_ROUTE_NAME = 'Operative';
 
 function buildOperativeScreenOptions({ navigation, route }: any) {
@@ -124,18 +132,25 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Operative"
             component={OperativeScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="PointsOfInterest"
             component={PointsOfInterestScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartJourney"
             component={StartJourneyScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartBreak"
             component={StartBreakScreen}
+          />
+          <Stack.Screen
+            name="EditJourneys"
+            component={EditJourneysScreen}
           />
           <Stack.Screen name="StopJourney" 
                 component={StopJourneyScreen}
@@ -147,6 +162,18 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Incident"
             component={IncidentScreen}
+          />
+          <Stack.Screen
+            name="Weather"
+            component={WeatherScreen}
+          />
+          <Stack.Screen
+            name="UnitsTracking"
+            component={UnitsTrackingScreen}
+          />
+          <Stack.Screen
+            name="UnitDetail"
+            component={UnitDetailScreen}
           />
           <Stack.Screen
             name="Chat"
@@ -161,6 +188,8 @@ function OperativeNavigator() {
             component={SettingsScreen}
           />
         </Stack.Navigator>
+        <BatteryAlertMonitor />
+        <MovementAlertMonitor />
         <LocationPermissionsScreen />
         <GeofenceLockScreen />
       </>
@@ -170,11 +199,12 @@ function OperativeNavigator() {
 
 function AppNavigator() {
   const { token, user, isLoading } = useAuth();
+  const themeColors = useThemeColors();
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Preparando acceso...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <Text style={[styles.loadingText, { color: themeColors.text }]}>Preparando acceso...</Text>
       </View>
     );
   }
@@ -187,18 +217,22 @@ function AppNavigator() {
 }
 
 /**
- * Componente principal de la aplicacion movil
- * Configura los proveedores de contexto y la navegacion
+ * Componente principal de la aplicación móvil
+ * Configura los proveedores de contexto y la navegación
  */
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <RootErrorBoundary>
-        <AuthProvider>
-          <OfflineSyncProvider>
-            <AppNavigator />
-          </OfflineSyncProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <OfflineSyncProvider>
+              <UnitsProvider>
+                <AppNavigator />
+              </UnitsProvider>
+            </OfflineSyncProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </RootErrorBoundary>
     </GestureHandlerRootView>
   );

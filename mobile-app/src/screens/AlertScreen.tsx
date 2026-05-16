@@ -4,6 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function AlertScreen({ navigation }: any) {
@@ -18,9 +19,9 @@ export default function AlertScreen({ navigation }: any) {
 
   const handleSendAlert = async () => {
     try {
-      // Validamos sesion y ubicacion antes de registrar la alerta operativa.
+      // Validamos sesión y ubicación antes de registrar la alerta operativa.
       if (!token) {
-        Alert.alert('Error', 'No hay sesion activa.');
+        Alert.alert('Error', 'No hay sesión activa.');
         return;
       }
 
@@ -29,14 +30,24 @@ export default function AlertScreen({ navigation }: any) {
         return;
       }
 
-      const result = await queueAlert({
-        alert_type: tipoAlerta,
-        severity: severidad,
-        title: `Alerta ${tipoAlerta}`,
-        description: descripcion,
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
+      const result =
+        tipoAlerta === 'SOS'
+          ? await dispatchSosAlert({
+              queueAlert,
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              severity: severidad,
+              title: 'SOS operativo',
+              description: descripcion || 'SOS enviado desde el formulario de alerta.',
+            })
+          : await queueAlert({
+              alert_type: tipoAlerta,
+              severity: severidad,
+              title: `Alerta ${tipoAlerta}`,
+              description: descripcion,
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
+            });
 
       if (!result.ok) {
         throw new Error(result.error ?? 'No se pudo registrar la alerta.');
@@ -60,7 +71,7 @@ export default function AlertScreen({ navigation }: any) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Enviar alerta</Text>
-            <Text style={styles.subtitle}>Documenta la situacion de emergencia</Text>
+            <Text style={styles.subtitle}>Documenta la situación de emergencia</Text>
           </View>
 
           {/* Form Sections */}
@@ -72,27 +83,10 @@ export default function AlertScreen({ navigation }: any) {
                 onValueChange={setTipoAlerta} 
                 style={styles.picker}
               >
-                <Picker.Item label="SOS Emergencia" value="SOS" />
-                <Picker.Item label="Operativo caido" value="MAN_DOWN" />
-                <Picker.Item label="Cambio de fuego" value="FIRE_SPREAD" />
-                <Picker.Item label="Humo en incidente" value="SMOKE" />
-                <Picker.Item label="Operativo herido" value="INJURY" />
-                <Picker.Item label="Operativo fallecido" value="DEATH" />
-                <Picker.Item label="Evacuacion de zona" value="EVACUATION" />
-                <Picker.Item label="Emergencia medica" value="MEDICAL" />
-                <Picker.Item label="Operativo atrapado" value="TRAPPED" />
-                <Picker.Item label="Incidente vehicular" value="VEHICLE" />
-                <Picker.Item label="Encuentro con animal peligroso" value="ANIMAL" />
-                <Picker.Item label="Animal herido" value="ANIMAL_INJURY" />
-                <Picker.Item label="Recursos bajos" value="LOW_SUPPLIES" />
-                <Picker.Item label="Perdida de comunicacion" value="COMM_LOSS" />
-                <Picker.Item label="Peligro ambiental" value="HAZARD" />
-                <Picker.Item label="Fatiga extrema" value="FATIGUE" />
-                <Picker.Item label="Clima peligroso" value="WEATHER" />
-                <Picker.Item label="Operativo perdido/desorientado" value="LOST" />
-                <Picker.Item label="Fuera de zona segura" value="GEOFENCE" />
-                <Picker.Item label="Anomalia detectada" value="ANOMALY" />
-                <Picker.Item label="Otro" value="OTHER" />
+                <Picker.Item label="🆘 Emergencia SOS" value="SOS" />
+                <Picker.Item label="👤 Hombre caído" value="MAN_DOWN" />
+                <Picker.Item label="🔴 Perdido" value="LOST" />
+                <Picker.Item label="📋 Otro" value="OTHER" />
               </Picker>
             </View>
           </View>
@@ -119,19 +113,19 @@ export default function AlertScreen({ navigation }: any) {
               ))}
             </View>
             <View style={styles.severityLabels}>
-              <Text style={styles.severityText}>Critico</Text>
-              <Text style={styles.severityText}>Informacion</Text>
+              <Text style={styles.severityText}>Crítico</Text>
+              <Text style={styles.severityText}>Información</Text>
             </View>
           </View>
 
           <View style={styles.formSection}>
-            <Text style={styles.label}>Descripcion</Text>
+            <Text style={styles.label}>Descripción</Text>
             <TextInput
               style={[
                 styles.textArea,
                 focusedField === 'description' && styles.inputFocused,
               ]}
-              placeholder="Describe la situacion..."
+              placeholder="Describe la situación..."
               placeholderTextColor={colors.textMuted}
               value={descripcion}
               onChangeText={setDescripcion}

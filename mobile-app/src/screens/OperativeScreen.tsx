@@ -16,6 +16,7 @@ import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors } from '../theme';
 
 const { height } = Dimensions.get('window');
@@ -93,7 +94,7 @@ export default function OperativeScreen({ navigation }: any) {
     setIsSendingSos(false);
   };
 
-  const sendSosAlert = async () => {
+  const handleSendSosAlert = async () => {
     try {
       if (!token) {
         Alert.alert('Error', 'No hay sesion activa.');
@@ -116,25 +117,30 @@ export default function OperativeScreen({ navigation }: any) {
         return;
       }
 
-      const result = await queueAlert({
-        incident: incident.id,
-        alert_type: 'SOS',
-        severity: 1,
-        title: 'SOS operativo',
+      const result = await dispatchSosAlert({
+        queueAlert,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        incidentId: incident.id,
         description: `SOS enviado desde el boton principal del operativo para ${incident.name ?? 'incidente activo'}.`,
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
       });
 
       if (!result.ok) {
         throw new Error(result.error ?? 'No se pudo registrar la alerta SOS.');
       }
 
+      const avisos = [
+        result.notification?.central_notified ? 'central operativa' : null,
+        result.notification?.team_notified ? 'compañeros del incidente' : null,
+      ].filter(Boolean);
+
       Alert.alert(
         result.queued ? 'SOS en cola' : 'SOS enviado',
         result.queued
-          ? `El SOS se ha guardado sin conexion y se enviara automaticamente al incidente ${incident.name ?? incident.id} cuando vuelva la red.`
-          : `El SOS se ha enviado correctamente al incidente ${incident.name ?? incident.id}.`
+          ? 'El SOS se ha guardado sin conexion y se enviara automaticamente al incidente asignado cuando vuelva la red.'
+          : avisos.length > 0
+            ? `El SOS se ha enviado correctamente y ha avisado a ${avisos.join(' y ')}.`
+            : 'El SOS se ha enviado correctamente al incidente asignado.'
       );
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo enviar la alerta SOS.');
@@ -169,7 +175,7 @@ export default function OperativeScreen({ navigation }: any) {
 
     if (sosCountdown <= 0) {
       if (!sosCancelledRef.current) {
-        void sendSosAlert();
+        void handleSendSosAlert();
       }
       return;
     }
@@ -195,7 +201,10 @@ export default function OperativeScreen({ navigation }: any) {
         Alert.alert('Companeros', 'Pantalla de companeros (proximamente)');
         break;
       case 'weather':
-        Alert.alert('Meteorologia', 'Informacion meteorologica (proximamente)');
+        navigation.navigate('Weather');
+        break;
+      case 'units':
+        navigation.navigate('UnitsTracking');
         break;
       case 'incidents':
         navigation.navigate('Incidents');
@@ -227,7 +236,7 @@ export default function OperativeScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
-          <Text style={styles.hamburgerText}>Menu</Text>
+          <Text style={styles.hamburgerText}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Emergencias</Text>
         <View style={styles.userInfo}>
@@ -241,7 +250,7 @@ export default function OperativeScreen({ navigation }: any) {
         <Text style={styles.statusText}>Seguimiento: {isTracking ? 'Activo' : 'Detenido'}</Text>
         <Text style={styles.statusSubtext}>
           {location
-            ? `Lat ${location.coords.latitude.toFixed(4)} | Lng ${location.coords.longitude.toFixed(4)}`
+            ? `Lat ${location.coords.latitude.toFixed(4)} · Lng ${location.coords.longitude.toFixed(4)}`
             : 'Sin posicion registrada'}
         </Text>
         <Text style={styles.syncText}>
@@ -301,15 +310,15 @@ export default function OperativeScreen({ navigation }: any) {
 
       <View style={styles.bottomMenu}>
         <TouchableOpacity style={styles.sideButton} onPress={handleAlertPress}>
-          <Text style={styles.sideButtonText}>ALERTA</Text>
+          <Text style={styles.sideButtonText}>🚨{'\n'}ALERTA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.centerButton} onPress={handleSosPress} disabled={isSendingSos}>
-          <Text style={styles.centerButtonText}>{`SOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
+          <Text style={styles.centerButtonText}>{`🆘\nSOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
-          <Text style={styles.sideButtonText}>PUNTOS DE{'\n'}INTERES</Text>
+          <Text style={styles.sideButtonText}>📍{'\n'}PUNTOS DE{'\n'}INTERES</Text>
         </TouchableOpacity>
       </View>
 
@@ -348,25 +357,28 @@ export default function OperativeScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.drawerMenu}>
             <TouchableOpacity style={styles.closeButton} onPress={() => setMenuVisible(false)}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
 
             <Text style={styles.drawerTitle}>Menu</Text>
 
             <ScrollView style={styles.menuOptions}>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('companions')}>
-                <Text style={styles.menuOptionText}>Companeros</Text>
+                <Text style={styles.menuOptionText}>👥 Companeros</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
-                <Text style={styles.menuOptionText}>Meteorologia</Text>
+                <Text style={styles.menuOptionText}>🌤️ Tiempo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('units')}>
+                <Text style={styles.menuOptionText}>Unidades</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
-                <Text style={styles.menuOptionText}>Incidentes</Text>
+                <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('chat')}>
-                <Text style={styles.menuOptionText}>Chat</Text>
+                <Text style={styles.menuOptionText}>💬 Chat</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -376,7 +388,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StartJourney');
                 }}
               >
-                <Text style={styles.menuOptionText}>Iniciar jornada</Text>
+                <Text style={styles.menuOptionText}>▶ Iniciar jornada</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -386,7 +398,17 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StartBreak');
                 }}
               >
-                <Text style={styles.menuOptionText}>Iniciar descanso</Text>
+                <Text style={styles.menuOptionText}>⏸ Iniciar descanso</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('EditJourneys');
+                }}
+              >
+                <Text style={styles.menuOptionText}>Editar jornadas</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -396,7 +418,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('StopJourney');
                 }}
               >
-                <Text style={styles.menuOptionText}>Parar jornada</Text>
+                <Text style={styles.menuOptionText}>🛑 Parar jornada</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -406,7 +428,7 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('Profile');
                 }}
               >
-                <Text style={styles.menuOptionText}>Perfil</Text>
+                <Text style={styles.menuOptionText}>👤 Perfil</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -416,14 +438,14 @@ export default function OperativeScreen({ navigation }: any) {
                   navigation.navigate('Settings');
                 }}
               >
-                <Text style={styles.menuOptionText}>Configuracion</Text>
+                <Text style={styles.menuOptionText}>⚙ Configuracion</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.menuOption, styles.logoutOption]}
                 onPress={() => handleMenuOption('logout')}
               >
-                <Text style={styles.menuOptionText}>Cerrar sesion</Text>
+                <Text style={styles.menuOptionText}>🚪 Cerrar sesion</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

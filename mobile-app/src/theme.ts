@@ -1,4 +1,4 @@
-export const colors = {
+export const lightColors = {
   background: '#F8FAFC',
   surface: '#FFFFFF',
   surfaceMuted: '#F1F5F9',
@@ -7,15 +7,48 @@ export const colors = {
   text: '#0F172A',
   textMuted: '#64748B',
   textSoft: '#475569',
+  textSecondary: '#64748B',
   primary: '#2563EB',
   primarySoft: '#DBEAFE',
+  secondary: '#64748B',
+  info: '#0EA5E9',
   success: '#16A34A',
   warning: '#EAB308',
   danger: '#DC2626',
+  dangerLight: '#FEE2E2',
   dangerSoft: '#FEE2E2',
   overlay: 'rgba(15, 23, 42, 0.55)',
   white: '#FFFFFF',
-};
+} as const;
+
+export const darkColors = {
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceMuted: '#334155',
+  border: '#475569',
+  borderStrong: '#64748B',
+  text: '#F1F5F9',
+  textMuted: '#94A3B8',
+  textSoft: '#CBD5E1',
+  textSecondary: '#94A3B8',
+  primary: '#3B82F6',
+  primarySoft: '#1E3A8A',
+  secondary: '#94A3B8',
+  info: '#38BDF8',
+  success: '#22C55E',
+  warning: '#FACC15',
+  danger: '#EF4444',
+  dangerLight: '#7F1D1D',
+  dangerSoft: '#7F1D1D',
+  overlay: 'rgba(255, 255, 255, 0.15)',
+  white: '#FFFFFF',
+} as const;
+
+export const colors = lightColors;
+
+export function getColors(isDark: boolean) {
+  return isDark ? darkColors : lightColors;
+}
 
 export const spacing = {
   xs: 4,
@@ -53,17 +86,32 @@ export const typography = {
     fontWeight: '400',
     lineHeight: 24,
   },
+  body1: {
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 24,
+  },
+  body2: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
   small: {
     fontSize: 14,
     fontWeight: '400',
     lineHeight: 20,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 16,
   },
-};
+} as const;
 
 export const shadows = {
   sm: {
@@ -90,9 +138,10 @@ export const shadows = {
 };
 
 export const borderRadius = {
+  xs: 4,
   sm: 6,
   md: 10,
   lg: 16,
   xl: 24,
   full: 999,
-};
+} as const;

@@ -155,5 +155,14 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 // Utilidad para parsear respuestas JSON con manejo uniforme de errores.
 export async function parseJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
-  return text ? (JSON.parse(text) as T) : ({} as T);
+
+  if (!text) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return {} as T;
+  }
 }

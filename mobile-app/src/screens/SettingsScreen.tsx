@@ -1,133 +1,143 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { getApiDebugUrls } from '../services/api';
-import { borderRadius, colors, shadows, spacing } from '../theme';
+import { borderRadius, colors, shadows, spacing, typography } from '../theme';
 
 export default function SettingsScreen({ navigation }: any) {
   const urls = getApiDebugUrls();
   const { pendingCount, isSyncing, lastSyncedAt, lastError, flushQueue } = useOfflineSync();
+  const themeColors = useThemeColors();
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Volver</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
+      <ScrollView
+        style={[styles.screen, { backgroundColor: themeColors.background }]}
+        contentContainerStyle={styles.content}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.backButton, { backgroundColor: themeColors.surfaceMuted }]}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.backButtonText, { color: themeColors.text }]}>Volver</Text>
+        </TouchableOpacity>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Configuracion operativa</Text>
-        <Text style={styles.subtitle}>Referencia rapida para conexion y uso en terreno.</Text>
-      </View>
-
-      <View style={[styles.card, styles.syncCard]}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Estado de sincronizacion</Text>
-          <View style={[styles.statusIndicator, isSyncing ? styles.syncingStatus : styles.syncedStatus]} />
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: themeColors.text }]}>Configuracion operativa</Text>
+          <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
+            Referencia rapida para conexion y uso en terreno.
+          </Text>
         </View>
 
-        <Text style={styles.cardValue}>Elementos en cola: {pendingCount}</Text>
-        <Text style={styles.cardValue}>Estado: {isSyncing ? 'Sincronizando...' : 'En espera'}</Text>
-        <Text style={styles.cardValue}>
-          Ultima sincronizacion: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
-        </Text>
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <ThemeToggle />
+        </View>
 
-        {lastError ? <Text style={styles.errorText}>Error: {lastError}</Text> : null}
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: themeColors.text }]}>Estado de sincronizacion</Text>
+            <View style={[styles.statusIndicator, isSyncing ? styles.syncingStatus : styles.syncedStatus]} />
+          </View>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>Pendientes: {pendingCount}</Text>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>
+            Estado: {isSyncing ? 'Sincronizando...' : 'En espera'}
+          </Text>
+          <Text style={[styles.cardValue, { color: themeColors.text }]}>
+            Ultima sincronizacion: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : 'Sin registros'}
+          </Text>
+          {lastError ? <Text style={[styles.errorText, { color: themeColors.danger }]}>{lastError}</Text> : null}
+          <TouchableOpacity style={[styles.syncButton, { backgroundColor: themeColors.primary }]} onPress={() => void flushQueue()}>
+            <Text style={styles.syncButtonText}>Sincronizar ahora</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.syncButton} onPress={() => void flushQueue()} disabled={isSyncing}>
-          <Text style={styles.syncButtonText}>{isSyncing ? 'Sincronizando...' : 'Sincronizar ahora'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>URLs de API detectadas</Text>
-        <View style={styles.urlContainer}>
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>URLs de API detectadas</Text>
           {urls.length > 0 ? (
             urls.map((url) => (
-              <Text key={url} style={styles.urlValue}>
+              <Text key={url} style={[styles.urlValue, { color: themeColors.textMuted }]}>
                 {url}
               </Text>
             ))
           ) : (
-            <Text style={styles.cardValue}>No se han detectado URLs.</Text>
+            <Text style={[styles.cardValue, { color: themeColors.textMuted }]}>Sin URLs detectadas</Text>
           )}
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Buenas practicas</Text>
-        <View style={styles.tipsContainer}>
-          <Text style={styles.tip}>- Activa el GPS antes de iniciar jornada.</Text>
-          <Text style={styles.tip}>- En Android por USB usa adb reverse tcp:8000 tcp:8000.</Text>
-          <Text style={styles.tip}>- Registra descansos para que queden reflejados en la ruta.</Text>
-          <Text style={styles.tip}>- Manten la app en primer plano durante operaciones criticas.</Text>
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>Buenas practicas</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- Activa el GPS antes de iniciar jornada.</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- En Android por USB usa adb reverse tcp:8000 tcp:8000.</Text>
+          <Text style={[styles.tip, { color: themeColors.text }]}>- Registra descansos para que queden reflejados en la ruta.</Text>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.xl,
+    padding: 20,
     paddingBottom: spacing.xxxl,
   },
   backButton: {
     alignSelf: 'flex-end',
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg,
+    marginTop: 24,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   backButtonText: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.subtitle,
     color: colors.text,
-    fontWeight: '700',
   },
   header: {
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
+    paddingTop: spacing.md,
   },
   title: {
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: '700',
+    ...typography.heading2,
     color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: spacing.sm,
+    ...typography.body,
     color: colors.textMuted,
   },
   card: {
-    marginBottom: spacing.lg,
-    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
     padding: spacing.lg,
+    gap: spacing.sm,
     ...shadows.md,
   },
-  syncCard: {
-    borderColor: colors.primary,
-  },
   cardHeader: {
-    marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: spacing.sm,
   },
   cardTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '600',
+    ...typography.subtitle,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  cardValue: {
+    ...typography.body,
     color: colors.text,
   },
   statusIndicator: {
@@ -141,54 +151,31 @@ const styles = StyleSheet.create({
   syncedStatus: {
     backgroundColor: colors.success,
   },
-  cardValue: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: spacing.sm,
-    color: colors.textSoft,
-  },
   errorText: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: spacing.sm,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.dangerSoft,
     color: colors.danger,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    fontSize: 13,
+    lineHeight: 19,
   },
   syncButton: {
-    marginTop: spacing.md,
     alignSelf: 'flex-start',
     borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   syncButtonText: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.subtitle,
     color: colors.white,
-    fontWeight: '700',
-  },
-  urlContainer: {
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
   },
   urlValue: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: spacing.sm,
+    ...typography.small,
     color: colors.textMuted,
     fontFamily: 'Courier',
-  },
-  tipsContainer: {
-    gap: spacing.md,
+    marginBottom: spacing.xs,
   },
   tip: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textSoft,
+    ...typography.body,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
 });

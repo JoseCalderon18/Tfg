@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
-import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
-import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
+import { STATUS_COLOR, getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 
 type FilaAlerta = {
   id: string;
   incident?: string | null;
+  incident_name?: string | null;
   alert_type?: string | null;
   severity?: number | null;
   status?: string | null;
@@ -16,39 +16,10 @@ type FilaAlerta = {
   created_at?: string | null;
 };
 
-const ALERT_TYPE_LABELS: Record<string, string> = {
-  SOS: "SOS Emergencia",
-  MAN_DOWN: "Operativo caido",
-  FIRE_SPREAD: "Cambio de fuego",
-  SMOKE: "Humo en incidente",
-  INJURY: "Operativo herido",
-  DEATH: "Operativo fallecido",
-  EVACUATION: "Evacuacion de zona",
-  MEDICAL: "Emergencia medica",
-  TRAPPED: "Operativo atrapado",
-  VEHICLE: "Incidente vehicular",
-  ANIMAL: "Animal peligroso",
-  ANIMAL_INJURY: "Animal herido",
-  LOW_SUPPLIES: "Recursos bajos",
-  COMM_LOSS: "Perdida de comunicacion",
-  HAZARD: "Peligro ambiental",
-  FATIGUE: "Fatiga extrema",
-  WEATHER: "Clima peligroso",
-  LOST: "Operativo perdido",
-  GEOFENCE: "Fuera de zona segura",
-  ANOMALY: "Anomalia detectada",
-  OTHER: "Otro",
-};
-
-function obtenerEtiquetaTipoAlerta(type?: string | null) {
-  if (!type) return "Desconocido";
-  return ALERT_TYPE_LABELS[type] ?? type;
-}
-
 function obtenerBadgeAlerta(type?: string | null) {
   if (type === "SOS") return "cm-badge-danger";
-  if (type === "MAN_DOWN" || type === "INJURY" || type === "DEATH" || type === "TRAPPED") return "cm-badge-alert";
-  if (type === "GEOFENCE" || type === "FIRE_SPREAD" || type === "SMOKE" || type === "WEATHER" || type === "HAZARD") return "cm-badge-warning";
+  if (type === "MAN_DOWN") return "cm-badge-alert";
+  if (type === "GEOFENCE") return "cm-badge-warning";
   if (type === "OTHER") return "cm-badge-special";
   return "cm-badge-info";
 }
@@ -97,7 +68,7 @@ export default function AlertsPage() {
     const normalized = consulta.trim().toLowerCase();
     if (!normalized) return alertas;
     return alertas.filter((alerta) =>
-      `${alerta.alert_type ?? ""} ${obtenerEtiquetaTipoAlerta(alerta.alert_type)} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""}`
+      `${alerta.alert_type ?? ""} ${alerta.title ?? ""} ${alerta.status ?? ""} ${alerta.created_by ?? ""} ${alerta.incident_name ?? ""}`
         .toLowerCase()
         .includes(normalized)
     );
@@ -211,108 +182,61 @@ export default function AlertsPage() {
   }
 
   if (cargando) {
-    return <LoadingState label="Cargando alertas..." />;
+    return (
+      <div className="cm-shell grid min-h-screen place-items-center">
+        <p className="text-[color:var(--cm-text-muted)]">Cargando alertas...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="cm-shell cm-page">
+    <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
       <div className="w-full">
-        <PageHeader
-          eyebrow="Alertas"
-          title="Centro de alertas operativas"
-          description="Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido."
-          actions={
-            <div className="flex flex-wrap gap-2 text-xs">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Alertas</p>
+            <h1 className="mt-1 text-2xl font-bold">Centro de alertas operativas</h1>
+            <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
+              Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
             <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
             <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
             <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
-            </div>
-          }
-        />
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Abiertas" value={indicadores.abiertas} tone="success" />
-          <MetricCard label="Reconocidas" value={indicadores.reconocidas} tone="warning" />
-          <MetricCard label="Críticas" value={indicadores.criticas} tone="danger" />
-          <MetricCard label="Cerradas" value={indicadores.cerradas} />
+          </div>
         </div>
 
-        <SearchBar
-          value={consulta}
-          onChange={(event) => setConsulta(event.target.value)}
-          onClear={() => setConsulta("")}
-          placeholder="Buscar por tipo, título, estado o creador..."
-          resultLabel={`${alertasFiltradas.length} de ${alertas.length} alertas`}
-        />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
+          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></div>
+        </div>
 
-        {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
-
-        {alertasFiltradas.length === 0 ? (
-          <EmptyState
-            title="No hay alertas para mostrar"
-            description={consulta ? "Prueba con otra búsqueda o limpia el filtro." : "Cuando haya alertas aparecerán en este listado."}
+        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
+          <input
+            type="text"
+            value={consulta}
+            onChange={(event) => setConsulta(event.target.value)}
+            placeholder="Buscar por tipo, titulo, estado o creador..."
+            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
-        ) : (
-          <div className="mt-4 grid gap-3 md:hidden">
-            {alertasPaginadas.map((alerta) => (
-              <article key={alerta.id} className="cm-card cm-card-pad">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold">{alerta.title || "Alerta sin título"}</h2>
-                    <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-                      {alerta.created_by || "Sistema"} · {alerta.created_at ? new Date(alerta.created_at).toLocaleString() : "-"}
-                    </p>
-                  </div>
-                  <span className={`${obtenerBadgeEstado(alerta.status)} shrink-0 rounded-full px-2.5 py-1 text-xs`}>
-                    {alerta.status === "OPEN" ? "Abierta" : alerta.status === "ACK" ? "Evaluación" : alerta.status === "CLOSED" ? "Cerrada" : "Desconocida"}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                    {obtenerEtiquetaTipoAlerta(alerta.alert_type)}
-                  </span>
-                  <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
-                    {obtenerEtiquetaSeveridad(alerta.severity)}
-                  </span>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => navegar(`/editAlert/${alerta.id}`)} className="cm-btn cm-btn-primary">
-                    Ver
-                  </button>
-                  <button type="button" onClick={() => prepararEliminarAlerta(alerta.id)} className="cm-btn cm-btn-danger">
-                    Eliminar
-                  </button>
-                  {alerta.status === "OPEN" ? (
-                    <button
-                      type="button"
-                      onClick={() => void actualizarEstadoAlerta(alerta.id, "acknowledge")}
-                      disabled={alertaActualizandoId === alerta.id}
-                      className="cm-btn cm-btn-warning"
-                    >
-                      Reconocer
-                    </button>
-                  ) : null}
-                  {alerta.status !== "CLOSED" ? (
-                    <button
-                      type="button"
-                      onClick={() => void actualizarEstadoAlerta(alerta.id, "close")}
-                      disabled={alertaActualizandoId === alerta.id}
-                      className="cm-btn cm-btn-success"
-                    >
-                      Cerrar
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        </div>
 
-        <DataTable minWidth="1220px" wrapperClassName="mt-4 hidden md:block">
-            <thead>
+        {errorMensaje ? (
+          <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
+            {errorMensaje}
+          </div>
+        ) : null}
+
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <table className="min-w-[1220px] w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Titulo</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Incidente</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Severidad</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Creada por</th>
@@ -322,13 +246,28 @@ export default function AlertsPage() {
             </thead>
             <tbody>
               {alertasPaginadas.map((alerta) => (
-                <tr key={alerta.id}>
+                <tr key={alerta.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
                     <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                      {obtenerEtiquetaTipoAlerta(alerta.alert_type)}
+                      {alerta.alert_type === "SOS"
+                        ? "SOS"
+                        : alerta.alert_type === "MAN_DOWN"
+                        ? "Hombre caido"
+                        : alerta.alert_type === "GEOFENCE"
+                        ? "Geofence"
+                        : alerta.alert_type === "LOST"
+                        ? "Perdida"
+                        : alerta.alert_type === "ANOMALY"
+                        ? "Anomalia"
+                        : alerta.alert_type === "OTHER"
+                        ? "Otro"
+                        : "Desconocido"}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
+                  <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
+                    {alerta.incident_name || alerta.incident || "Sin incidente"}
+                  </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
                     <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
                       {obtenerEtiquetaSeveridad(alerta.severity)}
@@ -356,7 +295,7 @@ export default function AlertsPage() {
                       <button
                         type="button"
                         onClick={() => navegar(`/editAlert/${alerta.id}`)}
-                    className="cm-btn cm-btn-sm cm-btn-primary"
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                       >
                         Ver
                       </button>
@@ -365,7 +304,7 @@ export default function AlertsPage() {
                           type="button"
                           onClick={() => void actualizarEstadoAlerta(alerta.id, "acknowledge")}
                           disabled={alertaActualizandoId === alerta.id}
-                          className="cm-btn cm-btn-sm cm-btn-warning"
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-warning)] px-2.5 py-1.5 text-xs font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {alertaActualizandoId === alerta.id ? "Guardando..." : "Reconocer"}
                         </button>
@@ -375,7 +314,7 @@ export default function AlertsPage() {
                           type="button"
                           onClick={() => void actualizarEstadoAlerta(alerta.id, "close")}
                           disabled={alertaActualizandoId === alerta.id}
-                          className="cm-btn cm-btn-sm cm-btn-success"
+                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-success)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {alertaActualizandoId === alerta.id ? "Guardando..." : "Cerrar"}
                         </button>
@@ -383,7 +322,7 @@ export default function AlertsPage() {
                       <button
                         type="button"
                         onClick={() => prepararEliminarAlerta(alerta.id)}
-                        className="cm-btn cm-btn-sm cm-btn-danger"
+                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
                       >
                         Eliminar
                       </button>
@@ -391,38 +330,87 @@ export default function AlertsPage() {
                   </td>
                 </tr>
               ))}
-              {alertasFiltradas.length === 0 ? <EmptyState colSpan={7} title="No hay alertas para mostrar" /> : null}
+              {alertasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
+                    No hay alertas para mostrar con ese filtro.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
-          </DataTable>
+          </table>
 
-        <Pagination
-          page={paginaActual}
-          totalPages={totalPaginas}
-          visibleCount={alertasPaginadas.length}
-          totalCount={alertasFiltradas.length}
-          itemLabel="alertas"
-          onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-          onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-        />
+          {alertasFiltradas.length > 0 ? (
+            <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[color:var(--cm-text-muted)]">
+                Página {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                  disabled={paginaActual === 1}
+                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                  disabled={paginaActual === totalPaginas}
+                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <ConfirmDialog
-        open={Boolean(alertaPendienteEliminar)}
-        eyebrow="Eliminar alerta"
-        title="¿Quieres borrar esta alerta?"
-        confirmLabel={alertaEliminandoId === alertaPendienteEliminar?.id ? "Borrando..." : "Confirmar borrado"}
-        isBusy={Boolean(alertaEliminandoId)}
-        onCancel={() => setAlertaPendienteEliminarId("")}
-        onConfirm={() => {
-          if (alertaPendienteEliminar) void confirmarEliminarAlerta(alertaPendienteEliminar.id);
-        }}
-      >
-        <p>
-          Se eliminará definitivamente la alerta
-          {alertaPendienteEliminar?.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
-        </p>
-        <p>Esta acción no se puede deshacer.</p>
-      </ConfirmDialog>
+      {alertaPendienteEliminar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="alerta-eliminar-titulo"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar alerta</p>
+            <h2 id="alerta-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta alerta?
+            </h2>
+            <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
+              Se eliminara definitivamente la alerta
+              {alertaPendienteEliminar.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+              Esta acción no se puede deshacer.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setAlertaPendienteEliminarId("")}
+                disabled={Boolean(alertaEliminandoId)}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2.5 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-surface-2)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarEliminarAlerta(alertaPendienteEliminar.id)}
+                disabled={Boolean(alertaEliminandoId)}
+                className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {alertaEliminandoId === alertaPendienteEliminar.id ? "Borrando..." : "Confirmar borrado"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

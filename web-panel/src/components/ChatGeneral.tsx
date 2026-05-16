@@ -565,13 +565,13 @@ export default function ChatGeneral() {
                   </button>
 
                   <div className="max-h-[34rem] space-y-2 overflow-auto pr-1">
-                    {cargandoUsuarios ? (
+                    {cargandoMensajes ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                         Cargando usuarios...
                       </div>
                     ) : null}
 
-                    {!cargandoUsuarios &&
+                    {!cargandoMensajes &&
                       filteredUsers.map((current) => {
                         const profileId = current.profile_id?.trim() || "";
                         const checked = MimebrosSeleccionados.includes(profileId);
@@ -596,7 +596,7 @@ export default function ChatGeneral() {
                         );
                       })}
 
-                    {!cargandoUsuarios && filteredUsers.length === 0 ? (
+                    {!cargandoMensajes && filteredUsers.length === 0 ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                     No hay usuarios que coincidan con la búsqueda.
                       </div>

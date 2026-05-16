@@ -23,7 +23,7 @@ from emergency.apps.api.views.chat_views import (
     PanelChatsView,
 )
 
-from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views
+from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views, unit_views
 
 app_name = "api"
 
@@ -37,10 +37,15 @@ router.register(r"lightning", lightning_views.LightningViewSet, basename="lightn
 router.register(r"workareas", workarea_views.WorkAreaViewSet, basename="workarea")
 router.register(r"journeys", journey_views.JourneyViewSet, basename="journey")
 router.register(r"points-of-interest", point_of_interest_views.PointOfInterestViewSet, basename="point-of-interest")
+router.register(r"units", unit_views.UnidadViewSet, basename="unit")
+router.register(r"unit-status-history", unit_views.EstadoUnidadViewSet, basename="unit-status-history")
+router.register(r"unit-consumption", unit_views.ConsumoRecursosViewSet, basename="unit-consumption")
+router.register(r"location-audit", unit_views.AuditoriaUbicacionViewSet, basename="location-audit")
 
 urlpatterns = [
     path("auth/register/", auth_views.RegisterView.as_view(), name="register"),
     path("auth/me/", auth_views.CurrentUserView.as_view(), name="current_user"),
+    path("auth/devices/register/", auth_views.DeviceRegistrationView.as_view(), name="device_register"),
     path("auth/me/profile/", auth_views.ProfileView.as_view(), name="profile"),
     path("auth/login/", JWTLoginView.as_view(), name="login"),
     path("auth/password-reset/request/", PasswordResetRequestView.as_view(), name="password_reset_request"),

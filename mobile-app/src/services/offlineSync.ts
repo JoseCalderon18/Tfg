@@ -3,8 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiConnectionError, apiFetch, parseJsonResponse } from './api';
 
 const OFFLINE_QUEUE_KEY = 'offlineSyncQueue';
-const RETRY_BASE_DELAY_MS = 15000;
-const RETRY_MAX_DELAY_MS = 5 * 60 * 1000;
 
 export type OfflineQueueKind = 'tracking' | 'alert' | 'point_of_interest';
 
@@ -14,11 +12,7 @@ export type OfflineQueueItem = {
   path: string;
   method: 'POST';
   body: string;
-  dedupeKey?: string;
   createdAt: string;
-  retryCount?: number;
-  lastAttemptAt?: string | null;
-  lastError?: string | null;
 };
 
 export type OfflineDispatchResult = {
@@ -38,52 +32,6 @@ export type OfflineSyncSummary = {
 
 function buildQueueId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function normalizeBodyForDedupe(body: string) {
-  try {
-    return JSON.stringify(JSON.parse(body));
-  } catch {
-    return body;
-  }
-}
-
-function buildDedupeKey(item: Pick<OfflineQueueItem, 'kind' | 'path' | 'method' | 'body'>) {
-  return [item.kind, item.method, item.path, normalizeBodyForDedupe(item.body)].join('|');
-}
-
-function markQueueAttempt(item: OfflineQueueItem, error: string): OfflineQueueItem {
-  return {
-    ...item,
-    retryCount: (item.retryCount ?? 0) + 1,
-    lastAttemptAt: new Date().toISOString(),
-    lastError: error,
-  };
-}
-
-function getRetryDelayMs(retryCount = 0) {
-  if (retryCount <= 0) {
-    return 0;
-  }
-
-  return Math.min(RETRY_BASE_DELAY_MS * 2 ** (retryCount - 1), RETRY_MAX_DELAY_MS);
-}
-
-function getNextRetryTime(item: Pick<OfflineQueueItem, 'retryCount' | 'lastAttemptAt'>) {
-  if (!item.lastAttemptAt) {
-    return 0;
-  }
-
-  const lastAttemptTime = new Date(item.lastAttemptAt).getTime();
-  if (!Number.isFinite(lastAttemptTime)) {
-    return 0;
-  }
-
-  return lastAttemptTime + getRetryDelayMs(item.retryCount ?? 0);
-}
-
-function canRetryItem(item: OfflineQueueItem, now = Date.now()) {
-  return getNextRetryTime(item) <= now;
 }
 
 function isOfflineLikeError(error: unknown) {
@@ -118,31 +66,10 @@ export async function getOfflineQueue() {
 
 export async function enqueueOfflineItem(item: Omit<OfflineQueueItem, 'id' | 'createdAt'>) {
   const queue = await readQueue();
-  const dedupeKey = item.dedupeKey ?? buildDedupeKey(item);
-  const existingItemIndex = queue.findIndex((queuedItem) => (queuedItem.dedupeKey ?? buildDedupeKey(queuedItem)) === dedupeKey);
-
-  if (existingItemIndex >= 0) {
-    const existingItem = queue[existingItemIndex];
-    const updatedItem = {
-      ...existingItem,
-      dedupeKey,
-      retryCount: Math.max(existingItem.retryCount ?? 0, item.retryCount ?? 0),
-      lastAttemptAt: item.lastAttemptAt ?? existingItem.lastAttemptAt ?? null,
-      lastError: item.lastError ?? existingItem.lastError ?? null,
-    };
-    queue[existingItemIndex] = updatedItem;
-    await writeQueue(queue);
-    return updatedItem;
-  }
-
   const nextItem: OfflineQueueItem = {
     ...item,
-    dedupeKey,
     id: buildQueueId(),
     createdAt: new Date().toISOString(),
-    retryCount: item.retryCount ?? 0,
-    lastAttemptAt: item.lastAttemptAt ?? null,
-    lastError: item.lastError ?? null,
   };
 
   queue.push(nextItem);
@@ -195,13 +122,7 @@ export async function sendOrQueueItem(
     }
 
     if (await shouldQueueResponse(response)) {
-      const errorMessage = await getResponseErrorMessage(response);
-      await enqueueOfflineItem({
-        ...item,
-        retryCount: item.retryCount ?? 1,
-        lastAttemptAt: new Date().toISOString(),
-        lastError: errorMessage,
-      });
+      await enqueueOfflineItem(item);
       return { ok: true, queued: true, response };
     }
 
@@ -213,12 +134,7 @@ export async function sendOrQueueItem(
     };
   } catch (error) {
     if (isOfflineLikeError(error)) {
-      await enqueueOfflineItem({
-        ...item,
-        retryCount: item.retryCount ?? 1,
-        lastAttemptAt: new Date().toISOString(),
-        lastError: getReadableError(error),
-      });
+      await enqueueOfflineItem(item);
       return { ok: true, queued: true };
     }
 
@@ -257,15 +173,9 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
   let syncedCount = 0;
   let failedCount = 0;
   let lastError: string | null = null;
-  const now = Date.now();
 
   for (let index = 0; index < queue.length; index += 1) {
     const item = queue[index];
-
-    if (!canRetryItem(item, now)) {
-      remaining.push(item);
-      continue;
-    }
 
     try {
       const response = await apiFetch(item.path, {
@@ -280,9 +190,9 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
       }
 
       if (await shouldQueueResponse(response)) {
-        lastError = await getResponseErrorMessage(response);
-        remaining.push(markQueueAttempt(item, lastError), ...queue.slice(index + 1));
+        remaining.push(item, ...queue.slice(index + 1));
         failedCount += 1;
+        lastError = await getResponseErrorMessage(response);
         break;
       }
 
@@ -290,9 +200,9 @@ export async function flushOfflineQueue(token: string | null): Promise<OfflineSy
       lastError = await getResponseErrorMessage(response);
     } catch (error) {
       if (isOfflineLikeError(error)) {
-        lastError = getReadableError(error);
-        remaining.push(markQueueAttempt(item, lastError), ...queue.slice(index + 1));
+        remaining.push(item, ...queue.slice(index + 1));
         failedCount += 1;
+        lastError = getReadableError(error);
         break;
       }
 

@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
+import { registrarFinJornadaActividad } from '../services/journeyActivity';
 
 type JourneyApi = {
   id: number;
@@ -400,6 +401,8 @@ export default function StopJourneyScreen({ navigation }: any) {
 
       const updatedJourney = await parseJsonResponse<JourneyApi>(response);
       setJourney(updatedJourney);
+      await registrarFinJornadaActividad();
+      stopTracking();
 
       Alert.alert('Exito', 'Jornada finalizada correctamente.', [
         {
@@ -410,7 +413,6 @@ export default function StopJourneyScreen({ navigation }: any) {
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Error de conexion');
     } finally {
-      stopTracking();
       setLoading(false);
     }
   };
@@ -445,7 +447,7 @@ export default function StopJourneyScreen({ navigation }: any) {
           <View style={styles.mapHeader}>
             <Text style={styles.mapTitle}>Recorrido de la jornada</Text>
             <Text style={styles.mapSubtitle}>
-              {`Inicio: ${startPoint ? 1 : 0} | Pausas: ${pausePoints.length} | Ruta: ${routeCoordinates.length} puntos`}
+              {`Inicio: ${startPoint ? 1 : 0} · Pausas: ${pausePoints.length} · Ruta: ${routeCoordinates.length} puntos`}
             </Text>
           </View>
 
@@ -522,18 +524,18 @@ export default function StopJourneyScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Estimacion de calorias y sugerencias */}
+        {/* Estimación de calorías y sugerencias */}
         <View style={styles.calorieCard}>
-          <Text style={styles.calorieTitle}>Estimacion energetica</Text>
-          <Text style={styles.calorieMeta}>{`Distancia: ${totalDistanceKm.toFixed(2)} km | Duracion: ${durationHours.toFixed(2)} h`}</Text>
+          <Text style={styles.calorieTitle}>Estimación energética</Text>
+          <Text style={styles.calorieMeta}>{`Distancia: ${totalDistanceKm.toFixed(2)} km · Duración: ${durationHours.toFixed(2)} h`}</Text>
           <Text style={styles.calorieEstimate}>{`${estimatedKcal} kcal estimadas quemadas`}</Text>
 
           <View style={styles.foodList}>
             {foodSuggestions.slice(0, 5).map((f, idx) => (
-              <Text key={`${f.name}-${idx}`} style={styles.foodItem}>{`- ${f.name} - ${f.kcal} kcal${f.portion ? ` | ${f.portion}` : ''}`}</Text>
+              <Text key={`${f.name}-${idx}`} style={styles.foodItem}>{`• ${f.name} — ${f.kcal} kcal${f.portion ? ` · ${f.portion}` : ''}`}</Text>
             ))}
           </View>
-          <Text style={styles.calorieNote}>Sugerencia: combina opciones segun necesidades energeticas.</Text>
+          <Text style={styles.calorieNote}>Sugerencia: combina opciones según necesidades energéticas.</Text>
         </View>
 
         <TouchableOpacity

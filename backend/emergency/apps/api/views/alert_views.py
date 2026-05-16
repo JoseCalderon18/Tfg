@@ -6,6 +6,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 
 from emergency.apps.core.models import Alerta
+from ..services.alert_notifications import dispatch_sos_alert
 from ..serializers import (
     AlertaSerializer, AlertaCreateSerializer,
     AlertaAckSerializer, AlertaCloseSerializer
@@ -27,6 +28,29 @@ class AlertaViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        alert = serializer.save(created_by=request.user)
+        dispatch_result = dispatch_sos_alert(alert)
+
+        response_serializer = AlertaSerializer(alert, context=self.get_serializer_context())
+        response_data = response_serializer.data
+        response_data["notification"] = {
+            "incident_id": dispatch_result.incident_id,
+            "incident_message_id": dispatch_result.incident_message_id,
+            "message_created": dispatch_result.message_created,
+            "central_notified": dispatch_result.central_sent,
+            "team_notified": dispatch_result.team_sent,
+            "central_targets": dispatch_result.central_targets,
+            "team_targets": dispatch_result.team_targets,
+            "push_enabled": dispatch_result.push_enabled,
+            "push_error": dispatch_result.error,
+        }
+
+        headers = self.get_success_headers(response_data)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['post'])
     def acknowledge(self, request, pk=None):

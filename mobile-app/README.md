@@ -1,179 +1,131 @@
-# Mobile App | Mando Operativo en Campo
+# Mobile App - Mando Operativo
 
-<p align="center">
-  <img src="./docs/assets/mobile-app-hero.svg" alt="Vista conceptual de la aplicacion movil operativa" width="100%" />
-</p>
+Aplicacion movil para personal operativo en campo. Permite iniciar sesion, activar seguimiento GPS, controlar jornadas, enviar alertas, consultar incidentes, usar chat operativo, marcar puntos de interes y recibir bloqueo visual cuando el dispositivo sale del area de trabajo asignada.
 
-<p align="center">
-  <img alt="React Native" src="https://img.shields.io/badge/React%20Native-0.73-61DAFB?logo=react&logoColor=111827" />
-  <img alt="Expo" src="https://img.shields.io/badge/Expo-SDK%2050-000020?logo=expo&logoColor=white" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
-  <img alt="Offline" src="https://img.shields.io/badge/Offline-Queue-16A34A" />
-  <img alt="GPS" src="https://img.shields.io/badge/GPS-Tracking-2563EB" />
-</p>
-
-La **Mobile App** es la herramienta de campo para personal operativo. Permite iniciar sesion, activar GPS, enviar alertas, consultar incidentes, marcar puntos de interes, usar chat, controlar jornadas y mantenerse sincronizado con el centro de supervision.
-
-Esta app esta pensada para uso rapido en terreno: **botones grandes, acciones directas, mapa por capas y funcionamiento con cola offline cuando la conexion falla**.
-
-## Para Que Sirve
-
-| Necesidad en campo | Como ayuda la app |
-| --- | --- |
-| Avisar rapido | Envio de alertas y SOS desde ubicacion actual. |
-| Saber donde estoy | Mapa operativo con posicion, incidentes, POI, alertas y jornadas. |
-| Registrar actividad | Inicio, pausa y finalizacion de jornada. |
-| No perder datos | Cola offline para tracking, alertas y puntos de interes. |
-| Coordinarse | Chat movil general y por incidentes. |
-| Mantener seguridad | Deteccion de salida de workarea y bloqueo visual. |
-
-## Funciones Principales
-
-### 1. Operativa Diaria
-
-- Login con JWT.
-- Pantalla principal para acciones rapidas.
-- Inicio y cierre de jornada.
-- Registro de descansos.
-- Estado de distancia, duracion, calorias estimadas y fatiga.
-
-### 2. Alertas y Seguridad
-
-- Envio manual de alertas.
-- Boton SOS.
-- Tipos de alerta operativos: SOS, caida, fuego, humo, herido, evacuacion, recursos bajos, perdida de comunicacion, fatiga, clima peligroso y mas.
-- Deteccion de salida de zona segura (`GEOFENCE`).
-- Pantalla bloqueante al salir del workarea.
-
-### 3. Mapa Operativo
-
-- Mapa a pantalla completa.
-- Capas seleccionables:
-  - incidentes;
-  - alertas;
-  - puntos de interes;
-  - jornadas;
-  - todas a la vez.
-- POI con boton para abrir incidente relacionado.
-- Visualizacion de recorridos de jornada.
-
-### 4. Offline y Sincronizacion
-
-- Cola persistente en `AsyncStorage`.
-- Reintento automatico al volver la conexion.
-- Sincronizacion manual desde ajustes.
-- Compatible con tracking, alertas y POI.
-
-## Galeria
-
-> Puedes sustituir estas imagenes conceptuales por capturas reales del dispositivo cuando prepares la presentacion.
-
-| App de campo | Vista operativa |
-| --- | --- |
-| <img src="./docs/assets/mobile-app-hero.svg" alt="Mobile app" width="420" /> | GPS -> Mapa -> Alerta -> Jornada -> Chat |
-
-## Flujo Operativo
-
-```mermaid
-flowchart LR
-  A[Login] --> B[Operative]
-  B --> C[Iniciar GPS]
-  C --> D[Iniciar jornada]
-  D --> E[Consultar mapa]
-  E --> F[Enviar alerta o marcar POI]
-  D --> G[Chat operativo]
-  D --> H[Finalizar jornada]
-```
-
-## Seguridad por Workarea
-
-```mermaid
-flowchart TB
-  GPS[Ubicacion GPS] --> API[Backend check-position]
-  API --> Inside{Dentro de workarea?}
-  Inside -- Si --> App[App operativa normal]
-  Inside -- No --> Alert[Crear alerta GEOFENCE]
-  Alert --> Lock[Pantalla bloqueante]
-  Lock --> Retry[Actualizar zona]
-  Retry --> API
-```
+Esta app esta pensada para uso rapido en terreno: botones grandes, acciones directas y sincronizacion con el backend Django.
 
 ## Stack
 
-| Capa | Tecnologia |
-| --- | --- |
-| App | React Native + Expo SDK 50 |
-| Lenguaje | TypeScript |
-| Navegacion | React Navigation |
-| Sesion | JWT + `expo-secure-store` |
-| Ubicacion | `expo-location` |
-| Segundo plano | `expo-task-manager` |
-| Persistencia offline | `AsyncStorage` |
-| Mapa | WebView + Leaflet/OpenStreetMap y componentes nativos donde aplica |
+- React Native
+- Expo SDK 50
+- TypeScript
+- React Navigation
+- JWT con `expo-secure-store`
+- `expo-location`
+- `expo-task-manager`
+- `react-native-maps`
+- `@react-native-async-storage/async-storage`
 
-## Pantallas Principales
+## Funcionalidades actuales
 
-| Pantalla | Uso |
-| --- | --- |
-| `Login` | Acceso del operativo |
-| `Operative` | Centro de acciones en campo |
-| `Map` | Mapa operativo por capas |
-| `Alert` | Envio manual de alertas |
-| `Incidents` | Incidentes asociados |
-| `Incident` | Detalle de incidente |
-| `Chat` | Conversaciones generales e incidentes |
-| `PointsOfInterest` | Alta y consulta de POI |
-| `StartJourney` | Inicio de jornada |
-| `StartBreak` | Registro de descanso |
-| `StopJourney` | Cierre y resumen de jornada |
-| `Profile` | Perfil operativo |
-| `Settings` | Diagnostico y sincronizacion |
+- Login con JWT.
+- Persistencia segura de sesion.
+- Refresh automatico del token cuando la API devuelve `401`.
+- Pantalla operativa principal.
+- Seguimiento GPS en primer plano.
+- Seguimiento GPS en segundo plano para deteccion de workarea.
+- Envio de puntos de tracking al backend.
+- Cola offline para tracking, alertas y puntos de interes.
+- Deteccion de salida de workarea.
+- Modal bloqueante cuando el operativo esta fuera del workarea.
+- Boton para actualizar manualmente la deteccion de workarea desde el modal.
+- Envio manual de alertas.
+- Boton SOS con cuenta atras y vibracion.
+- Mapa operativo con posicion, incidentes y alertas.
+- Listado de incidentes de la organizacion del operativo.
+- Chat movil:
+  - chats donde el perfil esta anadido;
+  - chats de incidentes asociados a la organizacion del operativo;
+  - lectura y envio de mensajes.
+- Inicio de jornada.
+- Registro de descanso dentro de una jornada.
+- Finalizacion de jornada con mapa/resumen de recorrido.
+- Registro y consulta de puntos de interes.
+- Edicion de perfil operativo.
+- Pantalla de configuracion con estado de sincronizacion y URLs de API detectadas.
 
-## Puesta en Marcha
+## Pantallas principales
 
-### 1. Configurar API
+- `Login`: acceso del operativo.
+- `Operative`: centro principal de uso en campo.
+- `Map`: mapa operativo a pantalla completa.
+- `Alert`: envio manual de alertas.
+- `Chat`: chats generales e incidentes de la organizacion.
+- `Incidents`: incidentes asociados a la organizacion del operativo.
+- `PointsOfInterest`: alta y consulta de puntos de interes.
+- `StartJourney`: inicio de jornada.
+- `StartBreak`: registro de descanso.
+- `StopJourney`: cierre de jornada y visualizacion de ruta.
+- `Profile`: consulta y edicion del perfil.
+- `Settings`: diagnostico de API y sincronizacion offline.
 
-Variables utiles en `mobile-app/.env`:
+## Flujo operativo recomendado
 
-```bash
-EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api
-EXPO_PUBLIC_ANDROID_API_HOST=http://127.0.0.1:8000
-EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
-```
+1. Iniciar sesion.
+2. Entrar en `Operative`.
+3. Pulsar `Iniciar GPS`.
+4. Iniciar jornada desde el menu lateral.
+5. Consultar mapa, incidentes, chat o puntos de interes segun la operativa.
+6. Si el movil sale del workarea, se muestra una pantalla bloqueante.
+7. Volver dentro del workarea para desbloquear la app automaticamente.
+8. Finalizar jornada al terminar el despliegue.
 
-Android fisico por USB:
+## Workarea y geofence
 
-```bash
-adb reverse tcp:8000 tcp:8000
-```
+La app comprueba la posicion del operativo contra las workareas activas de los incidentes abiertos asociados a la organizacion del operativo.
 
-Emulador Android:
+Cuando el dispositivo sale del workarea:
 
-```bash
-EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
-```
+- el backend crea una alerta `GEOFENCE`;
+- la app muestra un modal bloqueante;
+- el modal muestra la ultima ubicacion legible cuando es posible;
+- se puede pulsar `Actualizar zona` para forzar una nueva comprobacion;
+- la pantalla se cierra automaticamente cuando el backend confirma que el operativo vuelve dentro del area.
 
-### 2. Instalar dependencias
+Archivos relacionados:
 
-```bash
-npm install
-```
+- `src/context/LocationContext.tsx`
+- `src/components/GeofenceLockScreen.tsx`
+- backend: `/api/workareas/check-position/`
 
-### 3. Arrancar Expo
+## Chat movil
 
-```bash
-npm run start
-```
+La pantalla `Chat` consume endpoints moviles especificos:
 
-### 4. Ejecutar en Android
+- `GET /api/mobile/chats/`
+- `GET /api/mobile/chats/<kind>/<id>/messages/`
+- `POST /api/mobile/chats/<kind>/<id>/messages/`
 
-```bash
-npm run android
-```
+El listado incluye:
 
-## Permisos Android
+- chats generales donde el `profile_id` del usuario esta en miembros;
+- chats de incidentes cuya organizacion coincide con la organizacion del operativo.
 
-La app necesita permisos de ubicacion y segundo plano:
+Actualmente el chat refresca mensajes por polling cada 8 segundos.
+
+## Offline
+
+La app tiene cola offline para:
+
+- tracking GPS;
+- alertas;
+- puntos de interes.
+
+La cola se guarda en `AsyncStorage` y se intenta sincronizar:
+
+- al recuperar conexion;
+- periodicamente;
+- cuando la app vuelve a primer plano;
+- desde `Settings` con `Sincronizar ahora`.
+
+Archivos relacionados:
+
+- `src/context/OfflineSyncContext.tsx`
+- `src/services/offlineSync.ts`
+
+## Permisos necesarios
+
+Android necesita permisos de ubicacion y servicio en segundo plano:
 
 - `ACCESS_COARSE_LOCATION`
 - `ACCESS_FINE_LOCATION`
@@ -182,58 +134,119 @@ La app necesita permisos de ubicacion y segundo plano:
 - `FOREGROUND_SERVICE_LOCATION`
 - `POST_NOTIFICATIONS`
 
-Configurados en:
+Estan configurados en:
 
 - `app.json`
 - `android/app/src/main/AndroidManifest.xml`
 
-## Archivos Clave
+Para que los cambios nativos de permisos se apliquen, reconstruye la app.
 
-| Archivo | Responsabilidad |
-| --- | --- |
-| `App.tsx` | Navegacion y providers |
-| `src/context/AuthContext.tsx` | Login, sesion y refresh JWT |
-| `src/context/LocationContext.tsx` | GPS, tracking, workarea y fatiga |
-| `src/context/OfflineSyncContext.tsx` | Cola offline |
-| `src/services/api.ts` | Cliente API y fallback de URLs |
-| `src/screens/OperativeScreen.tsx` | Pantalla principal |
-| `src/components/MapaOperativo.tsx` | Mapa por capas |
-| `src/screens/AlertScreen.tsx` | Envio de alertas |
-| `src/screens/ChatScreen.tsx` | Chat movil |
-| `src/screens/PointsOfInterestScreen.tsx` | Puntos de interes |
-| `src/components/GeofenceLockScreen.tsx` | Bloqueo por workarea |
-| `src/screens/SettingsScreen.tsx` | Diagnostico y sincronizacion |
+## Configuracion de API
 
-## Integracion con el Panel Web
+Variables utiles:
 
-| Desde el panel | En la app movil |
-| --- | --- |
-| Incidentes | Consulta y detalle operativo |
-| Workareas | Deteccion de entrada/salida |
-| Alertas | Visualizacion y envio desde campo |
-| POI | Alta desde mapa o ubicacion actual |
-| Jornadas | Registro de actividad |
-| Chat | Comunicacion por incidente o general |
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://<host>:8000/api
+EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
+EXPO_PUBLIC_IOS_API_HOST=http://localhost:8000
+```
 
-## Estado del Proyecto
+Notas:
 
-Funcionalidades destacadas:
+- En Android fisico por USB, normalmente se puede usar:
 
-- Login y sesion segura.
-- GPS foreground/background.
-- Cola offline.
-- Mapa operativo por capas.
-- Alertas ampliadas.
-- Workarea/geofence.
-- Chat movil.
-- Jornadas y descansos.
-- Puntos de interes.
-- Perfil y ajustes.
+```bash
+adb reverse tcp:8000 tcp:8000
+```
 
-Pendientes recomendados:
+- En emulador Android, suele funcionar:
 
-- Integrar push notifications.
-- Mejorar contador de mensajes no leidos.
-- Asociar alertas y POI automaticamente a incidente activo cuando aplique.
-- Cachear workareas para validacion local offline.
-- Sustituir assets conceptuales del README por capturas reales.
+```bash
+EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
+```
+
+- Si no se define `EXPO_PUBLIC_API_BASE_URL`, la app intenta URLs fallback desde `src/services/api.ts`.
+
+## Instalacion
+
+```bash
+npm install
+```
+
+## Ejecucion en desarrollo
+
+Arrancar Expo:
+
+```bash
+npm run start
+```
+
+Ejecutar en Android:
+
+```bash
+npm run android
+```
+
+Ejecutar en iOS:
+
+```bash
+npm run ios
+```
+
+Ejecutar en web:
+
+```bash
+npm run web
+```
+
+## Validacion TypeScript
+
+El proyecto no tiene script propio de test/lint. Para comprobar tipos:
+
+```bash
+.\node_modules\.bin\tsc.cmd -p tsconfig.json --noEmit
+```
+
+En PowerShell desde `mobile-app`.
+
+## Archivos importantes
+
+- `App.tsx`: navegacion principal y providers.
+- `src/context/AuthContext.tsx`: login, sesion y refresh JWT.
+- `src/context/LocationContext.tsx`: GPS, tracking, workarea y segundo plano.
+- `src/context/OfflineSyncContext.tsx`: cola offline.
+- `src/services/api.ts`: cliente HTTP y fallback de URLs.
+- `src/services/offlineSync.ts`: persistencia y reintento offline.
+- `src/screens/OperativeScreen.tsx`: pantalla principal de campo.
+- `src/components/GeofenceLockScreen.tsx`: bloqueo por salida de workarea.
+- `src/screens/ChatScreen.tsx`: chat movil.
+- `src/components/MapaOperativo.tsx`: mapa operativo.
+- `src/screens/IncidentsScreen.tsx`: listado de incidentes.
+- `src/screens/PointsOfInterestScreen.tsx`: puntos de interes.
+- `src/screens/StartJourneyScreen.tsx`: inicio de jornada.
+- `src/screens/StartBreakScreen.tsx`: descanso.
+- `src/screens/StopJourneyScreen.tsx`: finalizacion de jornada.
+- `src/screens/ProfileScreen.tsx`: perfil.
+- `src/screens/SettingsScreen.tsx`: diagnostico y sincronizacion.
+
+## Limitaciones conocidas
+
+- La pantalla `Incidents` intenta abrir `Incident`, pero esa pantalla de detalle todavia no esta registrada.
+- El chat movil refresca por polling; no hay notificaciones push ni contador de no leidos.
+- Las notificaciones estan instaladas como dependencia, pero no estan integradas funcionalmente.
+- El mapa carga incidentes y alertas desde endpoints generales; conviene filtrar por organizacion/incidente activo.
+- El inicio de jornada no activa automaticamente el tracking si el usuario no pulsa `Iniciar GPS`.
+- El SOS se envia sin asociar explicitamente un incidente.
+- Algunos textos antiguos pueden tener caracteres corruptos por codificacion previa.
+
+## Mejoras recomendadas
+
+- Crear detalle de incidente en movil.
+- Activar tracking automaticamente al iniciar jornada.
+- Detener tracking/background al cerrar sesion o finalizar jornada.
+- Asociar alertas y puntos de interes al incidente activo.
+- Integrar push notifications para SOS, geofence, alertas y chat.
+- Cachear workareas para deteccion local offline.
+- Anadir contador de mensajes no leidos.
+- Unificar textos y corregir caracteres corruptos.
+

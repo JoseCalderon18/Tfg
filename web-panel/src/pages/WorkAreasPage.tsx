@@ -315,9 +315,6 @@ export default function WorkAreasPage() {
   const workAreaPendienteEliminar =
     workAreas.find((area) => area.id === workAreaPendienteEliminarId) ??
     (areaSeleccionada && areaSeleccionada.id === workAreaPendienteEliminarId ? areaSeleccionada : null);
-  const nombreWorkAreaPendienteEliminar = workAreaPendienteEliminar?.name
-    ? ` "${workAreaPendienteEliminar.name}"`
-    : "";
 
   async function confirmarEliminarWorkArea(areaId: number) {
     if (workAreaEliminandoId != null) return;
@@ -463,7 +460,8 @@ export default function WorkAreasPage() {
                 ¿Quieres borrar esta area de trabajo?
               </h2>
               <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-                Se eliminara definitivamente el area{nombreWorkAreaPendienteEliminar}.
+                Se eliminara definitivamente el area
+                {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
               </p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
                 Esta acción no se puede deshacer.
@@ -593,7 +591,8 @@ export default function WorkAreasPage() {
               ¿Quieres borrar esta area de trabajo?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente el area{nombreWorkAreaPendienteEliminar}.
+              Se eliminara definitivamente el area
+              {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
               Esta acción no se puede deshacer.

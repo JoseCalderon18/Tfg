@@ -18,7 +18,7 @@ export default function LoginScreen() {
       setError('');
       await login(username, password);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'No se pudo iniciar sesion.');
+      setError(error instanceof Error ? error.message : 'No se pudo iniciar sesión.');
     } finally {
       setSubmitting(false);
     }
@@ -42,7 +42,7 @@ export default function LoginScreen() {
       />
       <TextInput
         style={styles.input}
-        placeholder="Contrasena"
+        placeholder="Contraseña"
         placeholderTextColor={colors.textMuted}
         value={password}
         onChangeText={setPassword}

@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ApiConnectionError, apiFetch, parseJsonResponse, setApiAuthHandlers } from '../services/api';
+import { registerPushDevice } from '../services/pushRegistration';
 
 /**
  * Interface que define la estructura de un Usuario
@@ -151,11 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+  const pushRegistrationRef = useRef<string | null>(null);
 
   const clearAuthState = useCallback(async () => {
     await clearStoredAuth();
     setToken(null);
     setUser(null);
+    pushRegistrationRef.current = null;
   }, []);
 
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
@@ -208,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!storedToken || !storedUser) {
         setToken(null);
         setUser(null);
+        pushRegistrationRef.current = null;
         return;
       }
 
@@ -254,6 +258,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApiAuthHandlers(null);
     };
   }, [refreshAccessToken]);
+
+  const updateUser = useCallback(async (nextUser: User) => {
+    const normalized = normalizeUser(nextUser as any) as User | null;
+    await writeAuthItem('user', JSON.stringify(normalized));
+    setUser(normalized);
+  }, []);
+
+  useEffect(() => {
+    if (!token || !user || user.device_id) {
+      return;
+    }
+
+    const registrationKey = `${user.id}:${token}`;
+    if (pushRegistrationRef.current === registrationKey) {
+      return;
+    }
+
+    pushRegistrationRef.current = registrationKey;
+
+    void (async () => {
+      try {
+        const updatedUser = await registerPushDevice(token, user);
+        if (updatedUser) {
+          await updateUser(updatedUser);
+        }
+      } catch (error) {
+        console.warn('No se pudo registrar el dispositivo para push:', error);
+      }
+    })();
+  }, [token, user, updateUser]);
 
   const login = async (username: string, password: string) => {
     const normalizedUsername = username.trim();
@@ -323,12 +357,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await clearAuthState();
   };
-
-  const updateUser = useCallback(async (nextUser: User) => {
-    const normalized = normalizeUser(nextUser as any) as User | null;
-    await writeAuthItem('user', JSON.stringify(normalized));
-    setUser(normalized);
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, updateUser, refreshAccessToken, isLoading }}>

@@ -1,6 +1,6 @@
 import { getCookie } from "./csrf";
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "https://tfg-backend-jrrn.onrender.com/api";
+const API = import.meta.env.VITE_API_BASE_URL ?? "/api";
 const IS_ABSOLUTE_API = /^https?:\/\//i.test(API);
 
 export async function apiFetch(path: string, options: RequestInit = {}) {

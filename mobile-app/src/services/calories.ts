@@ -1,4 +1,4 @@
-// Servicio para estimar calorias quemadas y generar sugerencias de alimentos
+// Servicio para estimar calorías quemadas y generar sugerencias de alimentos
 
 export type FoodSuggestion = {
   name: string;
@@ -67,16 +67,16 @@ export function estimateCalories(opts: { distanceKm?: number; durationHours?: nu
 }
 
 const FOODS: FoodSuggestion[] = [
-  { name: 'Platano', kcal: 105, portion: '1 unidad' },
-  { name: 'Barra energetica', kcal: 250, portion: '1 barra' },
-  { name: 'Bocadillo pequeno de pollo', kcal: 350, portion: '1 unidad' },
-  { name: 'Yogur + fruta', kcal: 150, portion: '1 racion' },
+  { name: 'Plátano', kcal: 105, portion: '1 unidad' },
+  { name: 'Barra energética', kcal: 250, portion: '1 barra' },
+  { name: 'Bocadillo pequeño de pollo', kcal: 350, portion: '1 unidad' },
+  { name: 'Yogur + fruta', kcal: 150, portion: '1 ración' },
   { name: 'Ensalada con quinoa', kcal: 400, portion: '1 plato' },
   { name: 'Tostada con aguacate', kcal: 200, portion: '2 tostadas' },
-  { name: 'Plato de arroz', kcal: 300, portion: '1 racion' },
+  { name: 'Plato de arroz', kcal: 300, portion: '1 ración' },
   { name: 'Manzana', kcal: 95, portion: '1 unidad' },
   { name: 'Batido proteico', kcal: 220, portion: '1 vaso' },
-  { name: 'Sandwich completo', kcal: 450, portion: '1 unidad' },
+  { name: 'Sándwich completo', kcal: 450, portion: '1 unidad' },
 ];
 
 export function suggestFoodsForCalories(kcalNeeded: number) {
@@ -110,13 +110,13 @@ export function getJourneyNutritionPlan(opts: { durationHours: number; estimated
 
   const applyPreference = (items: FoodSuggestion[]) => {
     if (preference === 'vegan') {
-      return items.filter((item) => !/pollo|yogur|batido proteico|sandwich/i.test(item.name)).slice(0, 4);
+      return items.filter((item) => !/pollo|yogur|batido proteico|sándwich/i.test(item.name)).slice(0, 4);
     }
 
     if (preference === 'high_protein') {
       return items
         .slice()
-        .sort((a, b) => (/(pollo|proteico|sandwich)/i.test(b.name) ? 1 : 0) - (/(pollo|proteico|sandwich)/i.test(a.name) ? 1 : 0))
+        .sort((a, b) => (/(pollo|proteico|sándwich)/i.test(b.name) ? 1 : 0) - (/(pollo|proteico|sándwich)/i.test(a.name) ? 1 : 0))
         .slice(0, 4);
     }
 

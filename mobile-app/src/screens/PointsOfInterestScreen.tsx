@@ -44,99 +44,99 @@ type Section = 'add' | 'view';
 const PUNTOS_DE_INTERES: PuntosDeInteres[] = [
   {
     id: '1',
-    name: 'Hidratacion',
-    emoji: 'H2O',
+    name: 'Hidratación',
+    emoji: '🚰',
     description: 'Ubicacion de hidrantes disponibles',
     poiType: 'HYDRANT',
   },
   {
     id: '2',
     name: 'Asentamiento',
-    emoji: 'CASA',
+    emoji: '🏠',
     description: 'Zonas de asentamiento y viviendas',
     poiType: 'SETTLEMENT',
   },
   {
     id: '3',
     name: 'Cortafuegos',
-    emoji: 'FUEGO',
+    emoji: '🔥',
     description: 'Lineas de cortafuegos',
     poiType: 'FIREBREAK',
   },
   {
     id: '4',
     name: 'Puntos de Vigilancia',
-    emoji: 'VIGIA',
+    emoji: '👁️',
     description: 'Torres y puntos de vigilancia',
     poiType: 'WATCHPOINT',
   },
   {
     id: '5',
     name: 'Estaciones Base',
-    emoji: 'BASE',
+    emoji: '🏢',
     description: 'Campamentos y estaciones base',
     poiType: 'BASE_STATION',
   },
   {
     id: '6',
     name: 'Vias de Evacuacion',
-    emoji: 'RUTA',
+    emoji: '🚪',
     description: 'Rutas de evacuacion recomendadas',
     poiType: 'EVAC_ROUTE',
   },
   {
     id: '7',
     name: 'Antenas de Comunicacion',
-    emoji: 'COM',
+    emoji: '📡',
     description: 'Ubicacion de antenas de comunicacion',
     poiType: 'COMMUNICATION_TOWER',
   },
   {
     id: '8',
     name: 'Puntos de Control',
-    emoji: 'CTRL',
+    emoji: '🛑',
     description: 'Puntos de control para acceso y seguridad',
     poiType: 'CHECKPOINT',
   },
   {
     id: '9',
     name: 'Helisuperficies',
-    emoji: 'HELI',
-    description: 'Zonas aptas para aterrizaje de helicopteros',
+    emoji: '🚁',
+    description: 'Zonas aptas para aterrizaje de helicópteros',
     poiType: 'HELIPAD',
   },
   {
     id: '10',
     name: 'Obstaculos',
-    emoji: 'OBS',
+    emoji: '🌳',
     description: 'Arboles caidos u otros obstaculos sobre la ruta',
     poiType: 'OBSTACLE',
   },
   {
     id: '11',
     name: 'Puente o Paso Elevado',
-    emoji: 'PASO',
+    emoji: '🌉',
     description: 'Puentes o pasos elevados en la zona',
     poiType: 'BRIDGE',
   },
   {
     id: '12',
     name: 'Punto de Suministro',
-    emoji: 'SUM',
+    emoji: '📦',
     description: 'Almacenes o puntos de suministros disponibles',
     poiType: 'SUPPLY_POINT',
   },
   {
     id: '13',
     name: 'Otro punto operativo',
-    emoji: 'OTRO',
+    emoji: '🧭',
     description: 'Referencia adicional util para el operativo',
     poiType: 'OTHER',
   },
   {
     id: '14',
     name: 'Zona de apoyo logistico',
-    emoji: 'APOYO',
+    emoji: '⛺',
     description: 'Area auxiliar temporal para apoyo o reagrupacion',
     poiType: 'BASE_STATION',
   }
@@ -478,7 +478,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
   const catalogInfo = getPointCatalogInfo(point.poi_type);
 
   Alert.alert(
-    `${catalogInfo?.emoji ?? 'POI'} ${point.name || catalogInfo?.name || 'Punto de interes'}`,
+    `${catalogInfo?.emoji ?? '📍'} ${point.name || catalogInfo?.name || 'Punto de interes'}`,
     getReadablePointLocation(point),
     [
       {
@@ -534,7 +534,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
           <Text style={styles.cardName}>{item.name}</Text>
           <Text style={styles.cardDescription}>{item.description}</Text>
         </View>
-        <Text style={styles.arrow}>{savingPointId === item.id ? '...' : '>'}</Text>
+        <Text style={styles.arrow}>{savingPointId === item.id ? '…' : '›'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -580,7 +580,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
           </Text>
 
           <Text style={styles.savedMeta}>
-            {`Creado por ${item.created_by_username || 'usuario'} | ${formatPointDate(item.created_at)}`}
+            {`Creado por ${item.created_by_username || 'usuario'} · ${formatPointDate(item.created_at)}`}
           </Text>
           <TouchableOpacity
             style={styles.updateButton}
@@ -588,7 +588,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
             activeOpacity={0.7}
           >
             <Text style={styles.updateButtonText}>
-              Editar ubicacion
+              Editar ubicación
             </Text>
           </TouchableOpacity>
 
@@ -656,7 +656,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>Volver</Text>
+          <Text style={styles.backButtonText}>‹ Volver</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Puntos de Interes</Text>
         <View style={{ width: 60 }} />
@@ -697,7 +697,7 @@ const handleSavedPointPress = (point: GuardarPuntoInteres) => {
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Anadiendo punto de interes...</Text>
+            <Text style={styles.loadingText}>Añadiendo punto de interes...</Text>
           </View>
         </View>
       ) : null}
