@@ -32,6 +32,17 @@ from .lightning_serializers import LightningStrikeSerializer, LightningStrikeLis
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
 from .workarea_serializers import WorkAreaSerializer, WorkAreaCreateSerializer
 from .point_of_interest_serializers import PointOfInterestSerializer, PointOfInterestCreateSerializer
+from .unit_serializers import (
+    AuditoriaUbicacionSerializer,
+    CambioEstadoUnidadSerializer,
+    ConsumoRecursosCreateSerializer,
+    ConsumoRecursosSerializer,
+    EstadoUnidadSerializer,
+    UnidadCreateUpdateSerializer,
+    UnidadDetailSerializer,
+    UnidadListSerializer,
+    UnidadStatsSerializer,
+)
 
 # Alias en espanol para compatibilidad con vistas existentes
 PuntoRastreoSerializer = TrackPointSerializer
@@ -83,4 +94,13 @@ __all__ = [
     "JourneyStopSerializer",
     "PointOfInterestSerializer",
     "PointOfInterestCreateSerializer",
+    "AuditoriaUbicacionSerializer",
+    "CambioEstadoUnidadSerializer",
+    "ConsumoRecursosCreateSerializer",
+    "ConsumoRecursosSerializer",
+    "EstadoUnidadSerializer",
+    "UnidadCreateUpdateSerializer",
+    "UnidadDetailSerializer",
+    "UnidadListSerializer",
+    "UnidadStatsSerializer",
 ]

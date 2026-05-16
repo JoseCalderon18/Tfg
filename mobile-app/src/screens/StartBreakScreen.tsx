@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
+import { confirmarPresenciaJornada } from '../services/journeyActivity';
 import { colors } from '../theme';
 
 type JourneyApi = {
@@ -112,6 +113,11 @@ export default function StartBreakScreen({ navigation }: any) {
         const errorText = await response.text();
         throw new Error(errorText || 'No se pudo registrar el descanso.');
       }
+
+      await confirmarPresenciaJornada({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
 
       setLocationLabel(`${currentLocation.coords.latitude.toFixed(5)}, ${currentLocation.coords.longitude.toFixed(5)}`);
 

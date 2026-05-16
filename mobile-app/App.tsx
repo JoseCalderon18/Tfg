@@ -3,14 +3,15 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from './src/theme';
 
 // Importamos los contextos para manejo de estado global
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LocationProvider } from './src/context/LocationContext';
 import { OfflineSyncProvider } from './src/context/OfflineSyncContext';
-import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { UnitsProvider } from './src/context/UnitsContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { useThemeColors } from './src/hooks/useThemeColors';
 
 // Importamos las pantallas de la aplicación
@@ -22,15 +23,56 @@ import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
 import StartJourneyScreen from './src/screens/StartJourneyScreen';
 import StopJourneyScreen from './src/screens/StopJourneyScreen';
 import StartBreakScreen from './src/screens/StartBreakScreen';
+import EditJourneysScreen from './src/screens/EditJourneysScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
+import IncidentScreen from './src/screens/IncidentScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import WeatherScreen from './src/screens/WeatherScreen';
+import UnitsTrackingScreen from './src/screens/UnitsTrackingScreen';
+import UnitDetailScreen from './src/screens/UnitDetailScreen';
 import GeofenceLockScreen from './src/components/GeofenceLockScreen';
+import LocationPermissionsScreen from './src/components/LocationPermissionsScreen';
+import BatteryAlertMonitor from './src/components/BatteryAlertMonitor';
+import MovementAlertMonitor from './src/components/MovementAlertMonitor';
 
 // Creamos el stack navigator para la navegación entre pantallas
 const Stack = createStackNavigator();
+const MENU_ROUTE_NAME = 'Operative';
+
+function buildOperativeScreenOptions({ navigation, route }: any) {
+  const isMenu = route.name === MENU_ROUTE_NAME;
+
+  return {
+    headerShown: !isMenu,
+    headerTitle: '',
+    headerLeft: () => null,
+    headerShadowVisible: false,
+    headerStyle: {
+      backgroundColor: colors.background,
+    },
+    headerRightContainerStyle: {
+      paddingRight: 16,
+    },
+    headerRight: () => (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+        onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+          }
+          navigation.navigate(MENU_ROUTE_NAME);
+        }}
+        style={styles.headerBackButton}
+      >
+        <Text style={styles.headerBackButtonText}>Volver</Text>
+      </TouchableOpacity>
+    ),
+  };
+}
 
 type ErrorBoundaryState = {
   hasError: boolean;
@@ -80,7 +122,7 @@ function OperativeNavigator() {
   return (
     <LocationProvider>
       <>
-        <Stack.Navigator initialRouteName="Operative">
+        <Stack.Navigator initialRouteName="Operative" screenOptions={buildOperativeScreenOptions}>
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen
             name="Map"
@@ -105,37 +147,50 @@ function OperativeNavigator() {
           <Stack.Screen
             name="StartBreak"
             component={StartBreakScreen}
-            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="EditJourneys"
+            component={EditJourneysScreen}
           />
           <Stack.Screen name="StopJourney" 
                 component={StopJourneyScreen}
-                options={{headerShown: false}} />
+          />
           <Stack.Screen
             name="Incidents"
             component={IncidentsScreen}
-            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Incident"
+            component={IncidentScreen}
           />
           <Stack.Screen
             name="Weather"
             component={WeatherScreen}
-            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="UnitsTracking"
+            component={UnitsTrackingScreen}
+          />
+          <Stack.Screen
+            name="UnitDetail"
+            component={UnitDetailScreen}
           />
           <Stack.Screen
             name="Chat"
             component={ChatScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ headerShown: false }}
           />
         </Stack.Navigator>
+        <BatteryAlertMonitor />
+        <MovementAlertMonitor />
+        <LocationPermissionsScreen />
         <GeofenceLockScreen />
       </>
     </LocationProvider>
@@ -172,7 +227,9 @@ export default function App() {
         <ThemeProvider>
           <AuthProvider>
             <OfflineSyncProvider>
-              <AppNavigator />
+              <UnitsProvider>
+                <AppNavigator />
+              </UnitsProvider>
             </OfflineSyncProvider>
           </AuthProvider>
         </ThemeProvider>
@@ -210,5 +267,20 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 15,
     lineHeight: 22,
+  },
+  headerBackButton: {
+    minWidth: 86,
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  headerBackButtonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

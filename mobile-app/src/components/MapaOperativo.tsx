@@ -140,7 +140,7 @@ export default function MapaOperativo({
 }: MapaOperativoProps) {
   const mapaRef = useRef<MapView | null>(null);
   const { location } = useLocation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [incidentes, setIncidentes] = useState<IncidenteMapa[]>([]);
   const [alertas, setAlertas] = useState<AlertaMapa[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -160,8 +160,12 @@ export default function MapaOperativo({
     setErrorRemoto('');
 
     try {
+      const incidentesPath = user?.organization_id
+        ? `/incidents/?owner_organization=${encodeURIComponent(user.organization_id)}`
+        : '/incidents/';
+
       const [respuestaIncidentes, respuestaAlertas] = await Promise.all([
-        apiFetch('/incidents/', { token }),
+        apiFetch(incidentesPath, { token }),
         apiFetch('/alerts/open/', { token }),
       ]);
 
@@ -204,7 +208,7 @@ export default function MapaOperativo({
     } finally {
       setCargando(false);
     }
-  }, [token]);
+  }, [token, user?.organization_id]);
 
   useFocusEffect(
     useCallback(() => {

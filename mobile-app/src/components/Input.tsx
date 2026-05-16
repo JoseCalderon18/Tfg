@@ -25,7 +25,7 @@ export function Input({
         style={[
           styles.input,
           focused && styles.inputFocused,
-          error && styles.inputError,
+          Boolean(error) && styles.inputError,
         ]}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}

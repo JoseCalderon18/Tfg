@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef,
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import * as TaskManager from 'expo-task-manager';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
+import {
+  procesarInmovilidadSegundoPlano,
+  registrarPuntoMovimientoJornada,
+} from '../services/journeyActivity';
 
 const BACKGROUND_WORKAREA_TASK = 'background-workarea-detection';
 
@@ -57,15 +61,16 @@ TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
 
   if (lastLocation) {
     void sendBackgroundLocationUpdate(lastLocation).catch(() => undefined);
+    void procesarInmovilidadSegundoPlano(lastLocation).catch(() => undefined);
   }
 });
 
 /**
- * Interface que define el contexto de ubicación
- * @property location - Objeto con la última ubicación conocida
- * @property isTracking - Indica si el seguimiento está activo
- * @property startTracking - Inicia el seguimiento de ubicación
- * @property stopTracking - Detiene el seguimiento de ubicación
+ * Interface que define el contexto de ubicacion
+ * @property location - Objeto con la ultima ubicacion conocida
+ * @property isTracking - Indica si el seguimiento esta activo
+ * @property startTracking - Inicia el seguimiento de ubicacion
+ * @property stopTracking - Detiene el seguimiento de ubicacion
  * @property errorMsg - Mensaje de error si ocurre alguno
  */
 interface LocationContextType {
@@ -73,6 +78,12 @@ interface LocationContextType {
   isTracking: boolean;
   startTracking: () => Promise<void>;
   stopTracking: () => void;
+  foregroundPermissionStatus: Location.PermissionStatus | null;
+  backgroundPermissionStatus: Location.PermissionStatus | null;
+  hasRequiredLocationPermissions: boolean;
+  refreshLocationPermissions: () => Promise<void>;
+  requestLocationPermissions: () => Promise<boolean>;
+  openLocationSettings: () => Promise<void>;
   refreshWorkareaDetection: () => Promise<GeofenceStatus | null>;
   errorMsg: string | null;
   isCheckingWorkarea: boolean;
@@ -116,17 +127,17 @@ function extractShiftHours(schedule?: string) {
   return Number.isFinite(value) && value > 0 ? value : 8;
 }
 
-// Creación del contexto de ubicación
+// Creacion del contexto de ubicacion
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 /**
- * Provider que maneja el seguimiento de ubicación GPS
- * Permite rastrear la posición del operativo en tiempo real
+ * Provider que maneja el seguimiento de ubicacion GPS
+ * Permite rastrear la posicion del operativo en tiempo real
  * 
- * @param children - Componentes hijos que tendrán acceso al contexto
+ * @param children - Componentes hijos que tendran acceso al contexto
  */
 export function LocationProvider({ children }: { children: ReactNode }) {
-  // Estado del seguimiento GPS y errores de permisos/envío.
+  // Estado del seguimiento GPS y errores de permisos/envio.
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -144,15 +155,26 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [routeDurationHours, setRouteDurationHours] = useState<number>(0);
   const [estimatedKcal, setEstimatedKcal] = useState<number>(0);
   const [foodSuggestions, setFoodSuggestions] = useState<Array<{ name: string; kcal: number; portion?: string }>>([]);
+  const [foregroundPermissionStatus, setForegroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
+  const [backgroundPermissionStatus, setBackgroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
   const { token, updateUser, user } = useAuth();
   const { queueTrackingPoint, queueAlert } = useOfflineSync();
   const fatigueAlertSentRef = useRef(false);
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const routeStartTimeRef = useRef<number | null>(null);
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
   const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
+  const hasRequiredLocationPermissions =
+    foregroundPermissionStatus === Location.PermissionStatus.GRANTED &&
+    backgroundPermissionStatus === Location.PermissionStatus.GRANTED;
   const fatigueWarningMessage = isOverShift
     ? `Has superado el limite de ${shiftHoursLimit} h de jornada. Ojo: el cansancio ya no es una broma, es un riesgo.`
     : null;
+
+  useEffect(() => {
+    void refreshLocationPermissions();
+  }, []);
 
   useEffect(() => {
     if (!isTracking || fatigueAlertSentRef.current) {
@@ -201,12 +223,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, [isTracking, location, queueAlert, routeDurationHours, shiftHoursLimit, token]);
 
   useEffect(() => {
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
-    };
+    locationSubscriptionRef.current = locationSubscription;
   }, [locationSubscription]);
+
+  useEffect(() => {
+    return () => {
+      if (locationSubscriptionRef.current) {
+        locationSubscriptionRef.current.remove();
+        locationSubscriptionRef.current = null;
+      }
+
+      void stopBackgroundWorkareaDetection();
+    };
+  }, []);
 
   const syncProfileLocation = async (nextLocation: Location.LocationObject) => {
     if (!token) {
@@ -251,9 +280,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     if (result.queued) {
       setErrorMsg('Sin conexion: la ubicacion queda guardada para sincronizarse luego.');
+      void registrarPuntoMovimientoJornada({
+        latitude: nextLocation.coords.latitude,
+        longitude: nextLocation.coords.longitude,
+      }).catch(() => undefined);
       return;
     }
 
+    void registrarPuntoMovimientoJornada({
+      latitude: nextLocation.coords.latitude,
+      longitude: nextLocation.coords.longitude,
+    }).catch(() => undefined);
     setErrorMsg(null);
   };
 
@@ -316,9 +353,53 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshLocationPermissions = async () => {
+    const [foreground, background] = await Promise.all([
+      Location.getForegroundPermissionsAsync(),
+      Location.getBackgroundPermissionsAsync(),
+    ]);
+
+    setForegroundPermissionStatus(foreground.status);
+    setBackgroundPermissionStatus(background.status);
+  };
+
+  const requestLocationPermissions = async () => {
+    const foreground = await Location.requestForegroundPermissionsAsync();
+    setForegroundPermissionStatus(foreground.status);
+
+    if (foreground.status !== Location.PermissionStatus.GRANTED) {
+      setErrorMsg('El seguimiento necesita permiso de ubicacion mientras usas la app.');
+      return false;
+    }
+
+    const background = await Location.requestBackgroundPermissionsAsync();
+    setBackgroundPermissionStatus(background.status);
+
+    if (background.status !== Location.PermissionStatus.GRANTED) {
+      setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
+      Alert.alert(
+        'Permiso de ubicacion siempre activa',
+        'Android no siempre muestra este permiso dentro de la app. En la pantalla de ajustes, entra en Permisos > Ubicacion y selecciona "Permitir todo el tiempo".',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir ajustes', onPress: () => void Linking.openSettings() },
+        ],
+      );
+      return false;
+    }
+
+    setErrorMsg(null);
+    return true;
+  };
+
+  const openLocationSettings = async () => {
+    await Linking.openSettings();
+  };
+
   const startBackgroundWorkareaDetection = async () => {
-    const { status } = await Location.requestBackgroundPermissionsAsync();
-    if (status !== 'granted') {
+    const { status } = await Location.getBackgroundPermissionsAsync();
+    setBackgroundPermissionStatus(status);
+    if (status !== Location.PermissionStatus.GRANTED) {
       setErrorMsg('El seguimiento en segundo plano necesita permiso de ubicacion siempre activa.');
       return;
     }
@@ -350,17 +431,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Inicia el seguimiento continuo de la ubicación
+   * Inicia el seguimiento continuo de la ubicacion
    * Actualiza cada 5 segundos o cada 10 metros de movimiento
    * 
-   * TODO: Enviar ubicación al backend en cada actualización
+   * TODO: Enviar ubicacion al backend en cada actualizacion
    */
   const startTracking = async () => {
     try {
       fatigueAlertSentRef.current = false;
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+      const hasPermissions = await requestLocationPermissions();
+      if (!hasPermissions) {
         setIsTracking(false);
         return;
       }
@@ -370,8 +450,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       });
       setLocation(currentLocation);
       // initialize route tracking
+      const startedAtMs = Date.now();
       setRoutePoints([{ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }]);
-      setRouteStartTime(Date.now());
+      setRouteStartTime(startedAtMs);
+      routeStartTimeRef.current = startedAtMs;
       setRouteDistanceKm(0);
       setRouteDurationHours(0);
       setEstimatedKcal(0);
@@ -383,7 +465,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
       const subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,  // Alta precisión
+          accuracy: Location.Accuracy.High,  // Alta precision
           timeInterval: 5000,                // Actualizar cada 5 segundos
           distanceInterval: 10,              // O cada 10 metros
         },
@@ -398,7 +480,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             const dist = computeRouteDistanceKm(next);
             setRouteDistanceKm(dist);
 
-            const start = routeStartTime ?? Date.now();
+            const start = routeStartTimeRef.current ?? Date.now();
             const durationMs = Date.now() - start;
             const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
             setRouteDurationHours(durationH);
@@ -423,8 +505,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Detiene el seguimiento de ubicación
-   * Elimina la suscripción a las actualizaciones de GPS
+   * Detiene el seguimiento de ubicacion
+   * Elimina la suscripcion a las actualizaciones de GPS
    */
   const stopTracking = () => {
     if (locationSubscription) {
@@ -435,6 +517,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     fatigueAlertSentRef.current = false;
     setRoutePoints([]);
     setRouteStartTime(null);
+    routeStartTimeRef.current = null;
     setRouteDistanceKm(0);
     setRouteDurationHours(0);
     setEstimatedKcal(0);
@@ -449,6 +532,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         isTracking,
         startTracking,
         stopTracking,
+        foregroundPermissionStatus,
+        backgroundPermissionStatus,
+        hasRequiredLocationPermissions,
+        refreshLocationPermissions,
+        requestLocationPermissions,
+        openLocationSettings,
         refreshWorkareaDetection,
         errorMsg,
         isCheckingWorkarea,
@@ -468,9 +557,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Hook personalizado para acceder al contexto de ubicación
+ * Hook personalizado para acceder al contexto de ubicacion
  * 
- * @returns El contexto de ubicación
+ * @returns El contexto de ubicacion
  * @throws Error si se usa fuera de LocationProvider
  * 
  * @example

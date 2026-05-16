@@ -11,11 +11,15 @@ export interface ThemedColors {
   text: string;
   textMuted: string;
   textSoft: string;
+  textSecondary: string;
   primary: string;
   primarySoft: string;
+  secondary: string;
+  info: string;
   success: string;
   warning: string;
   danger: string;
+  dangerLight: string;
   dangerSoft: string;
   overlay: string;
   white: string;

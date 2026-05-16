@@ -1,4 +1,4 @@
-import { API_BASE_URL, callApi } from './api';
+import { apiFetch, parseJsonResponse } from './api';
 
 export interface Unit {
   id: string;
@@ -73,6 +73,26 @@ export interface UnitStats {
   average_battery_level: number;
 }
 
+async function unitsApi<T>(path: string, token: string, options: RequestInit = {}) {
+  const response = await apiFetch(path, {
+    ...options,
+    token,
+  });
+
+  if (!response.ok) {
+    let detail = 'Error al comunicarse con la API de unidades.';
+    try {
+      const payload = await parseJsonResponse<{ detail?: string; error?: string }>(response);
+      detail = payload.detail ?? payload.error ?? detail;
+    } catch {
+      // Si la respuesta no es JSON, devolvemos el mensaje generico.
+    }
+    throw new Error(detail);
+  }
+
+  return parseJsonResponse<T>(response);
+}
+
 /**
  * Obtener lista de unidades
  */
@@ -93,32 +113,23 @@ export async function getUnits(
   if (filters?.limit) query.append('limit', filters.limit.toString());
   if (filters?.offset) query.append('offset', filters.offset.toString());
 
-  const url = query.toString() ? `${API_BASE_URL}/units/?${query}` : `${API_BASE_URL}/units/`;
+  const url = query.toString() ? `/units/?${query}` : '/units/';
 
-  return callApi(url, {
-    method: 'GET',
-    token,
-  }) as Promise<{ results: Unit[]; count: number; next?: string; previous?: string }>;
+  return unitsApi<{ results: Unit[]; count: number; next?: string; previous?: string }>(url, token);
 }
 
 /**
  * Obtener detalles de una unidad
  */
 export async function getUnitDetail(token: string, unitId: string) {
-  return callApi(`${API_BASE_URL}/units/${unitId}/`, {
-    method: 'GET',
-    token,
-  }) as Promise<UnitDetail>;
+  return unitsApi<UnitDetail>(`/units/${unitId}/`, token);
 }
 
 /**
  * Obtener estadísticas de unidades
  */
 export async function getUnitsStats(token: string) {
-  return callApi(`${API_BASE_URL}/units/stats/`, {
-    method: 'GET',
-    token,
-  }) as Promise<UnitStats>;
+  return unitsApi<UnitStats>('/units/stats/', token);
 }
 
 /**
@@ -133,11 +144,10 @@ export async function changeUnitStatus(
     razon?: string;
   }
 ) {
-  return callApi(`${API_BASE_URL}/units/${unitId}/change_status/`, {
+  return unitsApi<StatusHistory>(`/units/${unitId}/change_status/`, token, {
     method: 'POST',
-    token,
-    body: data,
-  }) as Promise<StatusHistory>;
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -154,11 +164,10 @@ export async function recordConsumption(
     duration_minutes?: number;
   }
 ) {
-  return callApi(`${API_BASE_URL}/units/${unitId}/record_consumption/`, {
+  return unitsApi<UnitDetail>(`/units/${unitId}/record_consumption/`, token, {
     method: 'POST',
-    token,
-    body: data,
-  }) as Promise<UnitDetail>;
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -177,13 +186,10 @@ export async function getLocationHistory(
   if (filters?.date) query.append('date', filters.date);
 
   const url = query.toString()
-    ? `${API_BASE_URL}/units/${unitId}/location_history/?${query}`
-    : `${API_BASE_URL}/units/${unitId}/location_history/`;
+    ? `/units/${unitId}/location_history/?${query}`
+    : `/units/${unitId}/location_history/`;
 
-  return callApi(url, {
-    method: 'GET',
-    token,
-  }) as Promise<LocationAudit[]>;
+  return unitsApi<LocationAudit[]>(url, token);
 }
 
 /**
@@ -202,13 +208,10 @@ export async function getConsumptionHistory(
   if (filters?.date) query.append('date', filters.date);
 
   const url = query.toString()
-    ? `${API_BASE_URL}/units/${unitId}/consumption_history/?${query}`
-    : `${API_BASE_URL}/units/${unitId}/consumption_history/`;
+    ? `/units/${unitId}/consumption_history/?${query}`
+    : `/units/${unitId}/consumption_history/`;
 
-  return callApi(url, {
-    method: 'GET',
-    token,
-  }) as Promise<ConsumptionRecord[]>;
+  return unitsApi<ConsumptionRecord[]>(url, token);
 }
 
 /**
@@ -225,11 +228,8 @@ export async function getStatusHistory(
   if (filters?.limit) query.append('limit', filters.limit.toString());
 
   const url = query.toString()
-    ? `${API_BASE_URL}/units/${unitId}/status_history/?${query}`
-    : `${API_BASE_URL}/units/${unitId}/status_history/`;
+    ? `/units/${unitId}/status_history/?${query}`
+    : `/units/${unitId}/status_history/`;
 
-  return callApi(url, {
-    method: 'GET',
-    token,
-  }) as Promise<StatusHistory[]>;
+  return unitsApi<StatusHistory[]>(url, token);
 }

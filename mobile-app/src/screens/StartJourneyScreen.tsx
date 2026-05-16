@@ -3,8 +3,14 @@ import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } fro
 import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import { apiFetch, parseJsonResponse } from '../services/api';
+import { registrarInicioJornadaActividad } from '../services/journeyActivity';
 import { colors } from '../theme';
+
+type JourneyApi = {
+  id: number;
+  start_date?: string | null;
+};
 
 export default function StartJourneyScreen({ navigation }: any) {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -79,6 +85,16 @@ export default function StartJourneyScreen({ navigation }: any) {
         Alert.alert('Error', errorMessage);
         return;
       }
+
+      const createdJourney = await parseJsonResponse<JourneyApi>(response);
+      await registrarInicioJornadaActividad({
+        journeyId: createdJourney.id,
+        startedAt: createdJourney.start_date ?? new Date().toISOString(),
+        point: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+      });
 
       Alert.alert('Exito', 'Jornada iniciada', [
         { text: 'OK', onPress: () => navigation.goBack() },

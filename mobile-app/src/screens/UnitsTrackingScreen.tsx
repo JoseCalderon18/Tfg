@@ -4,12 +4,12 @@ import { useUnits } from '../context/UnitsContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export default function UnitsTrackingScreen({ navigation }: any) {
-  const { units, stats, loading, error, fetchUnits, refreshAllData } = useUnits();
+  const { units, stats, loading, error, refreshAllData } = useUnits();
   const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
-    fetchUnits();
-  }, []);
+    void refreshAllData();
+  }, [refreshAllData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

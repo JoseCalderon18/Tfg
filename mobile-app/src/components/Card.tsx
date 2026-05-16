@@ -23,7 +23,6 @@ export function Card({
 }: CardProps) {
   const colors = useThemeColors();
   const { isDark } = useTheme();
-  const Component = onPress ? TouchableOpacity : View;
   
   const getVariantStyle = () => {
     switch (variant) {
@@ -62,19 +61,21 @@ export function Card({
     backgroundColor: colors.surface,
   };
 
-  return (
-    <Component
-      style={[
-        baseCardStyle,
-        elevated && shadows.md,
-        getVariantStyle(),
-        active && { borderWidth: 2 },
-        style,
-      ]}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.85 : 1}
-    >
-      {children}
-    </Component>
-  );
+  const cardStyle = [
+    baseCardStyle,
+    elevated && shadows.md,
+    getVariantStyle(),
+    active && { borderWidth: 2 },
+    style,
+  ];
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.85}>
+        {children}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={cardStyle}>{children}</View>;
 }

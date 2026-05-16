@@ -79,6 +79,11 @@ const styles = StyleSheet.create({
     ...typography.small,
     color: colors.textMuted,
   },
+  title: {
+    ...typography.heading2,
+    color: colors.text,
+    marginBottom: spacing.xl,
+  },
   section: {
     marginBottom: spacing.xxxl,
   },
@@ -137,7 +142,30 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     ...typography.subtitle,
-    color: colors.white,
     color: colors.text,
+  },
+  button: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  buttonText: {
+    ...typography.subtitle,
+    color: colors.white,
+  },
+  startButton: {
+    backgroundColor: colors.success,
+  },
+  stopButton: {
+    backgroundColor: colors.danger,
+  },
+  alertButton: {
+    backgroundColor: colors.warning,
+  },
+  mapButton: {
+    backgroundColor: colors.primary,
   },
 });

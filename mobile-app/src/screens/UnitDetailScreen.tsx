@@ -51,15 +51,15 @@ export default function UnitDetailScreen({ route, navigation }: any) {
   };
 
   const handleStatusChange = (newStatus: string) => {
-    Alert.prompt(
+    Alert.alert(
       'Cambiar estado',
       `Cambiar a ${newStatus}?`,
       [
         { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
         {
           text: 'Confirmar',
-          onPress: (reason) => {
-            changeUnitStatus(unitId, newStatus, reason)
+          onPress: () => {
+            changeUnitStatus(unitId, newStatus)
               .then(() => {
                 Alert.alert('Éxito', 'Estado actualizado');
               })
@@ -68,9 +68,7 @@ export default function UnitDetailScreen({ route, navigation }: any) {
               });
           },
         },
-      ],
-      'plain-text',
-      'Razón (opcional)'
+      ]
     );
   };
 

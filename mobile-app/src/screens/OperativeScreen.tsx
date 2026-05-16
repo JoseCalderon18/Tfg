@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import JourneyLivePanel from '../components/JourneyLivePanel';
 import { useLocation } from '../context/LocationContext';
 import { useOfflineSync } from '../context/OfflineSyncContext';
+import { apiFetch, parseJsonResponse } from '../services/api';
 import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors } from '../theme';
 
@@ -22,11 +23,25 @@ const { height } = Dimensions.get('window');
 const ALTURA_MENU_INFERIOR = height * 0.15;
 const SOS_COUNTDOWN_SECONDS = 4;
 
+type ActiveIncident = {
+  id: string;
+  name?: string | null;
+  status?: string | null;
+  is_active?: boolean;
+};
+
+type IncidentListResponse = ActiveIncident[] | { results?: ActiveIncident[] };
+
+function normalizeIncidentList(payload: IncidentListResponse) {
+  return Array.isArray(payload) ? payload : payload.results ?? [];
+}
+
 export default function OperativeScreen({ navigation }: any) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [sosModalVisible, setSosModalVisible] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(SOS_COUNTDOWN_SECONDS);
   const [isSendingSos, setIsSendingSos] = useState(false);
+  const [activeIncident, setActiveIncident] = useState<ActiveIncident | null>(null);
   const { user, token, logout } = useAuth();
   const {
     isTracking,
@@ -44,6 +59,32 @@ export default function OperativeScreen({ navigation }: any) {
   const handleAlertPress = () => {
     navigation.navigate('Alert');
   };
+
+  const loadActiveIncident = useCallback(async () => {
+    if (!token || !user?.organization_id) {
+      setActiveIncident(null);
+      return null;
+    }
+
+    const organizationId = encodeURIComponent(user.organization_id);
+    const response = await apiFetch(`/incidents/?owner_organization=${organizationId}&status=OPEN`, {
+      token,
+      timeoutMs: 12000,
+    });
+
+    if (!response.ok) {
+      throw new Error('No se pudo consultar el incidente activo.');
+    }
+
+    const incidents = normalizeIncidentList(await parseJsonResponse<IncidentListResponse>(response));
+    const nextIncident = incidents.find((incident) => incident.is_active !== false) ?? null;
+    setActiveIncident(nextIncident);
+    return nextIncident;
+  }, [token, user?.organization_id]);
+
+  useEffect(() => {
+    void loadActiveIncident().catch(() => undefined);
+  }, [loadActiveIncident]);
 
   const closeSosModal = () => {
     sosCancelledRef.current = true;
@@ -66,10 +107,22 @@ export default function OperativeScreen({ navigation }: any) {
       }
 
       setIsSendingSos(true);
+      const incident = await loadActiveIncident().catch(() => activeIncident);
+
+      if (!incident?.id) {
+        Alert.alert(
+          'Sin incidente activo',
+          'No hay un incidente abierto asociado a tu organizacion. No se enviara el SOS sin incidente asignado.'
+        );
+        return;
+      }
+
       const result = await dispatchSosAlert({
         queueAlert,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        incidentId: incident.id,
+        description: `SOS enviado desde el boton principal del operativo para ${incident.name ?? 'incidente activo'}.`,
       });
 
       if (!result.ok) {
@@ -110,6 +163,11 @@ export default function OperativeScreen({ navigation }: any) {
     Vibration.vibrate([0, 500, 250], true);
   };
 
+  const handleLogout = async () => {
+    stopTracking();
+    await logout();
+  };
+
   useEffect(() => {
     if (!sosModalVisible || isSendingSos) {
       return;
@@ -145,6 +203,9 @@ export default function OperativeScreen({ navigation }: any) {
       case 'weather':
         navigation.navigate('Weather');
         break;
+      case 'units':
+        navigation.navigate('UnitsTracking');
+        break;
       case 'incidents':
         navigation.navigate('Incidents');
         break;
@@ -163,7 +224,7 @@ export default function OperativeScreen({ navigation }: any) {
       case 'logout':
         Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Cerrar sesion', onPress: logout, style: 'destructive' },
+          { text: 'Cerrar sesion', onPress: () => void handleLogout(), style: 'destructive' },
         ]);
         break;
       default:
@@ -309,6 +370,9 @@ export default function OperativeScreen({ navigation }: any) {
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>
                 <Text style={styles.menuOptionText}>🌤️ Tiempo</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('units')}>
+                <Text style={styles.menuOptionText}>Unidades</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
                 <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
               </TouchableOpacity>
@@ -335,6 +399,16 @@ export default function OperativeScreen({ navigation }: any) {
                 }}
               >
                 <Text style={styles.menuOptionText}>⏸ Iniciar descanso</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('EditJourneys');
+                }}
+              >
+                <Text style={styles.menuOptionText}>Editar jornadas</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

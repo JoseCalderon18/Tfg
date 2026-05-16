@@ -29,17 +29,15 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=db
+      - DB_HOST=${DB_HOST:-db}
       - DB_NAME=${DB_NAME:-emergency_db}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_SSLMODE=${DB_SSLMODE:-prefer}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-change-this-in-production}
       - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
-    depends_on:
-      db:
-        condition: service_healthy
     stdin_open: true
     tty: true
 
