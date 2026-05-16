@@ -209,6 +209,9 @@ export default function OperativeScreen({ navigation }: any) {
       case 'incidents':
         navigation.navigate('Incidents');
         break;
+      case 'alerts':
+        navigation.navigate('Alerts');
+        break;
       case 'chat':
         navigation.navigate('Chat');
         break;
@@ -375,6 +378,10 @@ export default function OperativeScreen({ navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('incidents')}>
                 <Text style={styles.menuOptionText}>🚧 Incidentes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('alerts')}>
+                <Text style={styles.menuOptionText}>Alertas operativas</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('chat')}>

@@ -18,6 +18,7 @@ import { useThemeColors } from './src/hooks/useThemeColors';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AlertScreen from './src/screens/AlertScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
 import OperativeScreen from './src/screens/OperativeScreen';
 import PointsOfInterestScreen from './src/screens/PointsOfInterestScreen';
 import StartJourneyScreen from './src/screens/StartJourneyScreen';
@@ -129,6 +130,7 @@ function OperativeNavigator() {
             getComponent={() => require('./src/screens/MapScreen').default}
           />
           <Stack.Screen name="Alert" component={AlertScreen} />
+          <Stack.Screen name="Alerts" component={AlertsScreen} />
           <Stack.Screen
             name="Operative"
             component={OperativeScreen}
