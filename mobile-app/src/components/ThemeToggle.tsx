@@ -5,9 +5,9 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { spacing, borderRadius } from '../theme';
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: string }[] = [
-  { mode: 'light', label: 'Claro', icon: '☀️' },
-  { mode: 'dark', label: 'Oscuro', icon: '🌙' },
-  { mode: 'system', label: 'Sistema', icon: '⚙️' },
+  { mode: 'light', label: 'Claro', icon: 'L' },
+  { mode: 'dark', label: 'Oscuro', icon: 'D' },
+  { mode: 'system', label: 'Sistema', icon: 'S' },
 ];
 
 export function ThemeToggle() {
@@ -16,7 +16,7 @@ export function ThemeToggle() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text }]}>Tema</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Tema de la aplicacion</Text>
       <View style={styles.buttonGroup}>
         {THEME_OPTIONS.map(({ mode: themeMode, label, icon }) => (
           <TouchableOpacity
@@ -24,13 +24,23 @@ export function ThemeToggle() {
             style={[
               styles.button,
               {
-                backgroundColor:
-                  mode === themeMode ? colors.primary : colors.surfaceMuted,
-                borderColor: colors.border,
+                backgroundColor: mode === themeMode ? colors.primary : colors.surfaceMuted,
+                borderColor: mode === themeMode ? colors.primary : colors.border,
               },
             ]}
             onPress={() => void setMode(themeMode)}
+            activeOpacity={0.85}
           >
+            <Text
+              style={[
+                styles.iconText,
+                {
+                  color: mode === themeMode ? '#fff' : colors.primary,
+                },
+              ]}
+            >
+              {icon}
+            </Text>
             <Text
               style={[
                 styles.buttonText,
@@ -39,7 +49,7 @@ export function ThemeToggle() {
                 },
               ]}
             >
-              {icon} {label}
+              {label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -50,12 +60,11 @@ export function ThemeToggle() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: spacing.md,
+    fontWeight: '800',
   },
   buttonGroup: {
     flexDirection: 'row',
@@ -63,14 +72,21 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: spacing.md,
+    minHeight: 58,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  iconText: {
+    fontSize: 14,
+    fontWeight: '900',
   },
   buttonText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
