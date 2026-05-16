@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,13 +9,16 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
 import { registrarFinJornadaActividad } from '../services/journeyActivity';
+
+const { WebView } = require('react-native-webview');
+const MAP_LOAD_TIMEOUT_MS = 5500;
 
 type JourneyApi = {
   id: number;
@@ -202,6 +205,239 @@ function buildRegion(points: PointCoordinates[]) {
     latitudeDelta: Math.max((maxLatitude - minLatitude) * 1.6, 0.02),
     longitudeDelta: Math.max((maxLongitude - minLongitude) * 1.6, 0.02),
   };
+}
+
+function buildJourneyMapHtml(points: PointCoordinates[], pauses: PausePoint[], region: Region) {
+  const markers = [
+    points[0]
+      ? {
+          title: 'Inicio de jornada',
+          lat: points[0].latitude,
+          lng: points[0].longitude,
+          color: '#16A34A',
+        }
+      : null,
+    ...pauses.map((pause) => ({
+      title: pause.title,
+      lat: pause.latitude,
+      lng: pause.longitude,
+      color: '#F59E0B',
+    })),
+    points.length > 0
+      ? {
+          title: 'Ubicacion actual',
+          lat: points[points.length - 1].latitude,
+          lng: points[points.length - 1].longitude,
+          color: '#2563EB',
+        }
+      : null,
+  ].filter(Boolean);
+
+  const markersJson = JSON.stringify(markers).replace(/</g, '\\u003c');
+  const routeJson = JSON.stringify(points.map((point) => [point.latitude, point.longitude])).replace(/</g, '\\u003c');
+
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+      html, body, #map { height: 100%; margin: 0; background: #E5E7EB; }
+      .marker-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+      }
+      .leaflet-popup-content { font: 600 13px system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const markers = ${markersJson};
+      const route = ${routeJson};
+      const map = L.map('map', { zoomControl: true, attributionControl: false })
+        .setView([${region.latitude}, ${region.longitude}], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      markers.forEach((marker) => {
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="marker-dot" style="background:' + marker.color + '"></div>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([marker.lat, marker.lng], { icon }).addTo(map).bindPopup(marker.title);
+      });
+
+      if (route.length >= 2) {
+        L.polyline(route, { color: '#2563EB', weight: 5, opacity: 0.9 }).addTo(map);
+        map.fitBounds(route, { padding: [32, 32] });
+      } else if (route.length === 1) {
+        map.setView(route[0], 15);
+      }
+    </script>
+  </body>
+</html>`;
+}
+
+class JourneyMapBoundary extends React.Component<
+  React.PropsWithChildren<{ onError: (message: string) => void }>,
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(error.message || 'El mapa de jornada fallo al renderizar.');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+
+    return this.props.children;
+  }
+}
+
+function JourneyRouteMap({
+  mapRegion,
+  routeCoordinates,
+  startPoint,
+  pausePoints,
+  operativePoint,
+  stopPoint,
+}: {
+  mapRegion: Region;
+  routeCoordinates: PointCoordinates[];
+  startPoint: PointCoordinates | null;
+  pausePoints: PausePoint[];
+  operativePoint: PointCoordinates | null;
+  stopPoint: PointCoordinates | null;
+}) {
+  const mapRef = useRef<MapView | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+  const [fallbackReason, setFallbackReason] = useState('');
+  const html = useMemo(
+    () => buildJourneyMapHtml(routeCoordinates, pausePoints, mapRegion),
+    [mapRegion, pausePoints, routeCoordinates]
+  );
+
+  const activateFallback = useCallback((reason: string) => {
+    setFallbackReason(reason);
+    setUseFallback(true);
+  }, []);
+
+  useEffect(() => {
+    setMapReady(false);
+    setUseFallback(false);
+    setFallbackReason('');
+  }, [routeCoordinates]);
+
+  useEffect(() => {
+    if (useFallback) {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (!mapReady) {
+        activateFallback('El mapa nativo no termino de cargar. Se muestra el recorrido en modo compatible.');
+      }
+    }, MAP_LOAD_TIMEOUT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [activateFallback, mapReady, useFallback]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || useFallback) {
+      return;
+    }
+
+    try {
+      mapRef.current.animateToRegion(mapRegion, 500);
+    } catch {
+      activateFallback('El mapa nativo no pudo ajustar la ruta.');
+    }
+  }, [activateFallback, mapReady, mapRegion, useFallback]);
+
+  if (useFallback) {
+    return (
+      <View style={styles.mapFallback}>
+        <WebView
+          originWhitelist={['*']}
+          source={{ html }}
+          style={styles.map}
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
+        />
+        <View style={styles.mapFallbackNotice}>
+          <Text style={styles.mapFallbackTitle}>Mapa en modo compatible</Text>
+          <Text style={styles.mapFallbackText}>{fallbackReason}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <JourneyMapBoundary onError={activateFallback}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={mapRegion}
+        mapType="standard"
+        toolbarEnabled={false}
+        showsCompass
+        showsScale
+        rotateEnabled
+        pitchEnabled={false}
+        loadingEnabled
+        moveOnMarkerPress={false}
+        onMapReady={() => {
+          setMapReady(true);
+          setFallbackReason('');
+        }}
+      >
+        {startPoint ? (
+          <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
+        ) : null}
+
+        {pausePoints.map((pausePoint) => (
+          <Marker
+            key={pausePoint.id}
+            coordinate={{ latitude: pausePoint.latitude, longitude: pausePoint.longitude }}
+            title={pausePoint.title}
+            description={pausePoint.description}
+            pinColor="#F59E0B"
+          />
+        ))}
+
+        {operativePoint ? (
+          <Marker coordinate={operativePoint} title="Ubicacion actual" pinColor="#2563EB" />
+        ) : null}
+
+        {stopPoint && !operativePoint ? (
+          <Marker coordinate={stopPoint} title="Fin de jornada" pinColor="#DC2626" />
+        ) : null}
+
+        {routeCoordinates.length >= 2 ? (
+          <Polyline coordinates={routeCoordinates} strokeColor="#2563EB" strokeWidth={4} />
+        ) : null}
+      </MapView>
+    </JourneyMapBoundary>
+  );
 }
 
 export default function StopJourneyScreen({ navigation }: any) {
@@ -459,44 +695,14 @@ export default function StopJourneyScreen({ navigation }: any) {
               </View>
             ) : canRenderMap ? (
               <>
-                <MapView
-                  style={styles.map}
-                  initialRegion={mapRegion}
-                  mapType="standard"
-                  toolbarEnabled={false}
-                  showsCompass
-                  showsScale
-                  rotateEnabled
-                  pitchEnabled={false}
-                  loadingEnabled={false}
-                  moveOnMarkerPress={false}
-                >
-                  {startPoint ? (
-                    <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
-                  ) : null}
-
-                  {pausePoints.map((pausePoint) => (
-                    <Marker
-                      key={pausePoint.id}
-                      coordinate={{ latitude: pausePoint.latitude, longitude: pausePoint.longitude }}
-                      title={pausePoint.title}
-                      description={pausePoint.description}
-                      pinColor="#F59E0B"
-                    />
-                  ))}
-
-                  {operativePoint ? (
-                    <Marker coordinate={operativePoint} title="Ubicacion actual" pinColor="#2563EB" />
-                  ) : null}
-
-                  {stopPoint && !operativePoint ? (
-                    <Marker coordinate={stopPoint} title="Fin de jornada" pinColor="#DC2626" />
-                  ) : null}
-
-                  {routeCoordinates.length >= 2 ? (
-                    <Polyline coordinates={routeCoordinates} strokeColor="#2563EB" strokeWidth={4} />
-                  ) : null}
-                </MapView>
+                <JourneyRouteMap
+                  mapRegion={mapRegion}
+                  routeCoordinates={routeCoordinates}
+                  startPoint={startPoint}
+                  pausePoints={pausePoints}
+                  operativePoint={operativePoint}
+                  stopPoint={stopPoint}
+                />
 
                 <View style={styles.legend}>
                   <View style={styles.legendItem}>
@@ -690,6 +896,34 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     backgroundColor: '#E5E7EB',
+  },
+  mapFallback: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#E5E7EB',
+  },
+  mapFallbackNotice: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    top: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFFE6',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  mapFallbackTitle: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  mapFallbackText: {
+    color: '#475569',
+    fontSize: 12,
+    lineHeight: 17,
   },
   stateBox: {
     flex: 1,
