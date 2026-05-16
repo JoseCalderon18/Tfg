@@ -5,10 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, Region } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -49,6 +51,14 @@ type IncidentMember = {
   joined_at?: string | null;
   left_at?: string | null;
   is_active?: boolean;
+};
+
+type ChecklistTask = {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+  completed_at?: string | null;
 };
 
 type WorkArea = {
@@ -120,6 +130,27 @@ const MEMBER_ROLE_LABELS: Record<string, string> = {
   OPERATIVE: 'Operativo',
   SUPPORT: 'Apoyo',
 };
+
+const DEFAULT_CHECKLIST_TITLES = [
+  'Confirmar ubicacion y zona segura',
+  'Revisar riesgos activos del incidente',
+  'Confirmar comunicacion con el equipo',
+  'Registrar alertas o novedades relevantes',
+];
+
+function buildChecklistStorageKey(incidentId: string) {
+  return `incident-checklist:${incidentId}`;
+}
+
+function createChecklistTask(title: string): ChecklistTask {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    completed: false,
+    created_at: new Date().toISOString(),
+    completed_at: null,
+  };
+}
 
 function normalizeList<T>(payload: ListResponse<T>) {
   return Array.isArray(payload) ? payload : payload.results ?? [];
@@ -281,6 +312,35 @@ function sortMembersByRole(members: IncidentMember[]) {
   });
 }
 
+function normalizeChecklistTasks(value: unknown): ChecklistTask[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const tasks: ChecklistTask[] = [];
+
+  value.forEach((item) => {
+    if (!item || typeof item !== 'object') {
+      return;
+    }
+
+    const candidate = item as Partial<ChecklistTask>;
+    if (!candidate.id || !candidate.title) {
+      return;
+    }
+
+    tasks.push({
+      id: String(candidate.id),
+      title: String(candidate.title),
+      completed: Boolean(candidate.completed),
+      created_at: candidate.created_at ? String(candidate.created_at) : new Date().toISOString(),
+      completed_at: candidate.completed_at ? String(candidate.completed_at) : null,
+    });
+  });
+
+  return tasks;
+}
+
 function parsePolygonCoordinates(value: unknown): Point[] {
   const rawRing =
     Array.isArray(value) && Array.isArray(value[0]) && Array.isArray(value[0][0])
@@ -356,6 +416,9 @@ export default function IncidentScreen({ navigation, route }: any) {
   const [alerts, setAlerts] = useState<IncidentAlert[]>([]);
   const [members, setMembers] = useState<IncidentMember[]>([]);
   const [membersError, setMembersError] = useState('');
+  const [checklistTasks, setChecklistTasks] = useState<ChecklistTask[]>([]);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [checklistError, setChecklistError] = useState('');
   const [workareas, setWorkareas] = useState<WorkArea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -375,7 +438,29 @@ export default function IncidentScreen({ navigation, route }: any) {
       ),
     [members, user?.id]
   );
+  const completedTasks = useMemo(
+    () => checklistTasks.filter((task) => task.completed).length,
+    [checklistTasks]
+  );
+  const checklistProgress = checklistTasks.length
+    ? Math.round((completedTasks / checklistTasks.length) * 100)
+    : 0;
   const mapRegion = useMemo(() => buildMapRegion(coordinates, activeWorkareas), [activeWorkareas, coordinates]);
+
+  const persistChecklistTasks = useCallback(async (nextTasks: ChecklistTask[]) => {
+    if (!incidentId) {
+      return;
+    }
+
+    setChecklistTasks(nextTasks);
+    setChecklistError('');
+
+    try {
+      await AsyncStorage.setItem(buildChecklistStorageKey(incidentId), JSON.stringify(nextTasks));
+    } catch {
+      setChecklistError('No se pudo guardar el checklist en el dispositivo.');
+    }
+  }, [incidentId]);
 
   const loadIncident = useCallback(async (refreshing = false) => {
     if (!token) {
@@ -443,6 +528,79 @@ export default function IncidentScreen({ navigation, route }: any) {
   useEffect(() => {
     void loadIncident();
   }, [loadIncident]);
+
+  useEffect(() => {
+    if (!incidentId) {
+      setChecklistTasks([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      setChecklistError('');
+
+      try {
+        const storedValue = await AsyncStorage.getItem(buildChecklistStorageKey(incidentId));
+        if (cancelled) {
+          return;
+        }
+
+        if (storedValue) {
+          const parsed = JSON.parse(storedValue) as unknown;
+          const storedTasks = normalizeChecklistTasks(parsed);
+          setChecklistTasks(storedTasks.length > 0 ? storedTasks : DEFAULT_CHECKLIST_TITLES.map(createChecklistTask));
+          return;
+        }
+
+        const initialTasks = DEFAULT_CHECKLIST_TITLES.map(createChecklistTask);
+        setChecklistTasks(initialTasks);
+        await AsyncStorage.setItem(buildChecklistStorageKey(incidentId), JSON.stringify(initialTasks));
+      } catch {
+        if (!cancelled) {
+          setChecklistTasks(DEFAULT_CHECKLIST_TITLES.map(createChecklistTask));
+          setChecklistError('No se pudo cargar el checklist guardado.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [incidentId]);
+
+  const toggleChecklistTask = (taskId: string) => {
+    const nextTasks = checklistTasks.map((task) => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      const completed = !task.completed;
+      return {
+        ...task,
+        completed,
+        completed_at: completed ? new Date().toISOString() : null,
+      };
+    });
+
+    void persistChecklistTasks(nextTasks);
+  };
+
+  const addChecklistTask = () => {
+    const title = newTaskTitle.trim();
+    if (!title) {
+      setChecklistError('Escribe una tarea antes de anadirla.');
+      return;
+    }
+
+    void persistChecklistTasks([...checklistTasks, createChecklistTask(title)]);
+    setNewTaskTitle('');
+  };
+
+  const resetChecklistTasks = () => {
+    void persistChecklistTasks(DEFAULT_CHECKLIST_TITLES.map(createChecklistTask));
+    setNewTaskTitle('');
+  };
 
   const renderBody = () => {
     if (isLoading) {
@@ -572,6 +730,62 @@ export default function IncidentScreen({ navigation, route }: any) {
               </View>
             ))
           )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Checklist de tareas</Text>
+            <Text style={styles.cardCount}>{`${checklistProgress}%`}</Text>
+          </View>
+          <Text style={styles.cardValue}>
+            {completedTasks} de {checklistTasks.length} tareas completadas para este incidente.
+          </Text>
+
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${checklistProgress}%` }]} />
+          </View>
+
+          {checklistError ? <Text style={styles.errorInline}>{checklistError}</Text> : null}
+
+          <View style={styles.addTaskRow}>
+            <TextInput
+              style={styles.taskInput}
+              placeholder="Nueva tarea operativa"
+              placeholderTextColor={colors.textMuted}
+              value={newTaskTitle}
+              onChangeText={setNewTaskTitle}
+              returnKeyType="done"
+              onSubmitEditing={addChecklistTask}
+            />
+            <TouchableOpacity style={styles.addTaskButton} onPress={addChecklistTask} activeOpacity={0.85}>
+              <Text style={styles.addTaskButtonText}>Anadir</Text>
+            </TouchableOpacity>
+          </View>
+
+          {checklistTasks.map((task) => (
+            <TouchableOpacity
+              key={task.id}
+              style={styles.taskItem}
+              onPress={() => toggleChecklistTask(task.id)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.taskCheckbox, task.completed && styles.taskCheckboxDone]}>
+                <Text style={[styles.taskCheckboxText, task.completed && styles.taskCheckboxTextDone]}>
+                  {task.completed ? 'OK' : ''}
+                </Text>
+              </View>
+              <View style={styles.taskBody}>
+                <Text style={[styles.taskTitle, task.completed && styles.taskTitleDone]}>{task.title}</Text>
+                <Text style={styles.taskMeta}>
+                  {task.completed ? `Completada ${formatDate(task.completed_at)}` : `Creada ${formatDate(task.created_at)}`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity style={styles.resetTasksButton} onPress={resetChecklistTasks} activeOpacity={0.85}>
+            <Text style={styles.resetTasksButtonText}>Restaurar tareas base</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
@@ -994,6 +1208,112 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 13,
     lineHeight: 19,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.success,
+  },
+  addTaskRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+    alignItems: 'stretch',
+  },
+  taskInput: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    color: colors.text,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addTaskButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTaskButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  taskItem: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  taskCheckbox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  taskCheckboxDone: {
+    borderColor: colors.success,
+    backgroundColor: colors.success,
+  },
+  taskCheckboxText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  taskCheckboxTextDone: {
+    color: colors.white,
+  },
+  taskBody: {
+    flex: 1,
+  },
+  taskTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  taskTitleDone: {
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
+  },
+  taskMeta: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  resetTasksButton: {
+    alignSelf: 'flex-start',
+    marginTop: 14,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  resetTasksButtonText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
   },
   listHeader: {
     flexDirection: 'row',
