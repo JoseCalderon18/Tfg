@@ -24,6 +24,7 @@ import EditUnitPage from './pages/EditUnitPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import NewOrganizationPage from './pages/NewOrganizationPage';
 import EditAlertPage from './pages/EditAlertPage';
+import CreateAlertPage from './pages/CreateAlertPage';
 import WorkAreasPage from './pages/WorkAreasPage';
 import NewWorkAreaPage from './pages/NewWorkAreaPage';
 import EditWorkAreaPage from './pages/EditWorkAreaPage';
@@ -66,6 +67,7 @@ function App() {
         <Route path="editorganization/:id" element={<EditOrganizationPage />} />
         <Route path="editunit/:id" element={<EditUnitPage />} />
         <Route path="createorganization" element={<NewOrganizationPage />} />
+        <Route path="createAlert" element={<CreateAlertPage />} />
         <Route path="editAlert/:id" element={<EditAlertPage />} />
         <Route path="workarea" element={<WorkAreasPage />} />
         <Route path="createWorkArea" element={<NewWorkAreaPage />} />

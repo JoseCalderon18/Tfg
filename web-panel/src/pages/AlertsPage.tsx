@@ -200,7 +200,14 @@ export default function AlertsPage() {
               Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => navegar("/createAlert")}
+              className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              Crear alerta
+            </button>
             <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
             <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
             <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
