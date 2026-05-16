@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { colors } from '../theme';
+
+const { WebView } = require('react-native-webview');
 
 type PuntoGeografico = {
   coordinates?: [number, number];
@@ -38,6 +40,8 @@ type MarcadorPlano = {
 };
 
 const DELTA_MINIMO = 0.08;
+const MAP_LOAD_TIMEOUT_MS = 5500;
+
 function tieneValor<T>(valor: T | null): valor is T {
   return Boolean(valor);
 }
@@ -134,6 +138,131 @@ function renderizarMarcadores(marcadores: MarcadorPlano[]) {
   ));
 }
 
+function crearHtmlMapaFallback(marcadores: MarcadorPlano[], region: Region) {
+  const markersJson = JSON.stringify(
+    marcadores.map((marcador) => ({
+      title: marcador.titulo,
+      lat: marcador.latitud,
+      lng: marcador.longitud,
+      color: marcador.color,
+      type: marcador.tipo,
+    }))
+  ).replace(/</g, '\\u003c');
+
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+      html, body, #map { height: 100%; margin: 0; background: #E5E7EB; }
+      .marker-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+      }
+      .leaflet-popup-content { font: 600 13px system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const markers = ${markersJson};
+      const map = L.map('map', { zoomControl: true, attributionControl: false })
+        .setView([${region.latitude}, ${region.longitude}], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      const bounds = [];
+      markers.forEach((marker) => {
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="marker-dot" style="background:' + marker.color + '"></div>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([marker.lat, marker.lng], { icon })
+          .addTo(map)
+          .bindPopup(marker.title);
+        bounds.push([marker.lat, marker.lng]);
+      });
+
+      if (bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [32, 32] });
+      } else if (bounds.length === 1) {
+        map.setView(bounds[0], 14);
+      }
+    </script>
+  </body>
+</html>`;
+}
+
+class NativeMapBoundary extends React.Component<
+  React.PropsWithChildren<{ onError: (message: string) => void }>,
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(error.message || 'El mapa nativo fallo al renderizar.');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+
+    return this.props.children;
+  }
+}
+
+function MapaFallback({
+  marcadores,
+  region,
+  motivo,
+}: {
+  marcadores: MarcadorPlano[];
+  region: Region;
+  motivo: string;
+}) {
+  const html = useMemo(() => crearHtmlMapaFallback(marcadores, region), [marcadores, region]);
+
+  return (
+    <View style={styles.fallbackContainer}>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html }}
+        style={styles.webMap}
+        javaScriptEnabled
+        domStorageEnabled
+        startInLoadingState
+      />
+      <View style={styles.estadoMapa}>
+        <Text style={styles.estadoMapaTitulo}>Mapa en modo compatible</Text>
+        <Text style={styles.estadoMapaTexto}>{motivo}</Text>
+        {marcadores.length > 0 ? (
+          <Text style={styles.estadoMapaTexto}>
+            {marcadores
+              .slice(0, 4)
+              .map((marcador) => `${marcador.titulo} (${marcador.latitud.toFixed(4)}, ${marcador.longitud.toFixed(4)})`)
+              .join(' | ')}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export default function MapaOperativo({
   mostrarCabecera = true,
   modoLigero = false,
@@ -147,6 +276,7 @@ export default function MapaOperativo({
   const [errorRemoto, setErrorRemoto] = useState('');
   const [mapaListo, setMapaListo] = useState(false);
   const [errorMapa, setErrorMapa] = useState('');
+  const [usarFallbackMapa, setUsarFallbackMapa] = useState(false);
 
   const cargarCapasRemotas = useCallback(async () => {
     if (!token) {
@@ -233,23 +363,38 @@ export default function MapaOperativo({
 
   const regionAjustada = useMemo(() => calcularRegionAjustada(marcadores, regionBase), [marcadores, regionBase]);
 
+  const activarFallbackMapa = useCallback((motivo: string) => {
+    setErrorMapa(motivo);
+    setUsarFallbackMapa(true);
+  }, []);
+
   useEffect(() => {
-    if (!mapaListo || !mapaRef.current) {
+    if (!mapaListo || !mapaRef.current || usarFallbackMapa) {
       return;
     }
 
-    mapaRef.current.animateToRegion(regionAjustada, 500);
-  }, [mapaListo, regionAjustada]);
+    try {
+      mapaRef.current.animateToRegion(regionAjustada, 500);
+    } catch {
+      activarFallbackMapa('El mapa nativo no pudo ajustar la region.');
+    }
+  }, [activarFallbackMapa, mapaListo, regionAjustada, usarFallbackMapa]);
 
   useEffect(() => {
+    if (usarFallbackMapa) {
+      return undefined;
+    }
+
     const timeoutId = setTimeout(() => {
       if (!mapaListo) {
-        setErrorMapa('El motor nativo del mapa no ha terminado de cargar en Android.');
+        activarFallbackMapa('El motor nativo del mapa no termino de cargar. Se muestra un mapa compatible.');
       }
-    }, 5000);
+    }, MAP_LOAD_TIMEOUT_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [mapaListo]);
+  }, [activarFallbackMapa, mapaListo, usarFallbackMapa]);
+
+  const mostrarUbicacionUsuario = Boolean(location && mapaListo && !usarFallbackMapa);
 
   return (
     <View style={styles.container}>
@@ -271,37 +416,38 @@ export default function MapaOperativo({
         </View>
       )}
 
-      <MapView
-        ref={mapaRef}
-        style={styles.mapa}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={regionAjustada}
-        mapType="standard"
-        liteMode={modoLigero}
-        cacheEnabled
-        loadingEnabled
-        toolbarEnabled={!modoLigero}
-        rotateEnabled={!modoLigero}
-        pitchEnabled={!modoLigero}
-        showsCompass={!modoLigero}
-        showsBuildings={!modoLigero}
-        showsUserLocation
-        scrollEnabled
-        zoomEnabled
-        onMapReady={() => {
-          setMapaListo(true);
-          setErrorMapa('');
-        }}
-      >
-        {renderizarMarcadores(marcadores)}
-      </MapView>
-
-      {!mapaListo && errorMapa ? (
-        <View style={styles.estadoMapa}>
-          <Text style={styles.estadoMapaTitulo}>Mapa no disponible</Text>
-          <Text style={styles.estadoMapaTexto}>{errorMapa}</Text>
-        </View>
-      ) : null}
+      {usarFallbackMapa ? (
+        <MapaFallback
+          marcadores={marcadores}
+          region={regionAjustada}
+          motivo={errorMapa || 'El mapa nativo no esta disponible en este dispositivo.'}
+        />
+      ) : (
+        <NativeMapBoundary onError={activarFallbackMapa}>
+          <MapView
+            ref={mapaRef}
+            style={styles.mapa}
+            initialRegion={regionAjustada}
+            mapType="standard"
+            liteMode={modoLigero}
+            loadingEnabled
+            toolbarEnabled={!modoLigero}
+            rotateEnabled={!modoLigero}
+            pitchEnabled={!modoLigero}
+            showsCompass={!modoLigero}
+            showsBuildings={!modoLigero}
+            showsUserLocation={mostrarUbicacionUsuario}
+            scrollEnabled
+            zoomEnabled
+            onMapReady={() => {
+              setMapaListo(true);
+              setErrorMapa('');
+            }}
+          >
+            {renderizarMarcadores(marcadores)}
+          </MapView>
+        </NativeMapBoundary>
+      )}
 
       {modoLigero ? (
         <View style={styles.leyendaInferior}>
@@ -330,6 +476,14 @@ const styles = StyleSheet.create({
   },
   mapa: {
     ...StyleSheet.absoluteFillObject,
+  },
+  fallbackContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#E5E7EB',
+  },
+  webMap: {
+    flex: 1,
+    backgroundColor: '#E5E7EB',
   },
   estadoMapa: {
     position: 'absolute',
