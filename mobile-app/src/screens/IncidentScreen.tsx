@@ -41,6 +41,16 @@ type IncidentAlert = {
   created_at?: string | null;
 };
 
+type IncidentMember = {
+  id: string;
+  user?: string | null;
+  user_id?: string | null;
+  role_in_incident?: string | null;
+  joined_at?: string | null;
+  left_at?: string | null;
+  is_active?: boolean;
+};
+
 type WorkArea = {
   id: string;
   name?: string | null;
@@ -103,6 +113,12 @@ const ALERT_STATUS_LABELS: Record<string, string> = {
   OPEN: 'Abierta',
   ACK: 'Reconocida',
   CLOSED: 'Cerrada',
+};
+
+const MEMBER_ROLE_LABELS: Record<string, string> = {
+  SUPERVISOR: 'Supervisor',
+  OPERATIVE: 'Operativo',
+  SUPPORT: 'Apoyo',
 };
 
 function normalizeList<T>(payload: ListResponse<T>) {
@@ -247,6 +263,24 @@ function sortAlertasPorFecha(alerts: IncidentAlert[]) {
   });
 }
 
+function sortMembersByRole(members: IncidentMember[]) {
+  const roleWeight: Record<string, number> = {
+    SUPERVISOR: 0,
+    OPERATIVE: 1,
+    SUPPORT: 2,
+  };
+
+  return [...members].sort((left, right) => {
+    const leftWeight = roleWeight[left.role_in_incident ?? ''] ?? 9;
+    const rightWeight = roleWeight[right.role_in_incident ?? ''] ?? 9;
+    if (leftWeight !== rightWeight) {
+      return leftWeight - rightWeight;
+    }
+
+    return String(left.user ?? '').localeCompare(String(right.user ?? ''));
+  });
+}
+
 function parsePolygonCoordinates(value: unknown): Point[] {
   const rawRing =
     Array.isArray(value) && Array.isArray(value[0]) && Array.isArray(value[0][0])
@@ -317,9 +351,11 @@ async function readErrorMessage(response: Response) {
 
 export default function IncidentScreen({ navigation, route }: any) {
   const incidentId = route?.params?.incidentId as string | undefined;
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [alerts, setAlerts] = useState<IncidentAlert[]>([]);
+  const [members, setMembers] = useState<IncidentMember[]>([]);
+  const [membersError, setMembersError] = useState('');
   const [workareas, setWorkareas] = useState<WorkArea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -332,6 +368,13 @@ export default function IncidentScreen({ navigation, route }: any) {
   );
   const sortedAlerts = useMemo(() => sortAlertasPorFecha(alerts), [alerts]);
   const activeWorkareas = useMemo(() => workareas.filter((workarea) => workarea.active !== false), [workareas]);
+  const availableCompanions = useMemo(
+    () =>
+      sortMembersByRole(
+        members.filter((member) => member.is_active !== false && member.user_id !== user?.id)
+      ),
+    [members, user?.id]
+  );
   const mapRegion = useMemo(() => buildMapRegion(coordinates, activeWorkareas), [activeWorkareas, coordinates]);
 
   const loadIncident = useCallback(async (refreshing = false) => {
@@ -354,13 +397,15 @@ export default function IncidentScreen({ navigation, route }: any) {
     }
 
     setError(null);
+    setMembersError('');
 
     try {
       const encodedIncidentId = encodeURIComponent(incidentId);
-      const [incidentResponse, alertsResponse, workareasResponse] = await Promise.all([
+      const [incidentResponse, alertsResponse, workareasResponse, membersResponse] = await Promise.all([
         apiFetch(`/incidents/${encodedIncidentId}/`, { token, timeoutMs: 12000 }),
         apiFetch(`/alerts/?incident=${encodedIncidentId}`, { token, timeoutMs: 12000 }),
         apiFetch(`/workareas/?incident=${encodedIncidentId}`, { token, timeoutMs: 12000 }),
+        apiFetch(`/incidents/${encodedIncidentId}/members/`, { token, timeoutMs: 12000 }),
       ]);
 
       if (!incidentResponse.ok) {
@@ -379,6 +424,13 @@ export default function IncidentScreen({ navigation, route }: any) {
         setWorkareas(normalizeList(await parseJsonResponse<ListResponse<WorkArea>>(workareasResponse)));
       } else {
         setWorkareas([]);
+      }
+
+      if (membersResponse.ok) {
+        setMembers(normalizeList(await parseJsonResponse<ListResponse<IncidentMember>>(membersResponse)));
+      } else {
+        setMembers([]);
+        setMembersError('No se pudieron cargar los companeros del incidente.');
       }
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'No se pudo cargar el incidente.');
@@ -490,6 +542,36 @@ export default function IncidentScreen({ navigation, route }: any) {
           <InfoRow label="Inicio" value={formatDate(incident.started_at ?? incident.created_at)} />
           <InfoRow label="Fin" value={formatDate(incident.ended_at)} />
           <InfoRow label="Actualizado" value={formatDate(incident.updated_at)} />
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Companeros disponibles</Text>
+            <Text style={styles.cardCount}>{availableCompanions.length}</Text>
+          </View>
+
+          {membersError ? <Text style={styles.errorInline}>{membersError}</Text> : null}
+
+          {!membersError && availableCompanions.length === 0 ? (
+            <Text style={styles.cardValue}>No hay otros companeros activos en este incidente.</Text>
+          ) : (
+            availableCompanions.map((member) => (
+              <View key={member.id} style={styles.memberItem}>
+                <View style={styles.memberAvatar}>
+                  <Text style={styles.memberAvatarText}>{String(member.user ?? '?').trim().charAt(0).toUpperCase() || '?'}</Text>
+                </View>
+                <View style={styles.memberBody}>
+                  <Text style={styles.memberName}>{member.user || 'Companero sin nombre'}</Text>
+                  <Text style={styles.memberMeta}>
+                    {getLabel(member.role_in_incident, MEMBER_ROLE_LABELS)} | Unido {formatDate(member.joined_at)}
+                  </Text>
+                </View>
+                <View style={styles.availableBadge}>
+                  <Text style={styles.availableBadgeText}>Activo</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         <View style={styles.card}>
@@ -858,6 +940,60 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surfaceMuted,
     padding: 12,
+  },
+  memberItem: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  memberAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  memberAvatarText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  memberBody: {
+    flex: 1,
+  },
+  memberName: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  memberMeta: {
+    marginTop: 4,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  availableBadge: {
+    borderRadius: 999,
+    backgroundColor: colors.success,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  availableBadgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  errorInline: {
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 19,
   },
   listHeader: {
     flexDirection: 'row',
