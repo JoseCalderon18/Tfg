@@ -330,3 +330,22 @@ export async function procesarInmovilidadSegundoPlano(location: Location.Locatio
   await marcarAlertaInmovilidadEnviada();
   await notificarAlertaInmovilidadEnviada();
 }
+
+export async function actualizarNotasJornada(journeyId: number, token: string, notes: unknown) {
+  const response = await apiFetch(`/journeys/${journeyId}/`, {
+    method: 'PATCH',
+    token,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ notes }),
+    timeoutMs: 10000,
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || 'No se pudo actualizar las notas de la jornada.');
+  }
+
+  return true;
+}

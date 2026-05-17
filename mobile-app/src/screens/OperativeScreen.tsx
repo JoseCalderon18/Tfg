@@ -225,11 +225,7 @@ export default function OperativeScreen({ navigation }: any) {
         ]);
         break;
       case 'startBreak':
-        Alert.alert('Iniciar descanso', 'Se iniciara su descanso');
-        try {
-          pauseJourney();
-        } catch {}
-        break;
+        navigation.navigate('StartBreak');
         break;
       case 'logout':
         Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
