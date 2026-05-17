@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
@@ -7,6 +8,7 @@ export default function LoginScreen() {
   // Estado del formulario y feedback visual.
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [focusedField, setFocusedField] = React.useState<string | null>(null);
@@ -40,14 +42,28 @@ export default function LoginScreen() {
         onChangeText={setUsername}
         autoCapitalize="none"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        placeholderTextColor={colors.textMuted}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[styles.input, styles.passwordInput]}
+          placeholder="Contraseña"
+          placeholderTextColor={colors.textMuted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          style={styles.passwordToggle}
+          onPress={() => setShowPassword((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color={colors.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -97,6 +113,10 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textMuted,
   },
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
   input: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
@@ -108,6 +128,18 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typography.body,
     ...shadows.sm,
+  },
+  passwordInput: {
+    paddingRight: spacing.xxxl,
+    marginBottom: 0,
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: spacing.md,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inputFocused: {
     borderColor: colors.primary,
