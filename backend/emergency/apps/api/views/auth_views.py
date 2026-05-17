@@ -1,4 +1,5 @@
 import json
+import logging
 import secrets
 from datetime import timedelta
 
@@ -447,13 +448,18 @@ class PasswordResetRequestView(APIView):
             "Si no has solicitado este cambio, puedes ignorar este correo."
         )
 
-        send_mail(
-            subject=asunto,
-            message=mensaje,
-            from_email=None,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject=asunto,
+                message=mensaje,
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=settings.DEBUG,
+            )
+        except Exception as mail_error:
+            if not settings.DEBUG:
+                raise
+            logging.warning('No se pudo enviar correo de restablecimiento de password en DEBUG: %s', mail_error)
 
         respuesta = {
             "detail": "Si existe una cuenta asociada, se ha enviado un codigo de verificacion.",

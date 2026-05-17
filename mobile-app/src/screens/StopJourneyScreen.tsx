@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -204,12 +204,32 @@ function buildRegion(points: PointCoordinates[]) {
   };
 }
 
+function uniqueValidCoordinates(points: Array<PointCoordinates | null>) {
+  const seen = new Set<string>();
+
+  return points.filter((point): point is PointCoordinates => {
+    if (!point || !isValidCoordinates(point.latitude, point.longitude)) {
+      return false;
+    }
+
+    const key = `${point.latitude.toFixed(7)}:${point.longitude.toFixed(7)}`;
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function StopJourneyScreen({ navigation }: any) {
+  const mapRef = useRef<MapView | null>(null);
   const [journey, setJourney] = useState<JourneyApi | null>(null);
   const [loading, setLoading] = useState(false);
   const [screenLoading, setScreenLoading] = useState(true);
   const [screenError, setScreenError] = useState('');
   const [locationPermission, setLocationPermission] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const { token, user } = useAuth();
   const { location: trackedLocation, stopTracking } = useLocation();
   const [manualLocation, setManualLocation] = useState<Location.LocationObject | null>(null);
@@ -316,29 +336,34 @@ export default function StopJourneyScreen({ navigation }: any) {
   const stopPoint = useMemo(() => parsePoint(journey?.location_stop), [journey?.location_stop]);
   const pausePoints = useMemo(() => parsePausePoints(journey?.notes), [journey?.notes]);
   const operativePoint = currentLocation
-    ? {
+    ? parsePoint({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
-      }
+      })
     : null;
 
   const routeCoordinates = useMemo(() => {
-    const points: PointCoordinates[] = [];
-    if (startPoint) points.push(startPoint);
-    pausePoints.forEach((pausePoint) => {
-      points.push({
+    return uniqueValidCoordinates([
+      startPoint,
+      ...pausePoints.map((pausePoint) => ({
         latitude: pausePoint.latitude,
         longitude: pausePoint.longitude,
-      });
-    });
-    if (operativePoint) points.push(operativePoint);
-    else if (stopPoint) points.push(stopPoint);
-    return points;
+      })),
+      operativePoint ?? stopPoint,
+    ]);
   }, [operativePoint, pausePoints, startPoint, stopPoint]);
 
   const mapRegion = useMemo(() => buildRegion(routeCoordinates), [routeCoordinates]);
   const canRenderMap = routeCoordinates.length > 0;
   const canStopJourney = Boolean(journey && !journey.end_date);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !canRenderMap) {
+      return;
+    }
+
+    mapRef.current.animateToRegion(mapRegion, 400);
+  }, [canRenderMap, mapReady, mapRegion]);
 
   // Calorias estimadas y sugerencias
   const totalDistanceKm = React.useMemo(() => computeRouteDistanceKm(routeCoordinates), [routeCoordinates]);
@@ -460,7 +485,9 @@ export default function StopJourneyScreen({ navigation }: any) {
             ) : canRenderMap ? (
               <>
                 <MapView
+                  ref={mapRef}
                   style={styles.map}
+                  provider={PROVIDER_GOOGLE}
                   initialRegion={mapRegion}
                   mapType="standard"
                   toolbarEnabled={false}
@@ -470,7 +497,15 @@ export default function StopJourneyScreen({ navigation }: any) {
                   pitchEnabled={false}
                   loadingEnabled={false}
                   moveOnMarkerPress={false}
+                  onMapReady={() => setMapReady(true)}
                 >
+                  <UrlTile
+                    urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    maximumZ={19}
+                    tileSize={256}
+                    zIndex={-1}
+                  />
+
                   {startPoint ? (
                     <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
                   ) : null}
@@ -512,6 +547,7 @@ export default function StopJourneyScreen({ navigation }: any) {
                     <Text style={styles.legendText}>Actual</Text>
                   </View>
                 </View>
+                <Text style={styles.mapAttribution}>© OpenStreetMap contributors</Text>
               </>
             ) : (
               <View style={styles.stateBox}>
@@ -746,6 +782,17 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 12,
     fontWeight: '700',
+  },
+  mapAttribution: {
+    position: 'absolute',
+    right: 10,
+    bottom: 56,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFFD9',
+    color: '#334155',
+    fontSize: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   finishButton: {
     backgroundColor: '#DC2626',

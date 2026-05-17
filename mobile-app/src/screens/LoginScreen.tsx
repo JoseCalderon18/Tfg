@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }: any) {
   // Estado del formulario y feedback visual.
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -53,6 +53,14 @@ export default function LoginScreen() {
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={submitting}>
         {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Entrar</Text>}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkButton}
+        onPress={() => navigation.navigate('ResetPassword')}
+        disabled={submitting}
+      >
+        <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -122,6 +130,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: spacing.lg,
     ...shadows.md,
+  },
+  linkButton: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  linkText: {
+    color: colors.primary,
+    ...typography.body,
+    fontWeight: '700',
   },
   buttonDisabled: {
     opacity: 0.7,
