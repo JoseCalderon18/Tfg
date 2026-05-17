@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // En Android fisico por USB + `adb reverse`, 127.0.0.1 apunta al backend del PC.
+// Para Render o cualquier backend remoto usa EXPO_PUBLIC_API_BASE_URL=https://tu-backend.onrender.com/api
 // Para emulador se puede usar EXPO_PUBLIC_ANDROID_API_HOST=http://10.0.2.2:8000
 const DEFAULT_LOCAL_API_HOST = 'http://127.0.0.1:8000';
 
@@ -30,7 +31,14 @@ function getExpoHostApiUrl() {
   return `http://${host}:8000/api`;
 }
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? `${DEFAULT_API_HOST}/api`;
+function normalizeApiBaseUrl(value: string) {
+  const cleanValue = value.trim().replace(/\/+$/, '');
+  return cleanValue.endsWith('/api') ? cleanValue : `${cleanValue}/api`;
+}
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL
+  ? normalizeApiBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL)
+  : normalizeApiBaseUrl(DEFAULT_API_HOST);
 
 type ApiAuthHandlers = {
   refreshAccessToken: () => Promise<string | null>;
