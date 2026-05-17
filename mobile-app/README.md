@@ -250,3 +250,24 @@ En PowerShell desde `mobile-app`.
 - Anadir contador de mensajes no leidos.
 - Unificar textos y corregir caracteres corruptos.
 
+## Ubicaciones en tiempo real (compañeros)
+
+La app móvil ahora soporta recibir y mostrar las ubicaciones de los compañeros en tiempo real:
+
+- Se suscribe por WebSocket a `ws://<host>/api/ws/locations/` tras autenticarse y suscribirse al incidente activo.
+- En `src/context/LocationContext.tsx` se gestiona la conexión WS, el parsing de mensajes `position.update` y el estado `colleaguesPositions`.
+- En `src/components/MapaOperativo.tsx` se renderizan marcadores para compañeros, con callouts que muestran "última vez" y animación suave entre posiciones.
+- Si un compañero no reporta durante 10 minutos, la app envía automáticamente una alerta para notificar la posible inactividad.
+
+Pruebas rápidas:
+
+1. Levanta el backend con Channels y Redis (ver `backend/README.md`).
+2. En dos dispositivos/emuladores, inicia sesión y activa el tracking.
+3. Observa que los marcadores aparecen y se mueven; para simular inactividad, deja un cliente sin enviar ubicaciones y espera 10 minutos para ver la alerta.
+
+Archivos a revisar:
+
+- `src/context/LocationContext.tsx`
+- `src/components/MapaOperativo.tsx`
+
+

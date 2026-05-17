@@ -113,3 +113,75 @@ python manage.py test
 - `emergency/config/urls.py`
 - `emergency/apps/api/urls.py`
 - `emergency/apps/core/models.py`
+
+## Funcionalidad tiempo real (ubicaciones de compañeros)
+
+El proyecto incluye soporte para publicar y recibir ubicaciones en tiempo real (WebSockets) para mostrar compañeros en el mapa y lanzar alertas cuando un compañero deja de reportar posición.
+
+Resumen técnico:
+- Endpoint REST: `POST /api/tracking/point/` guarda la posición y la retransmite por canal si procede.
+- WebSocket: `ws://<host>/api/ws/locations/` (autenticación vía token, acciones `auth` y `subscribe`).
+- Backend: Django Channels + consumer `LocationConsumer` (broadcast por grupo `incident:{id}:locations`).
+
+Qué hay que hacer para habilitarlo en desarrollo:
+
+1. Añadir dependencias en `backend/requirements.txt`:
+
+```
+channels>=4.0
+channels-redis>=4.0
+```
+
+2. Configurar `CHANNEL_LAYERS` para usar Redis en `emergency/config/settings.py`, por ejemplo:
+
+```py
+CHANNEL_LAYERS = {
+	'default': {
+		'BACKEND': 'channels_redis.core.RedisChannelLayer',
+		'CONFIG': {
+			'hosts': [('redis', 6379)],
+		},
+	},
+}
+ASGI_APPLICATION = 'emergency.config.asgi.application'
+```
+
+3. Añadir servicio `redis` en `backend/docker-compose.yml` (ejemplo mínimo):
+
+```yaml
+services:
+	redis:
+		image: redis:7
+		restart: unless-stopped
+
+	web:
+		build: .
+		depends_on:
+			- db
+			- redis
+		environment:
+			- CHANNEL_REDIS_URL=redis://redis:6379/0
+```
+
+4. Instalar dependencias y aplicar migraciones:
+
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+```
+
+5. Levantar servicio (con Docker Compose):
+
+```bash
+docker compose up --build
+```
+
+Pruebas rápidas desde la app móvil:
+- Iniciar sesión en la app móvil y activar tracking.
+- La app publica puntos a `/api/tracking/point/` y además se suscribe por WS a `ws://.../ws/locations/` para recibir `position.update`.
+- Ver en el mapa cómo aparecen y se mueven los marcadores de compañeros.
+- Si un compañero no reporta durante >10 minutos, la app móvil envía una alerta (`POST /api/alerts/`) indicando `Compañero inactivo`.
+
+Notas de seguridad:
+- Para producción, asegúrate de usar `wss://` y `rediss://` si usas TLS; configura permisos y límites de tasa para evitar abuso.
+
