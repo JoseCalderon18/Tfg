@@ -578,7 +578,7 @@ export default function WorkAreasPage() {
           </button>
         </section>
       </div>
-      {false && workAreaPendienteEliminarId != null ? (
+      {workAreaPendienteEliminar ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
           role="dialog"
@@ -592,7 +592,7 @@ export default function WorkAreasPage() {
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
               Se eliminara definitivamente el area
-              {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
+              {workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
               Esta acción no se puede deshacer.

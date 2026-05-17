@@ -158,7 +158,7 @@ const OPCIONES_PROVINCIA_PORTUGAL = [
 ];
 
 // FRANCIA
-const OPCIONES_PROVINCIA_FRANCIA = [
+export const OPCIONES_PROVINCIA_FRANCIA = [
   { value: "", label: "Selecciona una región" },
   { value: "Île-de-France", label: "Île-de-France" },
   { value: "Provence-Alpes-Côte d'Azur", label: "Provence-Alpes-Côte d'Azur" },
@@ -168,7 +168,7 @@ const OPCIONES_PROVINCIA_FRANCIA = [
 ];
 
 // ITALIA
-const OPCIONES_PROVINCIA_ITALIA = [
+export const OPCIONES_PROVINCIA_ITALIA = [
   { value: "", label: "Selecciona una región" },
   { value: "Lombardia", label: "Lombardia" },
   { value: "Lazio", label: "Lazio" },
@@ -178,7 +178,7 @@ const OPCIONES_PROVINCIA_ITALIA = [
 ];
 
 // ALEMANIA
-const OPCIONES_PROVINCIA_ALEMANIA = [
+export const OPCIONES_PROVINCIA_ALEMANIA = [
   { value: "", label: "Selecciona un estado" },
   { value: "Baviera", label: "Baviera" },
   { value: "Berlín", label: "Berlín" },

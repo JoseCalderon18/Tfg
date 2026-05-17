@@ -201,6 +201,13 @@ export default function AlertsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => navegar("/createalert")}
+              className="rounded-full bg-[color:var(--cm-danger)] px-3 py-1 font-semibold text-white transition hover:brightness-110"
+            >
+              Crear alerta
+            </button>
             <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
             <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
             <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>

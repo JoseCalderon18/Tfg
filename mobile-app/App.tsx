@@ -28,6 +28,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import IncidentsScreen from './src/screens/IncidentsScreen';
 import IncidentScreen from './src/screens/IncidentScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
+import CompanionsScreen from './src/screens/CompanionsScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import WeatherScreen from './src/screens/WeatherScreen';
@@ -168,6 +170,19 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Incident"
             component={IncidentScreen}
+          />
+          <Stack.Screen
+            name="Alerts"
+            component={AlertsScreen}
+          />
+          <Stack.Screen
+            name="Companions"
+            component={CompanionsScreen}
+          />
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Weather"

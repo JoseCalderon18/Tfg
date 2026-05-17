@@ -7,7 +7,7 @@ import { useOfflineSync } from '../context/OfflineSyncContext';
 import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
-export default function AlertScreen({ navigation }: any) {
+export default function AlertScreen({ navigation, route }: any) {
   // Estado del formulario de alertas en campo.
   const [tipoAlerta, setTipoAlerta] = useState('SOS');
   const [severidad, setSeveridad] = useState(3);
@@ -16,6 +16,8 @@ export default function AlertScreen({ navigation }: any) {
   const { location } = useLocation();
   const { token } = useAuth();
   const { queueAlert } = useOfflineSync();
+  const incidentId = route?.params?.incidentId as string | undefined;
+  const incidentName = route?.params?.incidentName as string | undefined;
 
   const handleSendAlert = async () => {
     try {
@@ -39,8 +41,10 @@ export default function AlertScreen({ navigation }: any) {
               severity: severidad,
               title: 'SOS operativo',
               description: descripcion || 'SOS enviado desde el formulario de alerta.',
+              incidentId,
             })
           : await queueAlert({
+              incident: incidentId,
               alert_type: tipoAlerta,
               severity: severidad,
               title: `Alerta ${tipoAlerta}`,
@@ -71,7 +75,9 @@ export default function AlertScreen({ navigation }: any) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Enviar alerta</Text>
-            <Text style={styles.subtitle}>Documenta la situación de emergencia</Text>
+            <Text style={styles.subtitle}>
+              {incidentName ? `Asociada a ${incidentName}` : 'Documenta la situacion de emergencia'}
+            </Text>
           </View>
 
           {/* Form Sections */}
