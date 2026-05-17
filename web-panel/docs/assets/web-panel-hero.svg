@@ -1,0 +1,33 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="520" rx="34" fill="#0f172a"/>
+  <rect x="42" y="42" width="1116" height="436" rx="28" fill="#f8fafc"/>
+  <rect x="72" y="72" width="260" height="376" rx="22" fill="#111827"/>
+  <rect x="96" y="100" width="164" height="18" rx="9" fill="#e5e7eb"/>
+  <rect x="96" y="148" width="184" height="14" rx="7" fill="#60a5fa"/>
+  <rect x="96" y="184" width="145" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="96" y="220" width="174" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="96" y="256" width="136" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="96" y="292" width="188" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="96" y="328" width="128" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="370" y="78" width="420" height="52" rx="18" fill="#e0f2fe"/>
+  <text x="394" y="112" fill="#075985" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="800">Centro de supervision operativa</text>
+  <rect x="370" y="156" width="180" height="108" rx="20" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="582" y="156" width="180" height="108" rx="20" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="794" y="156" width="180" height="108" rx="20" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="394" y="204" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="900">24</text>
+  <text x="394" y="232" fill="#64748b" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Incidentes</text>
+  <text x="606" y="204" fill="#dc2626" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="900">8</text>
+  <text x="606" y="232" fill="#64748b" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Alertas criticas</text>
+  <text x="818" y="204" fill="#16a34a" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="900">41</text>
+  <text x="818" y="232" fill="#64748b" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Operativos</text>
+  <rect x="370" y="292" width="372" height="132" rx="22" fill="#dbeafe"/>
+  <path d="M403 385 C455 320 510 394 558 344 C606 294 658 336 710 312" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="453" cy="334" r="11" fill="#dc2626"/>
+  <circle cx="616" cy="324" r="11" fill="#f59e0b"/>
+  <circle cx="688" cy="314" r="11" fill="#16a34a"/>
+  <rect x="770" y="292" width="292" height="132" rx="22" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="800" y="322" width="220" height="14" rx="7" fill="#94a3b8"/>
+  <rect x="800" y="354" width="178" height="14" rx="7" fill="#cbd5e1"/>
+  <rect x="800" y="386" width="240" height="14" rx="7" fill="#cbd5e1"/>
+  <text x="370" y="470" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Incidentes, alertas, mapas, jornadas, POI, usuarios y chat en una sola consola.</text>
+</svg>

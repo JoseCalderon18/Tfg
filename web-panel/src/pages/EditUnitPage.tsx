@@ -158,7 +158,7 @@ const OPCIONES_PROVINCIA_PORTUGAL = [
 ];
 
 // FRANCIA
-export const OPCIONES_PROVINCIA_FRANCIA = [
+const OPCIONES_PROVINCIA_FRANCIA = [
   { value: "", label: "Selecciona una región" },
   { value: "Île-de-France", label: "Île-de-France" },
   { value: "Provence-Alpes-Côte d'Azur", label: "Provence-Alpes-Côte d'Azur" },
@@ -168,7 +168,7 @@ export const OPCIONES_PROVINCIA_FRANCIA = [
 ];
 
 // ITALIA
-export const OPCIONES_PROVINCIA_ITALIA = [
+const OPCIONES_PROVINCIA_ITALIA = [
   { value: "", label: "Selecciona una región" },
   { value: "Lombardia", label: "Lombardia" },
   { value: "Lazio", label: "Lazio" },
@@ -178,7 +178,7 @@ export const OPCIONES_PROVINCIA_ITALIA = [
 ];
 
 // ALEMANIA
-export const OPCIONES_PROVINCIA_ALEMANIA = [
+const OPCIONES_PROVINCIA_ALEMANIA = [
   { value: "", label: "Selecciona un estado" },
   { value: "Baviera", label: "Baviera" },
   { value: "Berlín", label: "Berlín" },
@@ -188,6 +188,8 @@ export const OPCIONES_PROVINCIA_ALEMANIA = [
 ];
 
 const OPCIONES_PROVINCIA_FRANCIA_COMPLETA = [
+  ...OPCIONES_PROVINCIA_FRANCIA,
+  ...[
   { value: "", label: "Selecciona una region" },
   { value: "Auvergne-Rhone-Alpes", label: "Auvergne-Rhone-Alpes" },
   { value: "Bourgogne-Franche-Comte", label: "Bourgogne-Franche-Comte" },
@@ -207,9 +209,15 @@ const OPCIONES_PROVINCIA_FRANCIA_COMPLETA = [
   { value: "Guyane", label: "Guyane" },
   { value: "La Reunion", label: "La Reunion" },
   { value: "Mayotte", label: "Mayotte" },
+  ].filter(
+    (opcion) =>
+      opcion.value !== "" && !OPCIONES_PROVINCIA_FRANCIA.some((base) => base.value === opcion.value)
+  ),
 ];
 
 const OPCIONES_PROVINCIA_ITALIA_COMPLETA = [
+  ...OPCIONES_PROVINCIA_ITALIA,
+  ...[
   { value: "", label: "Selecciona una region" },
   { value: "Abruzzo", label: "Abruzzo" },
   { value: "Basilicata", label: "Basilicata" },
@@ -231,9 +239,15 @@ const OPCIONES_PROVINCIA_ITALIA_COMPLETA = [
   { value: "Umbria", label: "Umbria" },
   { value: "Valle d'Aosta", label: "Valle d'Aosta" },
   { value: "Veneto", label: "Veneto" },
+  ].filter(
+    (opcion) =>
+      opcion.value !== "" && !OPCIONES_PROVINCIA_ITALIA.some((base) => base.value === opcion.value)
+  ),
 ];
 
 const OPCIONES_PROVINCIA_ALEMANIA_COMPLETA = [
+  ...OPCIONES_PROVINCIA_ALEMANIA,
+  ...[
   { value: "", label: "Selecciona un estado" },
   { value: "Baden-Wurttemberg", label: "Baden-Wurttemberg" },
   { value: "Baviera", label: "Baviera" },
@@ -251,6 +265,10 @@ const OPCIONES_PROVINCIA_ALEMANIA_COMPLETA = [
   { value: "Sajonia-Anhalt", label: "Sajonia-Anhalt" },
   { value: "Schleswig-Holstein", label: "Schleswig-Holstein" },
   { value: "Turingia", label: "Turingia" },
+  ].filter(
+    (opcion) =>
+      opcion.value !== "" && !OPCIONES_PROVINCIA_ALEMANIA.some((base) => base.value === opcion.value)
+  ),
 ];
 
 const OPCIONES_PROVINCIA_REINO_UNIDO = [

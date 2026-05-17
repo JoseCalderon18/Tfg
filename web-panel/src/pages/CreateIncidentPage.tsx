@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
 
 type RespuestaUsuario = {
@@ -38,16 +39,16 @@ const PUNTO_FINAL_ORGANIZACIONES = "/organizations/";
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
   { value: "WILDFIRE", label: "Incendio forestal" },
-  { value: "SEARCH", label: "Busqueda de persona" },
+  { value: "SEARCH", label: "Búsqueda de persona" },
   { value: "RESCUE", label: "Rescate" },
-  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "MEDICAL", label: "Emergencia médica" },
   { value: "NATURAL_DISASTER", label: "Desastre natural" },
   { value: "OTHER", label: "Otro" },
 ];
 
 const opcionesEstado: Array<{ value: EstadoIncidente; label: string }> = [
   { value: "OPEN", label: "Abierto" },
-  { value: "TRIAGE", label: "En evaluacion" },
+  { value: "TRIAGE", label: "En evaluación" },
   { value: "CLOSED", label: "Cerrado" },
 ];
 
@@ -140,7 +141,7 @@ export default function CreateIncidentPage() {
     }
 
     if ((latitud.trim() && !longitud.trim()) || (!latitud.trim() && longitud.trim())) {
-      setErrorMensaje("Debes enviar latitud y longitud juntas, o dejar ambas vacias.");
+      setErrorMensaje("Debes enviar latitud y longitud juntas, o dejar ambas vacías.");
       return;
     }
 
@@ -148,11 +149,11 @@ export default function CreateIncidentPage() {
     const lonParseada = longitud.trim() ? Number(longitud) : undefined;
 
     if (latParseada !== undefined && Number.isNaN(latParseada)) {
-      setErrorMensaje("La latitud no es valida.");
+      setErrorMensaje("La latitud no es válida.");
       return;
     }
     if (lonParseada !== undefined && Number.isNaN(lonParseada)) {
-      setErrorMensaje("La longitud no es valida.");
+      setErrorMensaje("La longitud no es válida.");
       return;
     }
     if (latParseada !== undefined && (latParseada < -90 || latParseada > 90)) {
@@ -165,16 +166,13 @@ export default function CreateIncidentPage() {
     }
 
     if (organizaciones.length === 0) {
-      setErrorMensaje("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la pagina.");
+      setErrorMensaje("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la página.");
       return;
     }
     if (!organizacionResponsable) {
-      setErrorMensaje("Debes seleccionar una organizacion responsable.");
+      setErrorMensaje("Debes seleccionar una organización responsable.");
       return;
     }
-
-
-
 
     const payload: DatosIncidenteCrear = {
       name: nombre.trim(),
@@ -186,7 +184,6 @@ export default function CreateIncidentPage() {
       longitude: lonParseada,
       owner_organization: organizacionResponsable,
     };
-
 
     setEnviando(true);
     try {
@@ -233,70 +230,46 @@ export default function CreateIncidentPage() {
   }
 
   if (cargando) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
-          <p className="text-slate-300">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none fixed inset-0 opacity-25">
-        <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-red-600 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-600 blur-3xl" />
-      </div>
+    <div className="cm-shell cm-page">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <PageHeader
+          eyebrow="Operaciones · Supervisores"
+          title="Crear nuevo incidente"
+          description="Completa la información operativa para registrar el incidente."
+          actions={
+            <button type="button" onClick={() => navegar("/incidents")} className="cm-btn cm-btn-secondary">
+              Volver
+            </button>
+          }
+        />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-6 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-400">Operaciones · Supervisores</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear nuevo incidente</h1>
-            <p className="mt-2 text-slate-300">Completa la informacion operativa para registrar el incidente.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navegar("/incidents")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
-        </div>
+        {errorMensaje ? <ErrorBanner message={errorMensaje} /> : null}
+        {mensajeExito ? <SuccessBanner message={mensajeExito} /> : null}
 
-        <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
-          {errorMensaje ? (
-            <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
-              {errorMensaje}
-            </div>
-          ) : null}
-          {mensajeExito ? (
-            <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {mensajeExito}
-            </div>
-          ) : null}
-
-          <form onSubmit={manejarEnvio} className="space-y-5">
+        <form onSubmit={manejarEnvio} className="space-y-5">
+          <FormSection title="Datos del incidente" description="Información mínima para identificar y clasificar la emergencia.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre del incidente</label>
+                <label className="cm-field-label">Nombre del incidente</label>
                 <input
                   value={nombre}
                   onChange={(event) => setNombre(event.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="Forest Fire - Zone A"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de incidente</label>
+                <label className="cm-field-label">Tipo de incidente</label>
                 <select
                   value={tipoIncidente}
                   onChange={(event) => setTipoIncidente(event.target.value as TipoIncidente)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-select"
                 >
                   {opcionesTipoIncidente.map((opt) => (
                     <option key={opt.value} value={opt.value} className="bg-slate-900">
@@ -307,11 +280,11 @@ export default function CreateIncidentPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Estado inicial</label>
+                <label className="cm-field-label">Estado inicial</label>
                 <select
                   value={estado}
                   onChange={(event) => setEstado(event.target.value as EstadoIncidente)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-select"
                 >
                   {opcionesEstado.map((opt) => (
                     <option key={opt.value} value={opt.value} className="bg-slate-900">
@@ -322,100 +295,93 @@ export default function CreateIncidentPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Descripcion</label>
+                <label className="cm-field-label">Descripción</label>
                 <textarea
                   value={descripcion}
                   onChange={(event) => setDescripcion(event.target.value)}
                   rows={4}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Describe situacion, riesgos y alcance."
+                  className="cm-textarea"
+                  placeholder="Describe situación, riesgos y alcance."
                 />
               </div>
+            </div>
+          </FormSection>
 
+          <FormSection title="Ubicación" description="Dirección visible y coordenadas opcionales para ubicar el incidente.">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Direccion / ubicacion textual</label>
+                <label className="cm-field-label">Dirección / ubicación textual</label>
                 <input
                   value={direccionUbicacion}
                   onChange={(event) => setDireccionUbicacion(event.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="Oakwood Forest, Zona A"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Latitud</label>
+                <label className="cm-field-label">Latitud</label>
                 <input
                   value={latitud}
                   onChange={(event) => setLatitud(event.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="40.4168"
                   inputMode="decimal"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Longitud</label>
+                <label className="cm-field-label">Longitud</label>
                 <input
                   value={longitud}
                   onChange={(event) => setLongitud(event.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="-3.7038"
                   inputMode="decimal"
                 />
               </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Organizacion responsable</label>
-                <select
-                  value={organizacionResponsable}
-                  onChange={(event) => setOrganizacionResponsable(event.target.value)}
-                  disabled={cargandoOrganizaciones}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="" className="bg-slate-900">
-                    {cargandoOrganizaciones ? "Cargando organizaciones..." : "Sin organizacion"}
-                  </option>
-                  {organizaciones.map((organization) => (
-                    <option key={organization.id} value={organization.id} className="bg-slate-900">
-                      {organization.name}
-                    </option>
-                  ))}
-                </select>
-                {errorOrganizaciones ? (
-                  <p className="mt-1 text-xs text-amber-300">{errorOrganizaciones}</p>
-                ) : null}
-                {!cargandoOrganizaciones && !errorOrganizaciones && organizaciones.length === 0 ? (
-                  <p className="mt-1 text-xs text-slate-400">
-                    No hay organizaciones disponibles en la base de datos.
-                  </p>
-                ) : null}
-              </div>
             </div>
-
-            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-400">
+            <div className="mt-4 rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)] p-3 text-xs text-[color:var(--cm-text-muted)]">
               {tieneCoordenadas
-                ? "Se enviaran coordenadas geograficas para generar el Point en backend."
-                : "Si no informas coordenadas, el incidente se guardara sin Point geografico."}
+                ? "Se enviarán coordenadas geográficas para generar el Point en backend."
+                : "Si no informas coordenadas, el incidente se guardará sin Point geográfico."}
             </div>
+          </FormSection>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => navegar("/incidents")}
-                className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={enviando}
-                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-500 disabled:opacity-60 transition"
-              >
-                {enviando ? "Creando..." : "Crear incidente"}
-              </button>
-            </div>
-          </form>
-        </div>
+          <FormSection title="Organización responsable" description="Selecciona quién gestionará este incidente.">
+            <label className="cm-field-label">Organización responsable</label>
+            <select
+              value={organizacionResponsable}
+              onChange={(event) => setOrganizacionResponsable(event.target.value)}
+              disabled={cargandoOrganizaciones}
+              className="cm-select"
+            >
+              <option value="" className="bg-slate-900">
+                {cargandoOrganizaciones ? "Cargando organizaciones..." : "Sin organización"}
+              </option>
+              {organizaciones.map((organization) => (
+                <option key={organization.id} value={organization.id} className="bg-slate-900">
+                  {organization.name}
+                </option>
+              ))}
+            </select>
+            {errorOrganizaciones ? <ErrorBanner message={errorOrganizaciones} className="mt-3" /> : null}
+            {!cargandoOrganizaciones && !errorOrganizaciones && organizaciones.length === 0 ? (
+              <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
+                No hay organizaciones disponibles en la base de datos.
+              </p>
+            ) : null}
+          </FormSection>
+
+          <FormActions>
+            <button type="button" onClick={() => navegar("/incidents")} className="cm-btn cm-btn-secondary">
+              Cancelar
+            </button>
+            <button type="submit" disabled={enviando} className="cm-btn cm-btn-primary">
+              {enviando ? "Creando..." : "Crear incidente"}
+            </button>
+          </FormActions>
+        </form>
       </div>
     </div>
   );

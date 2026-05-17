@@ -1,217 +1,206 @@
-# Web Panel - Centro de Supervision
+# Web Panel | Centro de Supervision Operativa
 
-Panel web para coordinacion, supervision y gestion operativa. Esta parte del proyecto esta orientada a perfiles de administracion/supervision que necesitan una vision global: incidentes, alertas, usuarios, organizaciones, workareas, jornadas, puntos de interes, meteorologia, rayos y comunicaciones.
+<p align="center">
+  <img src="./docs/assets/web-panel-hero.svg" alt="Vista conceptual del panel web de supervision" width="100%" />
+</p>
+
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" />
+  <img alt="Maps" src="https://img.shields.io/badge/Maps-Leaflet-199900?logo=leaflet&logoColor=white" />
+  <img alt="Role" src="https://img.shields.io/badge/Perfil-Supervision-0F172A" />
+</p>
+
+El **Web Panel** es la consola de coordinacion del sistema Emergency. Esta pensado para perfiles de administracion, supervision y mando que necesitan una vista global del operativo: incidentes abiertos, alertas, usuarios, unidades, workareas, jornadas, puntos de interes, meteorologia, rayos y comunicaciones.
+
+La idea es sencilla: **un unico lugar para ver que esta pasando, decidir rapido y coordinar mejor**.
+
+## Vista Rapida
+
+| Area | Que resuelve |
+| --- | --- |
+| Dashboard | Vision inmediata del estado operativo y metricas clave. |
+| Incidentes | Alta, edicion, seguimiento y chat asociado a incidentes. |
+| Alertas | Priorizacion, reconocimiento, cierre y trazabilidad. |
+| Mapa operativo | Workareas, puntos de interes y contexto geografico. |
+| Personal | Gestion de usuarios, unidades y organizaciones. |
+| Jornadas | Consulta del trabajo en campo y actividad de operativos. |
+| Comunicacion | Chat general y chats ligados a incidentes. |
+
+## Modulos Principales
+
+### 1. Centro Operativo
+
+- Dashboard con indicadores de actividad.
+- Listados paginados y buscables.
+- Estados visuales para alertas, incidentes y severidad.
+- Acciones rapidas de reconocimiento, cierre y edicion.
+
+### 2. Incidentes y Alertas
+
+- Crear y editar incidentes.
+- Consultar alertas asociadas.
+- Ver detalle, estado, severidad y responsable.
+- Mantener comunicacion mediante chat del incidente.
+
+### 3. Mapa y Territorio
+
+- Workareas circulares y poligonales.
+- Puntos de interes geolocalizados.
+- Mapa de rayos y meteorologia.
+- Base para que la app movil detecte salidas de zona segura (`GEOFENCE`).
+
+### 4. Recursos y Organizacion
+
+- Usuarios y perfiles operativos.
+- Unidades.
+- Organizaciones.
+- Relacion entre operativos, supervision y estructura territorial.
+
+## Galeria
+
+> Las imagenes siguientes son assets visuales del README. Puedes sustituirlas por capturas reales del panel cuando prepares la entrega o la demo.
+
+| Vista general | Flujo operativo |
+| --- | --- |
+| <img src="./docs/assets/web-panel-hero.svg" alt="Panel web" width="420" /> | Dashboard -> Incidente -> Alerta -> Mapa -> Chat |
+
+## Flujo de Uso
+
+```mermaid
+flowchart LR
+  A[Login supervisor] --> B[Dashboard]
+  B --> C[Incidentes]
+  B --> D[Alertas]
+  C --> E[Workareas y mapa]
+  C --> F[Chat de incidente]
+  D --> G[Reconocer o cerrar]
+  E --> H[App movil recibe contexto]
+```
+
+## Arquitectura Funcional
+
+```mermaid
+flowchart TB
+  Panel[Web Panel React] --> API[Django REST API]
+  API --> DB[(Base de datos)]
+  API --> Geo[GeoDjango / PostGIS]
+  API --> Mobile[Mobile App]
+  Panel --> Maps[Leaflet / Mapas]
+  Panel --> Reports[PDF / Tablas / Metricas]
+```
 
 ## Stack
 
-- React 18
-- Vite
-- TypeScript
-- React Router
-- Zustand
-- Leaflet / React Leaflet
-- Chart.js
-- jsPDF + jsPDF AutoTable
-- Tailwind/PostCSS
+| Capa | Tecnologia |
+| --- | --- |
+| UI | React 18 + TypeScript |
+| Build | Vite |
+| Rutas | React Router |
+| Estado | Zustand |
+| Mapas | Leaflet / React Leaflet |
+| Graficas | Chart.js |
+| Exportacion | jsPDF + AutoTable |
+| Estilos | Tailwind / CSS del panel |
 
-## Funcionalidades actuales
+## Puesta en Marcha
 
-- Login de panel con sesion.
-- Verificacion de autenticacion al cargar la app.
-- Reset de contrasena.
-- Dashboard operativo.
-- Gestion de incidentes.
-- Creacion y edicion de incidentes.
-- Chat asociado a incidentes.
-- Gestion de alertas y edicion de estado.
-- Gestion de usuarios.
-- Gestion de unidades.
-- Gestion de organizaciones.
-- Creacion y edicion de organizaciones.
-- Gestion de areas de trabajo o workareas.
-- Creacion y edicion de workareas en mapa.
-- Gestion de puntos de interes.
-- Creacion de puntos de interes geolocalizados.
-- Visualizacion de jornadas.
-- Meteorologia.
-- Mapa de rayos.
-- Chat general con miembros autorizados por `profile_id`.
+### 1. Configurar API
 
-## Rutas principales
-
-Rutas publicas:
-
-- `/login`
-- `/reset-password`
-
-Rutas privadas dentro del layout:
-
-- `/`: dashboard.
-- `/incidents`: listado de incidentes.
-- `/createincident`: crear incidente.
-- `/editIncident/:id`: editar incidente y consultar chat del incidente.
-- `/alerts`: listado de alertas.
-- `/editAlert/:id`: editar alerta.
-- `/weather`: meteorologia.
-- `/lightning`: mapa de rayos.
-- `/viewusers`: usuarios.
-- `/newuser`: crear usuario.
-- `/edituser/:id`: editar usuario.
-- `/viewunidades`: unidades.
-- `/editunit/:id`: editar unidad.
-- `/vieworganizations`: organizaciones.
-- `/createorganization`: crear organizacion.
-- `/editorganization/:id`: editar organizacion.
-- `/workarea`: listado de workareas.
-- `/createWorkArea`: crear workarea.
-- `/editWorkArea/:id`: editar workarea.
-- `/journeys`: jornadas.
-- `/points`: puntos de interes.
-- `/createPointOfInterest`: crear punto de interes.
-- `/chats`: chat general.
-
-## Configuracion
-
-Crea un `.env` en `web-panel/`:
+Crea `web-panel/.env`:
 
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
-Si el backend corre en otro host o puerto, cambia esa URL.
-
-## Instalacion
+### 2. Instalar dependencias
 
 ```bash
 npm install
 ```
 
-## Desarrollo
+### 3. Ejecutar en desarrollo
 
 ```bash
 npm run dev
 ```
 
-Por defecto Vite sirve en:
+Vite sirve normalmente en:
 
 ```text
 http://localhost:5173
 ```
 
-## Build
+### 4. Generar build
 
 ```bash
 npm run build
 ```
 
-Este comando ejecuta TypeScript y despues genera el build de Vite.
+## Rutas Importantes
 
-## Preview del build
+| Ruta | Uso |
+| --- | --- |
+| `/login` | Acceso al panel |
+| `/` | Dashboard |
+| `/incidents` | Incidentes |
+| `/alerts` | Alertas |
+| `/weather` | Meteorologia |
+| `/lightning` | Rayos |
+| `/workarea` | Workareas |
+| `/journeys` | Jornadas |
+| `/points` | Puntos de interes |
+| `/chats` | Chat general |
+| `/viewusers` | Usuarios |
+| `/vieworganizations` | Organizaciones |
 
-```bash
-npm run preview
-```
+## Archivos Clave
 
-## Lint
+| Archivo | Responsabilidad |
+| --- | --- |
+| `src/App.tsx` | Rutas principales |
+| `src/components/Layout.tsx` | Shell privado y navegacion |
+| `src/store/authStore.ts` | Sesion del panel |
+| `src/utils/api.ts` | Cliente HTTP |
+| `src/pages/DashboardPage.tsx` | Dashboard |
+| `src/pages/IncidentsPage.tsx` | Incidentes |
+| `src/pages/AlertsPage.tsx` | Alertas |
+| `src/pages/WorkAreasPage.tsx` | Workareas |
+| `src/pages/JourneysPage.tsx` | Jornadas |
+| `src/pages/PointOfInterestPage.tsx` | Puntos de interes |
+| `src/components/ChatGeneral.tsx` | Chat general |
 
-```bash
-npm run lint
-```
+## Integracion con la App Movil
 
-## Autenticacion
+El panel y la app movil comparten el mismo backend. El panel define y supervisa el contexto operativo; la app movil lo consume en campo.
 
-El panel usa endpoints de panel del backend, con sesion y CSRF cuando corresponde.
+| Panel web | App movil |
+| --- | --- |
+| Crea incidentes | Consulta incidentes asignados |
+| Define workareas | Detecta salida de zona |
+| Gestiona alertas | Envia alertas desde campo |
+| Crea puntos de interes | Marca POI desde ubicacion actual |
+| Supervisa jornadas | Inicia, pausa y finaliza jornada |
+| Chat del incidente | Mensajeria operativa |
 
-Archivos clave:
+## Estado del Proyecto
 
-- `src/store/authStore.ts`
-- `src/utils/api.ts`
-- `src/utils/csrf.ts`
-- backend: `/api/auth/panel/login/`
-- backend: `/api/auth/panel/me/`
-- backend: `/api/auth/panel/logout/`
+Funcionalidades destacadas:
 
-## Chat del panel
+- Autenticacion de panel.
+- Dashboard operativo.
+- Gestion de incidentes, alertas, usuarios, unidades y organizaciones.
+- Workareas con mapa.
+- Puntos de interes.
+- Jornadas.
+- Meteorologia y rayos.
+- Chat general y chat de incidente.
 
-Hay dos tipos de chat presentes en el sistema:
+Pendientes recomendados:
 
-- Chat de incidente, accesible desde la edicion del incidente.
-- Chat general, accesible desde `/chats`.
-
-El chat general guarda miembros autorizados dentro del JSON del campo `profile_id` de la tabla `chats`. El panel permite:
-
-- listar chats disponibles;
-- crear chats;
-- leer mensajes;
-- enviar mensajes;
-- gestionar miembros autorizados.
-
-Archivos relacionados:
-
-- `src/pages/ChatPage.tsx`
-- `src/components/ChatGeneral.tsx`
-- backend: `/api/auth/panel/chats/`
-- backend: `/api/auth/panel/chats/<chat_ref>/messages/`
-
-## Workareas
-
-Las workareas se usan para delimitar zonas de trabajo asociadas a incidentes. Pueden ser:
-
-- circulares;
-- poligonales.
-
-La app movil utiliza estas workareas para detectar si un operativo sale de la zona asignada y lanzar alertas `GEOFENCE`.
-
-Archivos relacionados:
-
-- `src/pages/WorkAreasPage.tsx`
-- `src/pages/NewWorkAreaPage.tsx`
-- `src/pages/EditWorkAreaPage.tsx`
-- backend: `/api/workareas/`
-
-## Puntos de interes
-
-El panel permite ver y crear puntos de interes geolocalizados. Estos puntos tambien pueden crearse desde la app movil usando la ubicacion actual del operativo.
-
-Archivos relacionados:
-
-- `src/pages/PointOfInterestPage.tsx`
-- `src/pages/CreatePointOfInterestPage.tsx`
-- backend: `/api/points-of-interest/`
-
-## Archivos importantes
-
-- `src/App.tsx`: definicion de rutas.
-- `src/main.tsx`: entrada de React.
-- `src/components/Layout.tsx`: layout privado con navegacion.
-- `src/store/authStore.ts`: estado de autenticacion.
-- `src/utils/api.ts`: cliente HTTP.
-- `src/utils/csrf.ts`: soporte CSRF.
-- `src/pages/DashboardPage.tsx`: dashboard.
-- `src/pages/IncidentsPage.tsx`: incidentes.
-- `src/pages/EditIncidentPage.tsx`: edicion y chat de incidente.
-- `src/pages/AlertsPage.tsx`: alertas.
-- `src/pages/WorkAreasPage.tsx`: workareas.
-- `src/pages/JourneysPage.tsx`: jornadas.
-- `src/pages/PointOfInterestPage.tsx`: puntos de interes.
-- `src/components/ChatGeneral.tsx`: chat general.
-
-## Limitaciones conocidas
-
-- Algunas rutas tienen nombres mixtos (`editIncident`, `createWorkArea`, `viewusers`). Funcionan, pero seria recomendable normalizarlas.
-- Parte de la logica de carga vive dentro de paginas; podria extraerse a hooks compartidos.
-- No hay persistencia avanzada de filtros o estado de tablas.
-- El chat funciona por peticiones HTTP; no hay WebSocket ni notificaciones push.
-- Conviene revisar codificacion de textos antiguos que puedan mostrar caracteres corruptos.
-- La separacion funcional entre usuarios y unidades todavia puede afinarse.
-
-## Mejoras recomendadas
-
-- Normalizar rutas y nombres.
-- Extraer hooks para carga de incidentes, usuarios, alertas y workareas.
-- Usar React Query de forma mas sistematica.
-- Persistir filtros, orden y paginacion.
-- Anadir actualizacion en tiempo real para chat, alertas y tracking.
-- Mejorar permisos/guards por rol.
-- Mejorar vistas de mapa con filtros por organizacion, incidente y estado.
-
+- Normalizar nombres de rutas.
+- Persistir filtros y orden de tablas.
+- Mejorar permisos por rol.
+- Incorporar tiempo real para chat, alertas y tracking.
+- Sustituir los assets conceptuales del README por capturas reales.
