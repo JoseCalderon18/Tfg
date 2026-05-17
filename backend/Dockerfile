@@ -26,9 +26,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código
 COPY . .
 
+# Script de arranque (migraciones + static)
+RUN chmod +x /app/entrypoint.sh
+
 # Exponer puerto
 EXPOSE 8000
 
 # Arranque por defecto
-ENTRYPOINT ["python", "manage.py"]
-CMD ["runserver", "0.0.0.0:8000"]
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]
+CMD ["sh", "-c", "gunicorn emergency.config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
