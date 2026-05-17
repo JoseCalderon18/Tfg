@@ -47,6 +47,9 @@ export default function OperativeScreen({ navigation }: any) {
     isTracking,
     startTracking,
     stopTracking,
+    isOnBreak,
+    pauseJourney,
+    resumeJourney,
     errorMsg,
     geofenceStatus,
     location,
@@ -223,6 +226,10 @@ export default function OperativeScreen({ navigation }: any) {
         break;
       case 'startBreak':
         Alert.alert('Iniciar descanso', 'Se iniciara su descanso');
+        try {
+          pauseJourney();
+        } catch {}
+        break;
         break;
       case 'logout':
         Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
@@ -250,7 +257,7 @@ export default function OperativeScreen({ navigation }: any) {
 
       <View style={styles.mapContainer}>
         <Text style={styles.mapTitle}>Centro operativo</Text>
-        <Text style={styles.statusText}>Seguimiento: {isTracking ? 'Activo' : 'Detenido'}</Text>
+        <Text style={styles.statusText}>Seguimiento: {isOnBreak ? 'En descanso' : isTracking ? 'Activo' : 'Detenido'}</Text>
         <Text style={styles.statusSubtext}>
           {location
             ? `Lat ${location.coords.latitude.toFixed(4)} · Lng ${location.coords.longitude.toFixed(4)}`
@@ -273,9 +280,9 @@ export default function OperativeScreen({ navigation }: any) {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={[styles.quickActionButton, isTracking ? styles.stopQuickAction : styles.startQuickAction]}
-            onPress={isTracking ? stopTracking : startTracking}
+            onPress={isTracking ? pauseJourney : isOnBreak ? resumeJourney : startTracking}
           >
-            <Text style={styles.quickActionText}>{isTracking ? 'Detener GPS' : 'Iniciar GPS'}</Text>
+            <Text style={styles.quickActionText}>{isTracking ? 'Pausar GPS' : isOnBreak ? 'Reanudar GPS' : 'Iniciar GPS'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.quickActionButton, styles.mapQuickAction]} onPress={() => navigation.navigate('Map')}>
             <Text style={styles.quickActionText}>Abrir mapa</Text>

@@ -101,6 +101,10 @@ interface LocationContextType {
   // compañeros en tiempo real
   colleaguesPositions: Record<string, { user_id: string; display_name: string; latitude: number; longitude: number; accuracy?: number | null; timestamp?: string | null }>;
   setActiveIncident: (incidentId: string | null) => Promise<void>;
+  // Pausa de jornada (descanso): no finaliza la jornada, solo detiene temporalmente el tracking
+  isOnBreak: boolean;
+  pauseJourney: () => void;
+  resumeJourney: () => Promise<void>;
 }
 
 type GeofenceStatus = {
@@ -168,6 +172,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const fatigueAlertSentRef = useRef(false);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const routeStartTimeRef = useRef<number | null>(null);
+  const [isOnBreak, setIsOnBreak] = useState(false);
 
   const shiftHoursLimit = useMemo(() => extractShiftHours(user?.operative_schedule), [user?.operative_schedule]);
   const isOverShift = routeDurationHours >= shiftHoursLimit && shiftHoursLimit > 0;
@@ -304,6 +309,44 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       longitude: nextLocation.coords.longitude,
     }).catch(() => undefined);
     setErrorMsg(null);
+  };
+
+  // helper to create subscription without reinitializing route state
+  const createLocationSubscription = async () => {
+    const subscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        distanceInterval: 10,
+      },
+      async (newLocation) => {
+        setLocation(newLocation);
+        await sendTrackingPoint(newLocation);
+        await checkWorkareaPosition(newLocation);
+
+        setRoutePoints((prev) => {
+          const next = prev.concat({ latitude: newLocation.coords.latitude, longitude: newLocation.coords.longitude });
+          const dist = computeRouteDistanceKm(next);
+          setRouteDistanceKm(dist);
+
+          const start = routeStartTimeRef.current ?? Date.now();
+          const durationMs = Date.now() - start;
+          const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
+          setRouteDurationHours(durationH);
+
+          const userWeight = (user as any)?.weightKg ?? (user as any)?.weight_kg ?? 75;
+          const kcal = estimateCalories({ distanceKm: dist, durationHours: durationH, weightKg: userWeight });
+          setEstimatedKcal(kcal);
+          setFoodSuggestions(suggestFoodsForCalories(kcal));
+
+          return next;
+        });
+      }
+    );
+
+    setLocationSubscription(subscription);
+    locationSubscriptionRef.current = subscription;
+    setIsTracking(true);
   };
 
   // Real-time colleagues positions via WebSocket
@@ -594,41 +637,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       await sendTrackingPoint(currentLocation);
       await checkWorkareaPosition(currentLocation);
       await startBackgroundWorkareaDetection();
-
-      const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,  // Alta precision
-          timeInterval: 5000,                // Actualizar cada 5 segundos
-          distanceInterval: 10,              // O cada 10 metros
-        },
-        async (newLocation) => {
-          setLocation(newLocation);
-          await sendTrackingPoint(newLocation);
-          await checkWorkareaPosition(newLocation);
-
-          // Update route points and live metrics
-          setRoutePoints((prev) => {
-            const next = prev.concat({ latitude: newLocation.coords.latitude, longitude: newLocation.coords.longitude });
-            const dist = computeRouteDistanceKm(next);
-            setRouteDistanceKm(dist);
-
-            const start = routeStartTimeRef.current ?? Date.now();
-            const durationMs = Date.now() - start;
-            const durationH = Math.max(0, durationMs / (1000 * 60 * 60));
-            setRouteDurationHours(durationH);
-
-            // Use authenticated user's weight if available
-            const userWeight = (user as any)?.weightKg ?? (user as any)?.weight_kg ?? 75;
-            const kcal = estimateCalories({ distanceKm: dist, durationHours: durationH, weightKg: userWeight });
-            setEstimatedKcal(kcal);
-            setFoodSuggestions(suggestFoodsForCalories(kcal));
-
-            return next;
-          });
-        }
-      );
-      setLocationSubscription(subscription);
-      setIsTracking(true);
+      await createLocationSubscription();
       setErrorMsg(null);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : 'Error starting tracking');
@@ -647,6 +656,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
     void stopBackgroundWorkareaDetection();
     fatigueAlertSentRef.current = false;
+    // Full stop: clear route and metrics
     setRoutePoints([]);
     setRouteStartTime(null);
     routeStartTimeRef.current = null;
@@ -655,6 +665,53 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setEstimatedKcal(0);
     setFoodSuggestions([]);
     setIsTracking(false);
+  };
+
+  const pauseJourney = () => {
+    // stop GPS updates but preserve route state so journey is not finalized
+    if (locationSubscriptionRef.current) {
+      try {
+        locationSubscriptionRef.current.remove();
+      } catch {}
+      locationSubscriptionRef.current = null;
+    }
+    if (locationSubscription) {
+      try {
+        locationSubscription.remove();
+      } catch {}
+      setLocationSubscription(null);
+    }
+    void stopBackgroundWorkareaDetection();
+    setIsTracking(false);
+    setIsOnBreak(true);
+  };
+
+  const resumeJourney = async () => {
+    setIsOnBreak(false);
+    try {
+      const hasPermissions = await requestLocationPermissions();
+      if (!hasPermissions) {
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setLocation(currentLocation);
+      // if routeStartTime is not set, initialize it
+      if (!routeStartTimeRef.current) {
+        const startedAtMs = Date.now();
+        setRouteStartTime(startedAtMs);
+        routeStartTimeRef.current = startedAtMs;
+      }
+
+      // send an immediate tracking point and start subscription
+      await sendTrackingPoint(currentLocation);
+      await checkWorkareaPosition(currentLocation);
+      await startBackgroundWorkareaDetection();
+      await createLocationSubscription();
+      setErrorMsg(null);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Error reanudando el tracking');
+    }
   };
 
   const setActiveIncident = async (incidentId: string | null) => {
@@ -697,6 +754,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         shiftHoursLimit,
         isOverShift,
         fatigueWarningMessage,
+        isOnBreak,
+        pauseJourney,
+        resumeJourney,
       }}
     >
       {children}
