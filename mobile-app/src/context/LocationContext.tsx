@@ -310,7 +310,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [colleaguesPositions, setColleaguesPositions] = useState<Record<string, { user_id: string; display_name: string; latitude: number; longitude: number; accuracy?: number | null; timestamp?: string | null }>>({});
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
-  const alertedInactiveRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let closed = false;
@@ -354,10 +353,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                       timestamp: p.timestamp ?? null,
                     },
                   }));
-                  // clear inactive-alert flag when we receive a fresh position
-                  if (alertedInactiveRef.current.has(p.user_id)) {
-                    alertedInactiveRef.current.delete(p.user_id);
-                  }
             }
           } catch {
             // ignore
@@ -400,7 +395,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   // Prune stale colleague positions periodically
   useEffect(() => {
     const PRUNE_MS = 3 * 60 * 1000; // 3 minutes for pruning
-    const ALERT_MS = 10 * 60 * 1000; // 10 minutes -> send alert
     const interval = setInterval(() => {
       setColleaguesPositions((prev) => {
         const now = Date.now();
@@ -418,24 +412,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           }
 
           const age = now - ts;
-          // send alert if aged beyond ALERT_MS and not already alerted
-          if (age > ALERT_MS && !alertedInactiveRef.current.has(k)) {
-            alertedInactiveRef.current.add(k);
-            try {
-              void queueAlert({
-                alert_type: 'OTHER',
-                severity: 3,
-                title: 'Compañero inactivo',
-                description: `El compañero ${v.display_name || k} no ha reportado ubicaci\u00f3n en >10 min.`,
-                lat: v.latitude,
-                lng: v.longitude,
-                incident: activeIncidentId ?? null,
-              });
-            } catch {
-              // ignore
-            }
-          }
-
           // prune if older than PRUNE_MS
           if (age <= PRUNE_MS) {
             next[k] = v;
@@ -448,7 +424,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }, 30 * 1000);
 
     return () => clearInterval(interval);
-  }, [queueAlert, activeIncidentId]);
+  }, []);
 
   const checkWorkareaPosition = async (nextLocation: Location.LocationObject): Promise<GeofenceStatus | null> => {
     if (!token) {

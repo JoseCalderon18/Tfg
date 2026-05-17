@@ -180,7 +180,7 @@ Pruebas rápidas desde la app móvil:
 - Iniciar sesión en la app móvil y activar tracking.
 - La app publica puntos a `/api/tracking/point/` y además se suscribe por WS a `ws://.../ws/locations/` para recibir `position.update`.
 - Ver en el mapa cómo aparecen y se mueven los marcadores de compañeros.
-- Si un compañero no reporta durante >10 minutos, la app móvil envía una alerta (`POST /api/alerts/`) indicando `Compañero inactivo`.
+  
 
 Notas de seguridad:
 - Para producción, asegúrate de usar `wss://` y `rediss://` si usas TLS; configura permisos y límites de tasa para evitar abuso.
