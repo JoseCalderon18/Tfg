@@ -7,7 +7,10 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { colors } from '../theme';
 
-const { WebView } = require('react-native-webview');
+// react-native-webview exports the component as default; require may return the module
+// object so ensure we get the component reference regardless of interop.
+const WebViewModule = require('react-native-webview');
+const WebView = WebViewModule && WebViewModule.default ? WebViewModule.default : WebViewModule;
 
 type PuntoGeografico = {
   coordinates?: [number, number];
