@@ -14,7 +14,7 @@ import { STATUS_COLOR, getAlertStatusBadge, getIncidentMarkerColor, getIncidentS
 import "leaflet/dist/leaflet.css";
 
 import L, { type LatLngTuple } from "leaflet";
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
@@ -199,6 +199,7 @@ type WorkAreaRow = {
 };
 
 type LayerType = "satellite" | "relief" | "vegetation";
+type DashboardPanel = "incidents" | "alerts" | "resources" | "units";
 
 const tileUrls: Record<LayerType, { url: string; attribution: string }> = {
   satellite: {
@@ -638,12 +639,13 @@ export default function DashboardPage() {
   const [alertPage, setAlertPage] = useState(1);
   const [resourcePage, setResourcePage] = useState(1);
   const [unitPage, setUnitPage] = useState(1);
-  const [incidentsExpanded, setIncidentsExpanded] = useState(false);
+  const [activeDashboardPanel, setActiveDashboardPanel] = useState<DashboardPanel>("incidents");
+  const [incidentsExpanded, setIncidentsExpanded] = useState(true);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
   const [recursosExpandidos, setRecursosExpandidos] = useState(false);
   const [unitsExpanded, setUnitsExpanded] = useState(false);
   const [trackPoints, setTrackPoints] = useState<TrackPointRow[]>([]);
-  const [showAllTracks, setShowAllTracks] = useState(true);
+  const [showAllTracks] = useState(true);
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>
@@ -976,6 +978,14 @@ export default function DashboardPage() {
     navigate("/login", { replace: true });
   }
 
+  function focusDashboardPanel(panel: DashboardPanel) {
+    setActiveDashboardPanel(panel);
+    setIncidentsExpanded(panel === "incidents");
+    setAlertsExpanded(panel === "alerts");
+    setRecursosExpandidos(panel === "resources");
+    setUnitsExpanded(panel === "units");
+  }
+
   if (loading) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
@@ -1088,9 +1098,8 @@ export default function DashboardPage() {
             </article>
           </div>
 
-          {/* El mapa y el resumen juntos */}
-          <div className="mt-4 grid h-[calc(100vh-255px)] gap-4 xl:grid-cols-[1.8fr_0.95fr]">
-            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <div className="mt-4 grid min-h-[calc(100vh-255px)] gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(360px,0.95fr)]">
+            <section className="rounded-2xl border border-white/10 bg-[color:var(--cm-surface)] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.14)]">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Mapa operativo</p>
@@ -1460,11 +1469,43 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <aside className="rounded-2xl border border-white/10 bg-[color:var(--cm-surface)] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.14)] xl:max-h-[calc(100vh-255px)] xl:overflow-y-auto">
+              <div className="mb-4 rounded-2xl border border-white/10 bg-[color:var(--cm-surface-2)]/65 p-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Panel operativo</p>
+                <h2 className="mt-1 text-base font-bold">Bandeja de seguimiento</h2>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {[
+                    { id: "incidents", label: "Incidentes", value: incidentsFiltered.length, tone: "var(--cm-info)" },
+                    { id: "alerts", label: "Alertas", value: visibleAlerts.length, tone: "var(--cm-danger)" },
+                    { id: "resources", label: "Recursos", value: visiblePointsOfInterest.length, tone: "var(--cm-alert)" },
+                    { id: "units", label: "Unidades", value: visibleUnits.length, tone: "var(--cm-success)" },
+                  ].map((panel) => {
+                    const isActive = activeDashboardPanel === panel.id;
+                    return (
+                      <button
+                        key={panel.id}
+                        type="button"
+                        onClick={() => focusDashboardPanel(panel.id as DashboardPanel)}
+                        className={`rounded-xl border px-3 py-2 text-left transition ${
+                          isActive
+                            ? "border-[color:var(--cm-primary)] bg-[color:var(--cm-primary)]/16 text-white"
+                            : "border-white/10 bg-[color:var(--cm-bg)]/35 text-[color:var(--cm-text-muted)] hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className="block text-xs font-semibold uppercase tracking-[0.14em]">{panel.label}</span>
+                        <span className="mt-1 flex items-center gap-2 text-lg font-bold">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: panel.tone }} />
+                          {panel.value}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
-                  onClick={() => setIncidentsExpanded((current) => !current)}
+                  onClick={() => focusDashboardPanel("incidents")}
                   aria-expanded={incidentsExpanded}
                   className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-info)]"
                 >
@@ -1565,7 +1606,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => setAlertsExpanded((current) => !current)}
+                    onClick={() => focusDashboardPanel("alerts")}
                     aria-expanded={alertsExpanded}
                     className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-alert)]"
                   >
@@ -1638,7 +1679,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => setRecursosExpandidos((current) => !current)}
+                    onClick={() => focusDashboardPanel("resources")}
                     aria-expanded={recursosExpandidos}
                     className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-alert)]"
                   >
@@ -1781,7 +1822,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between gap-3">
                     <button
                       type="button"
-                      onClick={() => setUnitsExpanded((current) => !current)}
+                      onClick={() => focusDashboardPanel("units")}
                       aria-expanded={unitsExpanded}
                       className="flex flex-1 items-start justify-between gap-3 rounded-xl text-left transition hover:text-[color:var(--cm-primary)]"
                     >
