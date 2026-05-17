@@ -392,6 +392,33 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     };
   }, [token, activeIncidentId]);
 
+  // Prune stale colleague positions periodically
+  useEffect(() => {
+    const STALE_MS = 3 * 60 * 1000; // 3 minutes
+    const interval = setInterval(() => {
+      setColleaguesPositions((prev) => {
+        const now = Date.now();
+        const next: typeof prev = {};
+        let changed = false;
+        Object.entries(prev).forEach(([k, v]) => {
+          if (!v.timestamp) {
+            next[k] = v;
+            return;
+          }
+          const ts = Date.parse(v.timestamp);
+          if (Number.isNaN(ts) || now - ts <= STALE_MS) {
+            next[k] = v;
+          } else {
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 30 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const checkWorkareaPosition = async (nextLocation: Location.LocationObject): Promise<GeofenceStatus | null> => {
     if (!token) {
       return null;

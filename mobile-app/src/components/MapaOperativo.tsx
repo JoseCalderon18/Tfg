@@ -381,27 +381,116 @@ export default function MapaOperativo({
     [location]
   );
 
+  const animRefs = useRef<Record<string, number | null>>({});
+  const [animatedPositions, setAnimatedPositions] = useState<
+    Record<string, { latitude: number; longitude: number; timestamp?: string | null }>
+  >({});
+
+  // Animate transitions when colleaguesPositions updates
+  useEffect(() => {
+    const targets = colleaguesPositions ?? {};
+    const ids = Object.keys(targets);
+
+    ids.forEach((id) => {
+      const target = (targets as any)[id];
+      if (!target) return;
+
+      const current = animatedPositions[id] ?? { latitude: target.latitude, longitude: target.longitude };
+
+      const almostEqual =
+        Math.abs(current.latitude - target.latitude) < 1e-6 && Math.abs(current.longitude - target.longitude) < 1e-6;
+      if (almostEqual) {
+        // update timestamp only
+        setAnimatedPositions((prev) => ({ ...prev, [id]: { ...prev[id], timestamp: target.timestamp ?? null } }));
+        return;
+      }
+
+      // cancel previous
+      const prevRaf = animRefs.current[id];
+      if (prevRaf) {
+        try {
+          cancelAnimationFrame(prevRaf);
+        } catch {}
+        animRefs.current[id] = null;
+      }
+
+      const startLat = current.latitude;
+      const startLng = current.longitude;
+      const deltaLat = target.latitude - startLat;
+      const deltaLng = target.longitude - startLng;
+      const duration = 600;
+      const startTime = Date.now();
+
+      const step = () => {
+        const now = Date.now();
+        const t = Math.min(1, (now - startTime) / duration);
+        const lat = startLat + deltaLat * t;
+        const lng = startLng + deltaLng * t;
+        setAnimatedPositions((prev) => ({ ...prev, [id]: { latitude: lat, longitude: lng, timestamp: target.timestamp ?? null } }));
+        if (t < 1) {
+          animRefs.current[id] = requestAnimationFrame(step);
+        } else {
+          animRefs.current[id] = null;
+        }
+      };
+
+      animRefs.current[id] = requestAnimationFrame(step);
+    });
+
+    // prune animatedPositions for ids no longer present
+    setAnimatedPositions((prev) => {
+      const next: typeof prev = {};
+      ids.forEach((id) => {
+        next[id] = prev[id] ?? (targets as any)[id];
+      });
+      return next;
+    });
+
+    return () => {
+      // no-op per id; leave rafs running until next effect or unmount clears them
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colleaguesPositions]);
+
+  // cleanup rafs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(animRefs.current).forEach((r) => {
+        if (r) {
+          try {
+            cancelAnimationFrame(r);
+          } catch {}
+        }
+      });
+      animRefs.current = {};
+    };
+  }, []);
+
   const colegasMarcadores = useMemo(() => {
     if (!colleaguesPositions) return [] as MarcadorPlano[];
     const ahora = Date.now();
     const STALE_MS = 2 * 60 * 1000; // 2 minutos
-    return Object.values(colleaguesPositions)
-      .map((p) => ({
-        id: p.user_id,
-        titulo: p.display_name || 'Compañero',
-        latitud: p.latitude,
-        longitud: p.longitude,
-        color: colors.secondary,
-        tipo: 'usuario' as const,
-        timestamp: p.timestamp ?? null,
-      }))
+    return Object.keys(colleaguesPositions)
+      .map((id) => {
+        const src = animatedPositions[id] ?? (colleaguesPositions as any)[id];
+        const original = (colleaguesPositions as any)[id];
+        return {
+          id,
+          titulo: original.display_name || 'Compañero',
+          latitud: src.latitude,
+          longitud: src.longitude,
+          color: colors.secondary,
+          tipo: 'usuario' as const,
+          timestamp: original.timestamp ?? null,
+        } as MarcadorPlano;
+      })
       .filter((m) => {
         if (!m.timestamp) return true;
         const ts = Date.parse(m.timestamp);
         if (Number.isNaN(ts)) return true;
         return ahora - ts <= STALE_MS;
       });
-  }, [colleaguesPositions]);
+  }, [colleaguesPositions, animatedPositions]);
 
   const marcadores = useMemo(() => {
     const base = crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude);
