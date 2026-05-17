@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Badge, Button, Card, PageHeader, PaginationBar, SearchInput, TableShell } from "../components/ui";
 import { apiFetch } from "../utils/api";
 import { STATUS_COLOR, getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 
@@ -26,6 +27,16 @@ function obtenerBadgeAlerta(type?: string | null) {
 
 function obtenerBadgeEstado(status?: string | null) {
   return getAlertStatusBadge(status);
+}
+
+function obtenerTonoBadge(clase: string) {
+  if (clase === "cm-badge-danger") return "danger";
+  if (clase === "cm-badge-alert") return "alert";
+  if (clase === "cm-badge-warning") return "warning";
+  if (clase === "cm-badge-success") return "success";
+  if (clase === "cm-badge-special") return "special";
+  if (clase === "cm-badge-info") return "info";
+  return "neutral";
 }
 
 function obtenerEtiquetaSeveridad(severity?: number | null) {
@@ -192,42 +203,34 @@ export default function AlertsPage() {
   return (
     <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
       <div className="w-full">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Alertas</p>
-            <h1 className="mt-1 text-2xl font-bold">Centro de alertas operativas</h1>
-            <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-              Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => navegar("/createAlert")}
-              className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Crear alerta
-            </button>
-            <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
-            <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
-            <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Alertas"
+          title="Centro de alertas operativas"
+          description="Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido."
+          actions={
+            <>
+              <Button tone="danger" onClick={() => navegar("/createAlert")}>
+                Crear alerta
+              </Button>
+              <Badge tone="success" className="px-3">Abierta</Badge>
+              <Badge tone="warning" className="px-3">Evaluación</Badge>
+              <Badge tone="neutral" className="px-3">Cerrada</Badge>
+            </>
+          }
+        />
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></div>
-          <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></div>
+          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></Card>
+          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></Card>
+          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></Card>
+          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></Card>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input
-            type="text"
+        <div className="mt-4">
+          <SearchInput
             value={consulta}
             onChange={(event) => setConsulta(event.target.value)}
             placeholder="Buscar por tipo, titulo, estado o creador..."
-            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
         </div>
 
@@ -237,8 +240,23 @@ export default function AlertsPage() {
           </div>
         ) : null}
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-          <table className="min-w-[1220px] w-full text-sm">
+        <div className="mt-4">
+          <TableShell
+            minWidth="1220px"
+            footer={
+              alertasFiltradas.length > 0 ? (
+                <PaginationBar
+                  page={paginaActual}
+                  totalPages={totalPaginas}
+                  visibleCount={alertasPaginadas.length}
+                  totalCount={alertasFiltradas.length}
+                  itemLabel="alertas"
+                  onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                  onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                />
+              ) : null
+            }
+          >
             <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
@@ -255,7 +273,7 @@ export default function AlertsPage() {
               {alertasPaginadas.map((alerta) => (
                 <tr key={alerta.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
-                    <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
+                    <Badge tone={obtenerTonoBadge(obtenerBadgeAlerta(alerta.alert_type))}>
                       {alerta.alert_type === "SOS"
                         ? "SOS"
                         : alerta.alert_type === "MAN_DOWN"
@@ -269,19 +287,19 @@ export default function AlertsPage() {
                         : alerta.alert_type === "OTHER"
                         ? "Otro"
                         : "Desconocido"}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)]">
                     {alerta.incident_name || alerta.incident || "Sin incidente"}
                   </td>
                   <td className="px-4 py-3.5 whitespace-nowrap">
-                    <span className={`${getAlertSeverityBadge(alerta.severity)} rounded-full px-2.5 py-1 text-xs`}>
+                    <Badge tone={obtenerTonoBadge(getAlertSeverityBadge(alerta.severity))}>
                       {obtenerEtiquetaSeveridad(alerta.severity)}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className={`${obtenerBadgeEstado(alerta.status)} rounded-full px-2.5 py-1 text-xs`}>
+                    <Badge tone={obtenerTonoBadge(obtenerBadgeEstado(alerta.status))}>
                       {alerta.status === "OPEN"
                         ? "Abierta"
                         : alerta.status === "ACK"
@@ -289,7 +307,7 @@ export default function AlertsPage() {
                         : alerta.status === "CLOSED"
                         ? "Cerrada"
                         : "Desconocida"}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
                     {alerta.created_by || "Sistema"}
@@ -299,40 +317,32 @@ export default function AlertsPage() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => navegar(`/editAlert/${alerta.id}`)}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
-                      >
+                      <Button tone="primary" size="sm" onClick={() => navegar(`/editAlert/${alerta.id}`)}>
                         Ver
-                      </button>
+                      </Button>
                       {alerta.status === "OPEN" ? (
-                        <button
-                          type="button"
+                        <Button
+                          tone="warning"
+                          size="sm"
                           onClick={() => void actualizarEstadoAlerta(alerta.id, "acknowledge")}
                           disabled={alertaActualizandoId === alerta.id}
-                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-warning)] px-2.5 py-1.5 text-xs font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {alertaActualizandoId === alerta.id ? "Guardando..." : "Reconocer"}
-                        </button>
+                        </Button>
                       ) : null}
                       {alerta.status !== "CLOSED" ? (
-                        <button
-                          type="button"
+                        <Button
+                          tone="success"
+                          size="sm"
                           onClick={() => void actualizarEstadoAlerta(alerta.id, "close")}
                           disabled={alertaActualizandoId === alerta.id}
-                          className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-success)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {alertaActualizandoId === alerta.id ? "Guardando..." : "Cerrar"}
-                        </button>
+                        </Button>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() => prepararEliminarAlerta(alerta.id)}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-danger)] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
-                      >
+                      <Button tone="danger" size="sm" onClick={() => prepararEliminarAlerta(alerta.id)}>
                         Eliminar
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -345,35 +355,7 @@ export default function AlertsPage() {
                 </tr>
               ) : null}
             </tbody>
-          </table>
-
-          {alertasFiltradas.length > 0 ? (
-            <div className="flex flex-col gap-3 border-t border-[color:var(--cm-border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[color:var(--cm-text-muted)]">
-                Página {paginaActual} de {totalPaginas} · Mostrando {alertasPaginadas.length} de {alertasFiltradas.length} alertas
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                  disabled={paginaActual === 1}
-                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                  disabled={paginaActual === totalPaginas}
-                  className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--cm-text)] transition hover:bg-[color:var(--cm-info)]/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          ) : null}
+          </TableShell>
         </div>
       </div>
 

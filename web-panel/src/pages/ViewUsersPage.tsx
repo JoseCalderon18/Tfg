@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Badge, Button, PageHeader, PaginationBar, SearchInput, TableShell } from "../components/ui";
 import { apiFetch } from "../utils/api";
 
 type MeResponse = {
@@ -89,39 +90,27 @@ export default function ViewUsersPage() {
   return (
     <div className="cm-shell min-h-screen">
       <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administración</p>
-            <h1 className="text-2xl font-bold">Usuarios del sistema</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
-            >
-              Volver
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/newuser")}
-              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-            >
-              Crear Usuario
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Administración"
+          title="Usuarios del sistema"
+          actions={
+            <>
+              <Button onClick={() => navigate("/")}>Volver</Button>
+              <Button tone="primary" onClick={() => navigate("/newuser")}>
+                Crear Usuario
+              </Button>
+            </>
+          }
+        />
 
-        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input
-            type="text"
+        <div className="mt-4">
+          <SearchInput
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               setPaginaActual(1);
             }}
             placeholder="Buscar por username, email o rol..."
-            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
           />
         </div>
 
@@ -131,8 +120,8 @@ export default function ViewUsersPage() {
           </div>
         )}
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-          <table className="min-w-[1050px] w-full text-sm">
+        <div className="mt-4">
+          <TableShell minWidth="1050px">
             <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Username</th>
@@ -157,60 +146,34 @@ export default function ViewUsersPage() {
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{u.email}</td>
                     <td className="px-4 py-3.5 whitespace-nowrap">{u.role ?? "Sin rol asignado"}</td>
                     <td className="px-4 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs ring-1 ${
-                          u.is_active
-                            ? "cm-badge-success"
-                            : "cm-badge-warning"
-                        }`}
-                      >
-                        {u.is_active ? "Activo" : "Inactivo"}
-                      </span>
+                      <Badge tone={u.is_active ? "success" : "warning"}>{u.is_active ? "Activo" : "Inactivo"}</Badge>
                     </td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">
                       {u.created_at ? new Date(u.created_at).toLocaleString() : "Fecha desconocida"}
                     </td>
                     <td className="px-4 py-3.5">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/edituser/${u.id}`)}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
-                      >
+                      <Button tone="primary" size="sm" onClick={() => navigate(`/edituser/${u.id}`)}>
                         Editar usuario
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table>
+          </TableShell>
         </div>
 
         {filteredUsers.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[color:var(--cm-text-muted)]">
-              Página {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                disabled={paginaActual === 1}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Anterior
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                disabled={paginaActual === totalPaginas}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Siguiente
-              </button>
-            </div>
+          <div className="mt-4">
+            <PaginationBar
+              page={paginaActual}
+              totalPages={totalPaginas}
+              visibleCount={usuariosPaginados.length}
+              totalCount={filteredUsers.length}
+              itemLabel="usuarios"
+              onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+              onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+            />
           </div>
         )}
       </div>
