@@ -12,9 +12,22 @@ Más información: https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 import os
 
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+import os
 
 # Establece el módulo de settings por defecto para que Django sepa qué configuración usar
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'emergency.config.settings')
 
-# Obtiene la aplicación ASGI que será usada por el servidor web
-application = get_asgi_application()
+# Importar el enrutado de websockets
+from . import routing as project_routing
+
+# Aplicación ASGI que delega HTTP a Django y WS a Channels
+django_asgi_app = get_asgi_application()
+
+application = ProtocolTypeRouter({
+	'http': django_asgi_app,
+	'websocket': AuthMiddlewareStack(
+		URLRouter(project_routing.websocket_urlpatterns)
+	),
+})

@@ -60,6 +60,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',                 # Manejo de CORS para frontend
     'django_filters',              # Filtrado avanzado en APIs
     'drf_spectacular',             # Documentación automática (OpenAPI/Swagger)
+    'channels',                    # Soporte WebSocket (Django Channels)
 ]
 
 # Aplicaciones locales del proyecto
@@ -100,6 +101,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'emergency.config.wsgi.application'
+ASGI_APPLICATION = 'emergency.config.asgi.application'
+
+# Channels configuration - en desarrollo usamos InMemoryChannelLayer, en producción usar channels_redis
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 
 # Database
