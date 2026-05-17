@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, Region } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -104,6 +105,13 @@ const ALERT_STATUS_LABELS: Record<string, string> = {
   ACK: 'Reconocida',
   CLOSED: 'Cerrada',
 };
+
+const DEFAULT_TASKS = [
+  'Confirmar zona segura',
+  'Revisar comunicaciones',
+  'Validar recursos asignados',
+  'Reportar estado al mando',
+];
 
 function normalizeList<T>(payload: ListResponse<T>) {
   return Array.isArray(payload) ? payload : payload.results ?? [];
@@ -321,6 +329,7 @@ export default function IncidentScreen({ navigation, route }: any) {
   const [incident, setIncident] = useState<Incident | null>(null);
   const [alerts, setAlerts] = useState<IncidentAlert[]>([]);
   const [workareas, setWorkareas] = useState<WorkArea[]>([]);
+  const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -391,6 +400,41 @@ export default function IncidentScreen({ navigation, route }: any) {
   useEffect(() => {
     void loadIncident();
   }, [loadIncident]);
+
+  useEffect(() => {
+    if (!incidentId) {
+      return;
+    }
+
+    let cancelled = false;
+    void AsyncStorage.getItem(`incident-checklist:${incidentId}`).then((storedValue) => {
+      if (cancelled || !storedValue) {
+        return;
+      }
+
+      try {
+        setCheckedTasks(JSON.parse(storedValue) as Record<string, boolean>);
+      } catch {
+        setCheckedTasks({});
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [incidentId]);
+
+  const toggleTask = (task: string) => {
+    if (!incidentId) {
+      return;
+    }
+
+    setCheckedTasks((current) => {
+      const next = { ...current, [task]: !current[task] };
+      void AsyncStorage.setItem(`incident-checklist:${incidentId}`, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const renderBody = () => {
     if (isLoading) {
@@ -512,6 +556,23 @@ export default function IncidentScreen({ navigation, route }: any) {
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Checklist de tareas</Text>
+            <Text style={styles.cardCount}>
+              {DEFAULT_TASKS.filter((task) => checkedTasks[task]).length}/{DEFAULT_TASKS.length}
+            </Text>
+          </View>
+          {DEFAULT_TASKS.map((task) => (
+            <TouchableOpacity key={task} style={styles.taskRow} onPress={() => toggleTask(task)}>
+              <View style={[styles.taskCheckbox, checkedTasks[task] ? styles.taskCheckboxDone : null]}>
+                <Text style={styles.taskCheckboxText}>{checkedTasks[task] ? '✓' : ''}</Text>
+              </View>
+              <Text style={[styles.taskText, checkedTasks[task] ? styles.taskTextDone : null]}>{task}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>Alertas relacionadas</Text>
             <Text style={styles.cardCount}>{alerts.length}</Text>
           </View>
@@ -544,6 +605,12 @@ export default function IncidentScreen({ navigation, route }: any) {
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Map')}>
               <Text style={styles.secondaryButtonText}>Ver mapa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Companions', { incidentId: incident.id })}>
+              <Text style={styles.secondaryButtonText}>Companeros</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Alerts', { incidentId: incident.id })}>
+              <Text style={styles.secondaryButtonText}>Ver alertas</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryButton}
@@ -941,5 +1008,43 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: '800',
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    marginTop: 12,
+  },
+  taskCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  taskCheckboxDone: {
+    borderColor: colors.success,
+    backgroundColor: colors.success,
+  },
+  taskCheckboxText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  taskText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  taskTextDone: {
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
   },
 });

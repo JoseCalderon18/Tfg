@@ -198,7 +198,10 @@ export default function OperativeScreen({ navigation }: any) {
 
     switch (option) {
       case 'companions':
-        Alert.alert('Companeros', 'Pantalla de companeros (proximamente)');
+        navigation.navigate('Companions', activeIncident?.id ? { incidentId: activeIncident.id } : undefined);
+        break;
+      case 'alerts':
+        navigation.navigate('Alerts', activeIncident?.id ? { incidentId: activeIncident.id } : undefined);
         break;
       case 'weather':
         navigation.navigate('Weather');
@@ -365,6 +368,10 @@ export default function OperativeScreen({ navigation }: any) {
             <ScrollView style={styles.menuOptions}>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('companions')}>
                 <Text style={styles.menuOptionText}>👥 Companeros</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('alerts')}>
+                <Text style={styles.menuOptionText}>Alertas registradas</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('weather')}>

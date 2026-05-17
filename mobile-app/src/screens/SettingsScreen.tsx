@@ -38,6 +38,19 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
 
         <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+          <Text style={[styles.cardTitle, { color: themeColors.text }]}>Cuenta</Text>
+          <Text style={[styles.cardValue, { color: themeColors.textMuted }]}>
+            Cambia la contrasena desde la app sin salir del entorno operativo.
+          </Text>
+          <TouchableOpacity
+            style={[styles.syncButton, { backgroundColor: themeColors.primary }]}
+            onPress={() => navigation.navigate('ResetPassword')}
+          >
+            <Text style={styles.syncButtonText}>Resetear contrasena</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: themeColors.text }]}>Estado de sincronizacion</Text>
             <View style={[styles.statusIndicator, isSyncing ? styles.syncingStatus : styles.syncedStatus]} />

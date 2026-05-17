@@ -42,6 +42,15 @@ export default function ResetPasswordScreen({ navigation }: any) {
     setError(String(nextError ?? 'Ocurrió un error.')); 
   };
 
+  const goBackAfterReset = () => {
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate('Login');
+  };
+
   const handleRequestReset = async () => {
     setSubmitting(true);
     setError('');
@@ -225,8 +234,8 @@ export default function ResetPasswordScreen({ navigation }: any) {
         )}
 
         {step === 'done' ? (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.buttonText}>Volver a iniciar sesión</Text>
+          <TouchableOpacity style={styles.button} onPress={goBackAfterReset}>
+            <Text style={styles.buttonText}>Volver</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -252,10 +261,10 @@ export default function ResetPasswordScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.backLink}
-          onPress={() => navigation.navigate('Login')}
+          onPress={goBackAfterReset}
           disabled={submitting}
         >
-          <Text style={styles.backLinkText}>Volver a inicio de sesión</Text>
+          <Text style={styles.backLinkText}>Volver</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

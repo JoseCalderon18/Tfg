@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,12 @@ import { colors } from '../theme';
 
 type PuntoGeografico = {
   coordinates?: [number, number];
+  x?: number | string;
+  y?: number | string;
+  latitude?: number | string;
+  longitude?: number | string;
+  lat?: number | string;
+  lng?: number | string;
 };
 
 type IncidenteMapa = {
@@ -42,6 +48,34 @@ function tieneValor<T>(valor: T | null): valor is T {
   return Boolean(valor);
 }
 
+function crearPuntoDesdeUbicacion(location?: PuntoGeografico) {
+  if (!location) {
+    return null;
+  }
+
+  if (Array.isArray(location.coordinates) && location.coordinates.length >= 2) {
+    const longitude = Number(location.coordinates[0]);
+    const latitude = Number(location.coordinates[1]);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+  }
+
+  if (location.x !== undefined && location.y !== undefined) {
+    const longitude = Number(location.x);
+    const latitude = Number(location.y);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+  }
+
+  const latitudeValue = location.latitude ?? location.lat;
+  const longitudeValue = location.longitude ?? location.lng;
+  if (latitudeValue !== undefined && longitudeValue !== undefined) {
+    const latitude = Number(latitudeValue);
+    const longitude = Number(longitudeValue);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+  }
+
+  return null;
+}
+
 function crearMarcadores(
   incidentes: IncidenteMapa[],
   alertas: AlertaMapa[],
@@ -50,16 +84,16 @@ function crearMarcadores(
 ) {
   const marcadoresIncidentes: MarcadorPlano[] = incidentes
     .map((incidente) => {
-      const coordenadas = incidente.location?.coordinates;
-      if (!coordenadas || coordenadas.length < 2) {
+      const punto = crearPuntoDesdeUbicacion(incidente.location);
+      if (!punto) {
         return null;
       }
 
       return {
         id: incidente.id,
         titulo: incidente.name,
-        latitud: coordenadas[1],
-        longitud: coordenadas[0],
+        latitud: punto.latitude,
+        longitud: punto.longitude,
         color: colors.primary,
         tipo: 'incidente' as const,
       };
@@ -68,16 +102,16 @@ function crearMarcadores(
 
   const marcadoresAlertas: MarcadorPlano[] = alertas
     .map((alerta) => {
-      const coordenadas = alerta.location?.coordinates;
-      if (!coordenadas || coordenadas.length < 2) {
+      const punto = crearPuntoDesdeUbicacion(alerta.location);
+      if (!punto) {
         return null;
       }
 
       return {
         id: alerta.id,
         titulo: alerta.title,
-        latitud: coordenadas[1],
-        longitud: coordenadas[0],
+        latitud: punto.latitude,
+        longitud: punto.longitude,
         color: colors.danger,
         tipo: 'alerta' as const,
       };
@@ -274,18 +308,16 @@ export default function MapaOperativo({
       <MapView
         ref={mapaRef}
         style={styles.mapa}
-        provider={PROVIDER_GOOGLE}
         initialRegion={regionAjustada}
         mapType="standard"
         liteMode={modoLigero}
-        cacheEnabled
         loadingEnabled
         toolbarEnabled={!modoLigero}
         rotateEnabled={!modoLigero}
         pitchEnabled={!modoLigero}
         showsCompass={!modoLigero}
         showsBuildings={!modoLigero}
-        showsUserLocation
+        showsUserLocation={Boolean(location)}
         scrollEnabled
         zoomEnabled
         onMapReady={() => {

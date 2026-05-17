@@ -9,6 +9,7 @@ type SyncPayload = Record<string, unknown>;
 type QueueResult = {
   ok: boolean;
   queued: boolean;
+  response?: Response;
   error?: string;
 };
 
@@ -111,6 +112,7 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
       return {
         ok: true,
         queued: result.queued,
+        response: result.response,
       };
     },
     [refreshPendingCount, token]

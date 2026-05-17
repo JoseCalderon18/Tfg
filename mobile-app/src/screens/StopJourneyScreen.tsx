@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -487,7 +487,6 @@ export default function StopJourneyScreen({ navigation }: any) {
                 <MapView
                   ref={mapRef}
                   style={styles.map}
-                  provider={PROVIDER_GOOGLE}
                   initialRegion={mapRegion}
                   mapType="standard"
                   toolbarEnabled={false}
@@ -499,13 +498,6 @@ export default function StopJourneyScreen({ navigation }: any) {
                   moveOnMarkerPress={false}
                   onMapReady={() => setMapReady(true)}
                 >
-                  <UrlTile
-                    urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    maximumZ={19}
-                    tileSize={256}
-                    zIndex={-1}
-                  />
-
                   {startPoint ? (
                     <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
                   ) : null}
