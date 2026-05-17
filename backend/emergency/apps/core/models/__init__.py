@@ -32,6 +32,8 @@ from .location_audit import AuditoriaUbicacion
 from .location_audit import AuditoriaUbicacion as LocationAudit
 from .resource_consumption import ConsumoRecursos
 from .resource_consumption import ConsumoRecursos as ResourceConsumption
+from .last_position import UltimaPosicion
+from .last_position import UltimaPosicion as LastPosition
 
 __all__ = [
     'User',
@@ -63,4 +65,6 @@ __all__ = [
     'LocationAudit',
     'ConsumoRecursos',
     'ResourceConsumption',
+    'UltimaPosicion',
+    'LastPosition',
 ]
