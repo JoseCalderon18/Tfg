@@ -412,6 +412,7 @@ async function readErrorMessage(response: Response) {
 export default function IncidentScreen({ navigation, route }: any) {
   const incidentId = route?.params?.incidentId as string | undefined;
   const { token, user } = useAuth();
+  const { setActiveIncident } = useLocation();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [alerts, setAlerts] = useState<IncidentAlert[]>([]);
   const [members, setMembers] = useState<IncidentMember[]>([]);
@@ -527,6 +528,12 @@ export default function IncidentScreen({ navigation, route }: any) {
 
   useEffect(() => {
     void loadIncident();
+    // set active incident for location tracking
+    void setActiveIncident?.(incidentId ?? null);
+
+    return () => {
+      void setActiveIncident?.(null);
+    };
   }, [loadIncident]);
 
   useEffect(() => {

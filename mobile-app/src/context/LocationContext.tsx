@@ -20,6 +20,7 @@ type BackgroundLocationTaskData = {
 
 async function sendBackgroundLocationUpdate(nextLocation: Location.LocationObject) {
   const storedToken = await SecureStore.getItemAsync('token');
+  const storedIncident = await SecureStore.getItemAsync('activeIncidentId');
   if (!storedToken) {
     return;
   }
@@ -31,6 +32,7 @@ async function sendBackgroundLocationUpdate(nextLocation: Location.LocationObjec
     altitude: nextLocation.coords.altitude,
     speed: nextLocation.coords.speed,
     recorded_at: new Date(nextLocation.timestamp).toISOString(),
+    incident: storedIncident ?? null,
   };
 
   await apiFetch('/tracking/point/', {
@@ -157,6 +159,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [foodSuggestions, setFoodSuggestions] = useState<Array<{ name: string; kcal: number; portion?: string }>>([]);
   const [foregroundPermissionStatus, setForegroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
   const [backgroundPermissionStatus, setBackgroundPermissionStatus] = useState<Location.PermissionStatus | null>(null);
+  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
   const { token, updateUser, user } = useAuth();
   const { queueTrackingPoint, queueAlert } = useOfflineSync();
   const fatigueAlertSentRef = useRef(false);
@@ -264,14 +267,20 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const result = await queueTrackingPoint({
+    const payload: any = {
       latitude: nextLocation.coords.latitude,
       longitude: nextLocation.coords.longitude,
       accuracy_m: nextLocation.coords.accuracy,
       altitude: nextLocation.coords.altitude,
       speed: nextLocation.coords.speed,
       recorded_at: new Date(nextLocation.timestamp).toISOString(),
-    });
+    };
+
+    if (activeIncidentId) {
+      payload.incident = activeIncidentId;
+    }
+
+    const result = await queueTrackingPoint(payload);
 
     if (!result.ok) {
       setErrorMsg(result.error ?? 'No se pudo enviar la ubicacion al servidor.');
@@ -525,6 +534,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setIsTracking(false);
   };
 
+  const setActiveIncident = async (incidentId: string | null) => {
+    setActiveIncidentId(incidentId);
+    try {
+      if (incidentId) {
+        await SecureStore.setItemAsync('activeIncidentId', incidentId);
+      } else {
+        await SecureStore.deleteItemAsync('activeIncidentId');
+      }
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   return (
     <LocationContext.Provider
       value={{
@@ -532,6 +554,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         isTracking,
         startTracking,
         stopTracking,
+        setActiveIncident,
+        activeIncidentId,
         foregroundPermissionStatus,
         backgroundPermissionStatus,
         hasRequiredLocationPermissions,
