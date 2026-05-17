@@ -38,11 +38,20 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-change-this-in-production}
       - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - CHANNEL_REDIS_URL=redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
     stdin_open: true
     tty: true
+
+  # Redis for Channels
+  redis:
+    image: redis:7
+    container_name: emergency_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:

@@ -104,11 +104,26 @@ WSGI_APPLICATION = 'emergency.config.wsgi.application'
 ASGI_APPLICATION = 'emergency.config.asgi.application'
 
 # Channels configuration - en desarrollo usamos InMemoryChannelLayer, en producción usar channels_redis
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+CHANNEL_REDIS_URL = os.environ.get('CHANNEL_REDIS_URL') or os.environ.get('CHANNEL_REDIS_URL'.upper()) or os.environ.get('CHANNEL_REDIS_URL'.lower())
+if not CHANNEL_REDIS_URL:
+    # Try legacy variable name
+    CHANNEL_REDIS_URL = os.environ.get('CHANNEL_REDIS_URL')
+
+if CHANNEL_REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNEL_REDIS_URL],
+            },
+        },
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 # Database
