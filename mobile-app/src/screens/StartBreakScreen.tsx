@@ -4,7 +4,8 @@ import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
-import { confirmarPresenciaJornada } from '../services/journeyActivity';
+import { confirmarPresenciaJornada, actualizarNotasJornada } from '../services/journeyActivity';
+import { useLocation } from '../context/LocationContext';
 import { colors } from '../theme';
 
 type JourneyApi = {
@@ -41,6 +42,7 @@ function buildNextNotes(existingNotes: unknown, entry: BreakEntry) {
 
 export default function StartBreakScreen({ navigation }: any) {
   const { token, user } = useAuth();
+  const { pauseJourney } = useLocation();
   const [loading, setLoading] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [locationLabel, setLocationLabel] = useState('Pendiente de registrar');
@@ -100,24 +102,17 @@ export default function StartBreakScreen({ navigation }: any) {
         started_at: startedAt,
       });
 
-      const response = await apiFetch(`/journeys/${journey.id}/`, {
-        method: 'PATCH',
-        token,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notes: nextNotes }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'No se pudo registrar el descanso.');
-      }
+      await actualizarNotasJornada(journey.id, token ?? '', nextNotes);
 
       await confirmarPresenciaJornada({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
       });
+
+      // Pause local tracking but keep journey active
+      try {
+        pauseJourney();
+      } catch {}
 
       setLocationLabel(`${currentLocation.coords.latitude.toFixed(5)}, ${currentLocation.coords.longitude.toFixed(5)}`);
 
