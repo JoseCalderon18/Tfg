@@ -271,7 +271,7 @@ export default function MapaOperativo({
   modoLigero = false,
 }: MapaOperativoProps) {
   const mapaRef = useRef<MapView | null>(null);
-  const { location } = useLocation();
+  const { location, colleaguesPositions } = useLocation();
   const { token, user } = useAuth();
   const [incidentes, setIncidentes] = useState<IncidenteMapa[]>([]);
   const [alertas, setAlertas] = useState<AlertaMapa[]>([]);
@@ -359,10 +359,22 @@ export default function MapaOperativo({
     [location]
   );
 
-  const marcadores = useMemo(
-    () => crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude),
-    [alertas, incidentes, location]
-  );
+  const colegasMarcadores = useMemo(() => {
+    if (!colleaguesPositions) return [] as MarcadorPlano[];
+    return Object.values(colleaguesPositions).map((p) => ({
+      id: p.user_id,
+      titulo: p.display_name || 'Compañero',
+      latitud: p.latitude,
+      longitud: p.longitude,
+      color: colors.secondary,
+      tipo: 'usuario' as const,
+    }));
+  }, [colleaguesPositions]);
+
+  const marcadores = useMemo(() => {
+    const base = crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude);
+    return [...base, ...colegasMarcadores];
+  }, [alertas, incidentes, location, colegasMarcadores]);
 
   const regionAjustada = useMemo(() => calcularRegionAjustada(marcadores, regionBase), [marcadores, regionBase]);
 
