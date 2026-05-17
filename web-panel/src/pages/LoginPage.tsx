@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       <form
         onSubmit={manejarEnvio}
-        className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-2xl"
+        className="cm-card relative z-10 w-full max-w-md space-y-4 p-6"
       >
         <div className="text-center">
           <h1 className="text-2xl font-bold text-[color:var(--cm-text)]">Emergency Management</h1>
@@ -51,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
+          <label htmlFor="email" className="cm-field-label">
             Correo electrónico
           </label>
           <input
@@ -61,13 +61,13 @@ export default function LoginPage() {
             onChange={(e) => setCorreoElectronico(e.target.value)}
             required
             autoComplete="email"
-            className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
+            className="cm-input"
             placeholder="usuario@emergency.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-[color:var(--cm-text-muted)]">
+          <label htmlFor="password" className="cm-field-label">
             Contraseña
           </label>
           <div className="relative">
@@ -78,7 +78,7 @@ export default function LoginPage() {
               onChange={(e) => setContrasena(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 pr-12 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)] focus:ring-2 focus:ring-[color:var(--cm-info)]"
+              className="cm-input pr-12"
               placeholder="********"
             />
             <button
@@ -87,17 +87,47 @@ export default function LoginPage() {
               onClick={() => setMostrarContrasena((current) => !current)}
               className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-lg text-[color:var(--cm-text-muted)] transition hover:text-[color:var(--cm-text)]"
             >
-              {mostrarContrasena ? "Ocultar" : "Ver"}
+              {mostrarContrasena ? (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                >
+                  <path d="M10.7 5.1A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.8 6.5a1 1 0 0 1 0 1C21.1 13.6 19.8 15.3 18 16.7" />
+                  <path d="M14.1 14.1a3 3 0 0 1-4.2-4.2" />
+                  <path d="M4.2 4.2 19.8 19.8" />
+                  <path d="M6.4 6.4C4.5 7.7 3.1 9.5 2.2 11.5a1 1 0 0 0 0 1C3.5 14.5 7 19 12 19c1.7 0 3.2-.5 4.5-1.2" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                >
+                  <path d="M2.2 11.5a1 1 0 0 0 0 1C3.5 14.5 7 19 12 19s8.5-4.5 9.8-6.5a1 1 0 0 0 0-1C20.5 9.5 17 5 12 5s-8.5 4.5-9.8 6.5Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
 
-        {error ? <div className="cm-badge-danger rounded-lg p-3 text-sm">{error}</div> : null}
+        {error ? <div className="cm-error-banner">{error}</div> : null}
 
         <button
           type="submit"
           disabled={enviando}
-          className="cm-button-primary w-full rounded-lg py-2.5 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="cm-btn cm-btn-primary w-full"
         >
           {enviando ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>

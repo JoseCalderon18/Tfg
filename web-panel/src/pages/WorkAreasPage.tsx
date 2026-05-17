@@ -315,6 +315,9 @@ export default function WorkAreasPage() {
   const workAreaPendienteEliminar =
     workAreas.find((area) => area.id === workAreaPendienteEliminarId) ??
     (areaSeleccionada && areaSeleccionada.id === workAreaPendienteEliminarId ? areaSeleccionada : null);
+  const nombreWorkAreaPendienteEliminar = workAreaPendienteEliminar?.name
+    ? ` "${workAreaPendienteEliminar.name}"`
+    : "";
 
   async function confirmarEliminarWorkArea(areaId: number) {
     if (workAreaEliminandoId != null) return;
@@ -460,8 +463,7 @@ export default function WorkAreasPage() {
                 ¿Quieres borrar esta area de trabajo?
               </h2>
               <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-                Se eliminara definitivamente el area
-                {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
+                Se eliminara definitivamente el area{nombreWorkAreaPendienteEliminar}.
               </p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
                 Esta acción no se puede deshacer.
@@ -578,7 +580,7 @@ export default function WorkAreasPage() {
           </button>
         </section>
       </div>
-      {workAreaPendienteEliminar ? (
+      {false && workAreaPendienteEliminarId != null ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
           role="dialog"
@@ -591,8 +593,7 @@ export default function WorkAreasPage() {
               ¿Quieres borrar esta area de trabajo?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente el area
-              {workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
+              Se eliminara definitivamente el area{nombreWorkAreaPendienteEliminar}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
               Esta acción no se puede deshacer.

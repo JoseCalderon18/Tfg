@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
 
 type MeResponse = {
@@ -106,67 +107,35 @@ export default function NewUserPage() {
   }
 
   if (cargando) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
-          <p className="text-slate-300">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Fondo de la página */}
-      <div className="pointer-events-none fixed inset-0 opacity-25">
-        <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-red-600 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-sky-600 blur-3xl" />
-      </div>
+    <div className="cm-shell cm-page">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <PageHeader
+          eyebrow="Administración · Supervisores"
+          title="Crear usuario operativo"
+          description="Este usuario tendrá rol OPERATIVE y podrá usar el sistema operativo."
+          actions={
+            <button type="button" onClick={() => navegar("/dashboard")} className="cm-btn cm-btn-secondary">
+              Volver
+            </button>
+          }
+        />
 
-      <div className="relative z-10 mx-auto max-w-3xl px-6 py-10">
-        {/* La cabecera */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-400">Administración · Supervisores</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear usuario operativo</h1>
-            <p className="mt-2 text-slate-300">
-              Este usuario tendrá rol <span className="font-semibold text-slate-100">OPERATIVE</span> y podrá usar el sistema operativo.
-            </p>
-          </div>
+        {error ? <ErrorBanner message={error} /> : null}
+        {enviado ? <SuccessBanner message={enviado} /> : null}
 
-          <button
-            type="button"
-            onClick={() => navegar("/dashboard")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
-        </div>
-
-        {/* La tarjeta del formulario */}
-        <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
-          {error && (
-            <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
-            </div>
-          )}
-          {enviado && (
-            <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {enviado}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormSection title="Datos de acceso" description="Credenciales principales del usuario operativo.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Username
-                </label>
+                <label className="cm-field-label">Username</label>
                 <input
                   value={usuario}
                   onChange={(e) => setUsuario(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="operativo01"
                   autoComplete="username"
                   required
@@ -174,63 +143,50 @@ export default function NewUserPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Email
-                </label>
+                <label className="cm-field-label">Email</label>
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+                  className="cm-input"
                   placeholder="operativo01@emergency.com"
                   autoComplete="email"
                   type="email"
                   required
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Contraseña
-              </label>
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
-                placeholder="Mínimo 8 caracteres"
-                autoComplete="new-password"
-                type="password"
-                required
-              />
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full bg-slate-950/40 px-3 py-1 ring-1 ring-slate-800">
-                  Recomendado: 12+ caracteres
-                </span>
-                <span className="rounded-full bg-slate-950/40 px-3 py-1 ring-1 ring-slate-800">
-                  Incluye mayúsculas, números y símbolo
-                </span>
+              <div className="sm:col-span-2">
+                <label className="cm-field-label">Contraseña</label>
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="cm-input"
+                  placeholder="Mínimo 8 caracteres"
+                  autoComplete="new-password"
+                  type="password"
+                  required
+                />
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-[color:var(--cm-text-muted)]">
+                  <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)] px-3 py-1">
+                    Recomendado: 12+ caracteres
+                  </span>
+                  <span className="rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-bg)] px-3 py-1">
+                    Incluye mayúsculas, números y símbolo
+                  </span>
+                </div>
               </div>
             </div>
+          </FormSection>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => navegar("/dashboard")}
-                className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="submit"
-                disabled={enviando}
-                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-500 disabled:opacity-60 transition"
-              >
-                {enviando ? "Creando..." : "Crear usuario"}
-              </button>
-            </div>
-          </form>
-        </div>
+          <FormActions>
+            <button type="button" onClick={() => navegar("/dashboard")} className="cm-btn cm-btn-secondary">
+              Cancelar
+            </button>
+            <button type="submit" disabled={enviando} className="cm-btn cm-btn-primary">
+              {enviando ? "Creando..." : "Crear usuario"}
+            </button>
+          </FormActions>
+        </form>
       </div>
     </div>
   );
