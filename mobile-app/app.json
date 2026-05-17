@@ -4,11 +4,16 @@
     "slug": "emergency-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
       "package": "com.emergency.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+        "backgroundColor": "#ffffff"
+      },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
