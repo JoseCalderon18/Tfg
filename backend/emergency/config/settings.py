@@ -221,13 +221,20 @@ DEFAULT_FRONTEND_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://127.0.0.1:5173",
     "https://tfg-virid-nine.vercel.app",
+    "https://tfg-kl5v43kub-josecalderon18s-projects.vercel.app",
 ]
 
 CORS_ALLOWED_ORIGINS = DEFAULT_FRONTEND_ORIGINS + _csv_env("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://tfg-[a-z0-9-]+-josecalderon18s-projects\.vercel\.app$",
+    r"^https://tfg-git-[a-z0-9-]+-josecalderon18s-projects\.vercel\.app$",
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = DEFAULT_FRONTEND_ORIGINS + _csv_env("CSRF_TRUSTED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = DEFAULT_FRONTEND_ORIGINS + [
+    "https://*.vercel.app",
+] + _csv_env("CSRF_TRUSTED_ORIGINS")
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
