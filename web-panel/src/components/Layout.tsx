@@ -101,46 +101,42 @@ export default function Layout() {
 
   return (
     <div className="cm-shell flex h-screen">
-      <aside className="relative w-72 border-r border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] text-[color:var(--cm-text)]">
-        <div className="border-b border-white/6 px-4 py-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--cm-text-muted)]">Emergency</p>
-          <h1 className="mt-1 text-lg font-bold">Panel de emergencias</h1>
-          <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">{user?.username}</p>
+      <aside className="relative flex w-64 shrink-0 flex-col border-r border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] text-[color:var(--cm-text)] shadow-[8px_0_24px_rgba(0,0,0,0.16)]">
+        <div className="border-b border-white/10 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">
+            Emergency
+          </p>
+          <h1 className="mt-1 truncate text-base font-bold">Panel de emergencias</h1>
+          <p className="mt-0.5 truncate text-xs text-[color:var(--cm-text-muted)]">{user?.username}</p>
         </div>
 
-        <nav className="mt-4 space-y-3 px-3 pb-24">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           {NAVIGATION_SECTIONS.map((section) => {
             const isOpen = openSections.includes(section.id);
             const isActiveSection = activeSectionIds.includes(section.id);
 
             return (
-              <section
-                key={section.id}
-                className={`rounded-2xl border transition ${
-                  isActiveSection
-                    ? "border-[color:var(--cm-info)]/40 bg-[color:var(--cm-info)]/10"
-                    : "border-white/8 bg-white/3"
-                }`}
-              >
+              <section key={section.id} className="mb-3 last:mb-0">
                 <button
                   type="button"
                   onClick={() => toggleSection(section.id)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
+                    isActiveSection
+                      ? "text-[color:var(--cm-info)]"
+                      : "text-[color:var(--cm-text-muted)] hover:bg-white/5 hover:text-[color:var(--cm-text)]"
+                  }`}
                 >
-                  <div>
-                    <h2 className="mt-1 text-lg font-bold text-[color:var(--cm-text)]">{section.label}</h2>
-                  </div>
+                  <span>{section.label}</span>
                   <span
-                    className={`text-lg text-[color:var(--cm-text-muted)] transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    aria-hidden="true"
+                    className={`text-xs leading-none transition-transform ${isOpen ? "rotate-180" : ""}`}
                   >
-                    ▾
+                    v
                   </span>
                 </button>
 
                 {isOpen ? (
-                  <div className="border-t border-white/8 px-2 py-2">
+                  <div className="mt-1 space-y-0.5">
                     {section.items.map((item) =>
                       item.to ? (
                         <NavLink
@@ -148,10 +144,10 @@ export default function Layout() {
                           to={item.to}
                           end={item.to === "/"}
                           className={({ isActive }) =>
-                            `mb-1 block rounded-xl px-3 py-2.5 text-base transition last:mb-0 ${
+                            `relative block rounded-lg py-2 pl-3 pr-2 text-sm transition ${
                               isActive
-                                ? "bg-[color:var(--cm-info)]/25 font-semibold text-white"
-                                : "text-[color:var(--cm-text)] hover:bg-[color:var(--cm-info)]/15"
+                                ? "bg-[color:var(--cm-info)]/18 font-semibold text-white shadow-[inset_3px_0_0_var(--cm-info)]"
+                                : "text-[color:var(--cm-text-muted)] hover:bg-white/6 hover:text-[color:var(--cm-text)]"
                             }`
                           }
                         >
@@ -160,14 +156,12 @@ export default function Layout() {
                       ) : (
                         <div
                           key={item.label}
-                          className="mb-1 rounded-xl px-3 py-2.5 text-base text-[color:var(--cm-text-muted)] opacity-70 last:mb-0"
+                          className="flex items-center justify-between gap-2 rounded-lg py-2 pl-3 pr-2 text-sm text-[color:var(--cm-text-muted)] opacity-70"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <span>{item.label}</span>
-                            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]">
-                              Próximamente
-                            </span>
-                          </div>
+                          <span className="truncate">{item.label}</span>
+                          <span className="shrink-0 rounded-full border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]">
+                            Próx.
+                          </span>
                         </div>
                       )
                     )}
@@ -178,12 +172,13 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-3">
+        <div className="border-t border-white/10 p-3">
           <button
+            type="button"
             onClick={() => void logout()}
-            className="w-full rounded-xl bg-[color:var(--cm-danger)] py-2.5 text-white transition hover:brightness-110"
+            className="w-full rounded-lg border border-[color:var(--cm-danger)]/45 bg-[color:var(--cm-danger)]/14 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-[color:var(--cm-danger)] hover:text-white"
           >
-            Logout
+            Cerrar sesión
           </button>
         </div>
       </aside>
