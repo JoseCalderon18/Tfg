@@ -5,7 +5,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Alert, Linking } from 'react-native';
 import { User, useAuth } from './AuthContext';
 import { useOfflineSync } from './OfflineSyncContext';
-import { apiFetch, parseJsonResponse } from '../services/api';
+import { apiFetch, parseJsonResponse, API_BASE_URL } from '../services/api';
 import { computeRouteDistanceKm, estimateCalories, suggestFoodsForCalories } from '../services/calories';
 import {
   procesarInmovilidadSegundoPlano,
@@ -98,6 +98,9 @@ interface LocationContextType {
   shiftHoursLimit: number;
   isOverShift: boolean;
   fatigueWarningMessage: string | null;
+  // compañeros en tiempo real
+  colleaguesPositions: Record<string, { user_id: string; display_name: string; latitude: number; longitude: number; accuracy?: number | null; timestamp?: string | null }>;
+  setActiveIncident: (incidentId: string | null) => Promise<void>;
 }
 
 type GeofenceStatus = {
@@ -302,6 +305,92 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }).catch(() => undefined);
     setErrorMsg(null);
   };
+
+  // Real-time colleagues positions via WebSocket
+  const [colleaguesPositions, setColleaguesPositions] = useState<Record<string, { user_id: string; display_name: string; latitude: number; longitude: number; accuracy?: number | null; timestamp?: string | null }>>({});
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let closed = false;
+
+    const connectWs = async () => {
+      if (!token || !activeIncidentId) return;
+
+      // derive ws url from API_BASE_URL
+      try {
+        const base = API_BASE_URL.replace(/\/api\/?$/, '');
+        const wsScheme = base.startsWith('https') ? 'wss' : 'ws';
+        const hostPart = base.replace(/^https?:/, '');
+        const wsUrl = `${wsScheme}:${hostPart}/ws/locations/`;
+
+        if (wsRef.current) {
+          try { wsRef.current.close(); } catch {}
+          wsRef.current = null;
+        }
+
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ action: 'auth', token }));
+          ws.send(JSON.stringify({ action: 'subscribe', incident_id: activeIncidentId }));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'position.update' && msg.payload) {
+              const p = msg.payload;
+              setColleaguesPositions((prev) => ({
+                ...prev,
+                [p.user_id]: {
+                  user_id: p.user_id,
+                  display_name: p.display_name ?? '',
+                  latitude: Number(p.latitude),
+                  longitude: Number(p.longitude),
+                  accuracy: p.accuracy ?? null,
+                  timestamp: p.timestamp ?? null,
+                },
+              }));
+            }
+          } catch {
+            // ignore
+          }
+        };
+
+        ws.onclose = () => {
+          wsRef.current = null;
+          if (closed) return;
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current as any);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            void connectWs();
+          }, 2000) as unknown as number;
+        };
+
+        ws.onerror = () => {
+          // noop
+        };
+      } catch {
+        if (closed) return;
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current as any);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          void connectWs();
+        }, 3000) as unknown as number;
+      }
+    };
+
+    void connectWs();
+
+    return () => {
+      closed = true;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current as any);
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch {}
+        wsRef.current = null;
+      }
+    };
+  }, [token, activeIncidentId]);
 
   const checkWorkareaPosition = async (nextLocation: Location.LocationObject): Promise<GeofenceStatus | null> => {
     if (!token) {
@@ -556,6 +645,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         stopTracking,
         setActiveIncident,
         activeIncidentId,
+        colleaguesPositions,
         foregroundPermissionStatus,
         backgroundPermissionStatus,
         hasRequiredLocationPermissions,
