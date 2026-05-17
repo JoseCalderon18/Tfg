@@ -4,17 +4,17 @@ type Tone = "primary" | "secondary" | "danger" | "success" | "warning" | "neutra
 
 const buttonToneClasses: Record<Tone, string> = {
   primary:
-    "border-[color:var(--cm-info)]/40 bg-[color:var(--cm-info)] text-white hover:brightness-110",
+    "border-[color:var(--cm-primary)]/45 bg-[color:var(--cm-primary)] text-white shadow-[0_8px_20px_rgba(47,111,237,0.18)] hover:bg-[color:var(--cm-primary-strong)]",
   secondary:
-    "border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] text-[color:var(--cm-text)] hover:bg-[color:var(--cm-surface-2)]",
+    "border-white/10 bg-[color:var(--cm-surface)] text-[color:var(--cm-text)] hover:bg-[color:var(--cm-surface-2)]",
   danger:
-    "border-[color:var(--cm-danger)]/45 bg-[color:var(--cm-danger)] text-white hover:brightness-110",
+    "border-[color:var(--cm-danger)]/55 bg-[color:var(--cm-danger)] text-white shadow-[0_8px_22px_rgba(239,68,68,0.2)] hover:brightness-110",
   success:
-    "border-[color:var(--cm-success)]/45 bg-[color:var(--cm-success)] text-white hover:brightness-110",
+    "border-[color:var(--cm-success)]/45 bg-[color:var(--cm-success)] text-slate-950 hover:brightness-110",
   warning:
     "border-[color:var(--cm-warning)]/45 bg-[color:var(--cm-warning)] text-slate-950 hover:brightness-110",
   neutral:
-    "border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text)] hover:bg-[color:var(--cm-info)]/20",
+    "border-white/10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text)] hover:bg-white/10",
 };
 
 const badgeToneClasses: Record<Tone | "alert" | "special" | "info", string> = {
@@ -60,7 +60,7 @@ type CardProps = {
 export function Card({ as: Component = "div", className = "", children }: CardProps) {
   return (
     <Component
-      className={`rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${className}`}
+      className={`rounded-2xl border border-white/10 bg-[color:var(--cm-surface)] shadow-[0_8px_22px_rgba(0,0,0,0.14)] ${className}`}
     >
       {children}
     </Component>
@@ -103,7 +103,7 @@ export function SearchInput({ className = "", ...props }: SearchInputProps) {
     <Card className="p-3.5 shadow-none">
       <input
         type="text"
-        className={`w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition placeholder:text-[color:var(--cm-text-muted)] focus:border-[color:var(--cm-info)] ${className}`}
+        className={`w-full rounded-xl border border-white/10 bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition placeholder:text-[color:var(--cm-text-muted)] focus:border-[color:var(--cm-primary)] ${className}`}
         {...props}
       />
     </Card>
@@ -122,7 +122,7 @@ export function TableShell({ minWidth = "1050px", children, footer }: TableShell
       <table className="w-full text-sm" style={{ minWidth }}>
         {children}
       </table>
-      {footer ? <div className="border-t border-[color:var(--cm-border)] px-4 py-4">{footer}</div> : null}
+      {footer ? <div className="border-t border-white/10 px-4 py-4">{footer}</div> : null}
     </Card>
   );
 }
@@ -163,4 +163,3 @@ export function PaginationBar({
     </div>
   );
 }
-

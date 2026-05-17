@@ -212,7 +212,7 @@ export default function AlertsPage() {
               <Button tone="danger" onClick={() => navegar("/createAlert")}>
                 Crear alerta
               </Button>
-              <Badge tone="success" className="px-3">Abierta</Badge>
+              <Badge tone="danger" className="px-3">Abierta</Badge>
               <Badge tone="warning" className="px-3">Evaluación</Badge>
               <Badge tone="neutral" className="px-3">Cerrada</Badge>
             </>
@@ -220,7 +220,7 @@ export default function AlertsPage() {
         />
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-success)]">{indicadores.abiertas}</p></Card>
+          <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Abiertas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.abiertas}</p></Card>
           <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Reconocidas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-warning)]">{indicadores.reconocidas}</p></Card>
           <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Críticas</p><p className="mt-1 text-2xl font-bold text-[color:var(--cm-danger)]">{indicadores.criticas}</p></Card>
           <Card className="px-4 py-3"><p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Cerradas</p><p className="mt-1 text-2xl font-bold" style={{ color: STATUS_COLOR.cerrado }}>{indicadores.cerradas}</p></Card>
