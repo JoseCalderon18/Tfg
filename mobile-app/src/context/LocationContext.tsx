@@ -78,6 +78,7 @@ interface LocationContextType {
   isTracking: boolean;
   startTracking: () => Promise<void>;
   stopTracking: () => void;
+  pauseJourney: () => void;
   foregroundPermissionStatus: Location.PermissionStatus | null;
   backgroundPermissionStatus: Location.PermissionStatus | null;
   hasRequiredLocationPermissions: boolean;
@@ -175,6 +176,19 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshLocationPermissions();
   }, []);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const hasStarted = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK);
+        if (!isTracking && hasStarted) {
+          await Location.stopLocationUpdatesAsync(BACKGROUND_WORKAREA_TASK);
+        }
+      } catch {
+        // Una tarea antigua no debe romper el arranque de la app.
+      }
+    })();
+  }, [isTracking]);
 
   useEffect(() => {
     if (!isTracking || fatigueAlertSentRef.current) {
@@ -525,6 +539,15 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setIsTracking(false);
   };
 
+  const pauseJourney = () => {
+    if (locationSubscription) {
+      locationSubscription.remove();
+      setLocationSubscription(null);
+    }
+    void stopBackgroundWorkareaDetection();
+    setIsTracking(false);
+  };
+
   return (
     <LocationContext.Provider
       value={{
@@ -532,6 +555,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         isTracking,
         startTracking,
         stopTracking,
+        pauseJourney,
         foregroundPermissionStatus,
         backgroundPermissionStatus,
         hasRequiredLocationPermissions,
