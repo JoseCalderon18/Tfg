@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { Marker, Region, Callout } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
@@ -40,6 +40,7 @@ type MarcadorPlano = {
   longitud: number;
   color: string;
   tipo: 'incidente' | 'alerta' | 'usuario';
+  timestamp?: string | null;
 };
 
 const DELTA_MINIMO = 0.08;
@@ -135,10 +136,31 @@ function renderizarMarcadores(marcadores: MarcadorPlano[]) {
     <Marker
       key={`${marcador.tipo}-${marcador.id}`}
       coordinate={{ latitude: marcador.latitud, longitude: marcador.longitud }}
-      title={marcador.titulo}
       pinColor={marcador.color}
-    />
+    >
+      <Callout>
+        <View style={{ maxWidth: 220 }}>
+          <Text style={{ fontWeight: '700', color: colors.text }}>{marcador.titulo}</Text>
+          {marcador.timestamp ? (
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{formatRelativeTime(marcador.timestamp)}</Text>
+          ) : null}
+        </View>
+      </Callout>
+    </Marker>
   ));
+}
+
+function formatRelativeTime(timestamp: string) {
+  try {
+    const ts = Date.parse(timestamp);
+    if (Number.isNaN(ts)) return '';
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 60) return `Hace ${diff}s`;
+    if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+    return `Hace ${Math.floor(diff / 3600)} h`;
+  } catch {
+    return '';
+  }
 }
 
 function crearHtmlMapaFallback(marcadores: MarcadorPlano[], region: Region) {
@@ -361,14 +383,24 @@ export default function MapaOperativo({
 
   const colegasMarcadores = useMemo(() => {
     if (!colleaguesPositions) return [] as MarcadorPlano[];
-    return Object.values(colleaguesPositions).map((p) => ({
-      id: p.user_id,
-      titulo: p.display_name || 'Compañero',
-      latitud: p.latitude,
-      longitud: p.longitude,
-      color: colors.secondary,
-      tipo: 'usuario' as const,
-    }));
+    const ahora = Date.now();
+    const STALE_MS = 2 * 60 * 1000; // 2 minutos
+    return Object.values(colleaguesPositions)
+      .map((p) => ({
+        id: p.user_id,
+        titulo: p.display_name || 'Compañero',
+        latitud: p.latitude,
+        longitud: p.longitude,
+        color: colors.secondary,
+        tipo: 'usuario' as const,
+        timestamp: p.timestamp ?? null,
+      }))
+      .filter((m) => {
+        if (!m.timestamp) return true;
+        const ts = Date.parse(m.timestamp);
+        if (Number.isNaN(ts)) return true;
+        return ahora - ts <= STALE_MS;
+      });
   }, [colleaguesPositions]);
 
   const marcadores = useMemo(() => {
