@@ -18,12 +18,12 @@ type MapaMiniUnidadProps = {
 export default function MapaMiniUnidad({
   latitud,
   longitud,
-  etiqueta = "Ubicacion actual de la unidad",
+  etiqueta = "Ubicación actual de la unidad",
 }: MapaMiniUnidadProps) {
   if (latitud == null || longitud == null) {
     return (
       <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-8 text-center text-sm text-[color:var(--cm-text-muted)]">
-        La unidad aun no tiene ubicacion registrada.
+        La unidad aún no tiene ubicación registrada.
       </div>
     );
   }

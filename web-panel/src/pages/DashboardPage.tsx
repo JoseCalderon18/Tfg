@@ -371,7 +371,7 @@ function normalizePointsOfInterest(raw: unknown): PointOfInterestRow[] {
       id: row.id,
       name: row.name?.trim() || "Punto sin nombre",
       poiType: row.poi_type ?? "OTHER",
-      description: row.description?.trim() || "Sin descripcion adicional.",
+      description: row.description?.trim() || "Sin descripción adicional.",
       incidentId: row.incident ?? null,
       incidentName: row.incident_name ?? null,
       createdBy: row.created_by ?? null,
@@ -538,7 +538,7 @@ function poiTypeLabel(poiType?: string | null) {
     case "HELIPAD":
       return "Helipuerto";
     default:
-      return "Punto de interes";
+      return "Punto de interés";
   }
 }
 
@@ -1068,7 +1068,7 @@ export default function DashboardPage() {
               className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--cm-danger)]/50 hover:bg-[color:var(--cm-surface-2)]"
               type="button"
             >
-              Logout
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -1143,8 +1143,8 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: STATUS_COLOR.cerrado }} /> Incidente cerrado</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-alert)]" /> Alerta operativa</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-[color:var(--cm-danger)]" /> Nivel crítico</div>
-                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Area de trabajo</div>
-                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interes</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-cyan-400" /> Área de trabajo</div>
+                <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-teal-600" /> Punto de interés</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-green-600" /> Inicio de jornada</div>
                 <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-red-600" /> Fin de jornada</div>
                 <div className="flex items-center gap-2"><span className="h-2 w-4 border-2 border-purple-400 bg-purple-400/20" /> Rutas de usuarios</div>
@@ -1190,7 +1190,7 @@ export default function DashboardPage() {
                     >
                       <Popup>
                         <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Area de trabajo</p>
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Área de trabajo</p>
                           <h3 className="mt-1 font-bold text-base">{area.name}</h3>
                           <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                             <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-200">
@@ -1223,7 +1223,7 @@ export default function DashboardPage() {
                     >
                       <Popup>
                         <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Area de trabajo</p>
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Área de trabajo</p>
                           <h3 className="mt-1 font-bold text-base">{area.name}</h3>
                           <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                             <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 font-semibold text-cyan-200">
@@ -1235,7 +1235,7 @@ export default function DashboardPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Zona activa de operacion</p>
+                          <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">Zona activa de operación</p>
                         </div>
                       </Popup>
                     </Polygon>
@@ -1253,7 +1253,7 @@ export default function DashboardPage() {
                   >
                     <Popup>
                       <div className="min-w-[220px] rounded-2xl bg-[color:var(--cm-bg)] p-3 text-[color:var(--cm-text)]">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Punto de interes</p>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Punto de interés</p>
                         <h3 className="mt-1 font-bold text-base">{point.name}</h3>
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                           <span className="rounded-full bg-teal-500/15 px-2.5 py-1 font-semibold text-teal-200">
@@ -1686,7 +1686,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">INFORMACIÓN OPERATIVA</p>
                       <h3 className="mt-1 text-base font-bold">Recursos operativos</h3>
-                      <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Recursos operativos en la zona, puntos de interes y avisos.</p>
+                      <p className="mt-1 text-xs text-[color:var(--cm-text-muted)]">Recursos operativos en la zona, puntos de interés y avisos.</p>
                     </div>
                     <span
                       aria-hidden="true"
@@ -1708,7 +1708,7 @@ export default function DashboardPage() {
                     <div className="mt-3 space-y-2">
                       {paginatedResources.length === 0 ? (
                         <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
-                          No hay puntos de interes para mostrar.
+                          No hay puntos de interés para mostrar.
                         </div>
                       ) : (
                         paginatedResources.map((point) => (

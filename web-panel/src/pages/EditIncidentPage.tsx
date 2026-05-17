@@ -53,9 +53,9 @@ type MensajeIncidente = {
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
   { value: "WILDFIRE", label: "Incendio forestal" },
-  { value: "SEARCH", label: "Busqueda de persona" },
+  { value: "SEARCH", label: "Búsqueda de persona" },
   { value: "RESCUE", label: "Rescate" },
-  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "MEDICAL", label: "Emergencia médica" },
   { value: "NATURAL_DISASTER", label: "Desastre natural" },
   { value: "OTHER", label: "Otro" },
 ];
@@ -177,7 +177,7 @@ export default function EditIncidentPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setErrorMensaje("Incidente no valido.");
+        setErrorMensaje("Incidente no válido.");
         setCargando(false);
         return;
       }
@@ -308,11 +308,11 @@ export default function EditIncidentPage() {
     const latParseada = latitud.trim() ? Number(latitud) : undefined;
     const lonParseada = longitud.trim() ? Number(longitud) : undefined;
     if (latParseada !== undefined && Number.isNaN(latParseada)) {
-      setErrorMensaje("Latitud no valida.");
+      setErrorMensaje("Latitud no válida.");
       return;
     }
     if (lonParseada !== undefined && Number.isNaN(lonParseada)) {
-      setErrorMensaje("Longitud no valida.");
+      setErrorMensaje("Longitud no válida.");
       return;
     }
     if (latParseada !== undefined && (latParseada < -90 || latParseada > 90)) {

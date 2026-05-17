@@ -247,7 +247,7 @@ export default function EditWorkAreaPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setError("Area de trabajo no valida.");
+        setError("Área de trabajo no válida.");
         setCargando(false);
         return;
       }
@@ -259,7 +259,7 @@ export default function EditWorkAreaPage() {
         ]);
 
         if (!respuestaIncidentes.ok || !respuestaArea.ok) {
-          setError("No se pudo cargar el area de trabajo.");
+          setError("No se pudo cargar el área de trabajo.");
           setCargando(false);
           return;
         }
@@ -284,7 +284,7 @@ export default function EditWorkAreaPage() {
         setFechaCreacion(area.created_at ?? null);
         setNombreIncidente(area.incident_name ?? "");
       } catch {
-        setError("Error de red al cargar el area de trabajo.");
+        setError("Error de red al cargar el área de trabajo.");
       } finally {
         setCargando(false);
       }
@@ -314,7 +314,7 @@ export default function EditWorkAreaPage() {
     evento.preventDefault();
 
     if (!id) {
-      setError("Area de trabajo no valida.");
+      setError("Área de trabajo no válida.");
       return;
     }
 
@@ -327,7 +327,7 @@ export default function EditWorkAreaPage() {
     }
 
     if (!nombreArea.trim()) {
-      setError("Debes indicar un nombre para el area.");
+      setError("Debes indicar un nombre para el área.");
       return;
     }
 
@@ -341,7 +341,7 @@ export default function EditWorkAreaPage() {
 
     if (tipoArea === "CIRCLE") {
       if (!centroCirculo) {
-        setError("Marca el centro del circulo en el mapa.");
+        setError("Marca el centro del círculo en el mapa.");
         return;
       }
       if (Number.isNaN(radioParseado) || radioParseado <= 0) {
@@ -356,7 +356,7 @@ export default function EditWorkAreaPage() {
 
     if (tipoArea === "POLYGON") {
       if (!poligonoListo) {
-        setError("Debes marcar al menos 3 puntos para el poligono.");
+        setError("Debes marcar al menos 3 puntos para el polígono.");
         return;
       }
       datosArea.polygon_points = puntosPoligono.map(([latitud, longitud]) => [latitud, longitud]);
@@ -371,7 +371,7 @@ export default function EditWorkAreaPage() {
       });
 
       if (!respuesta.ok) {
-        let detalle = "No se pudo guardar el area de trabajo.";
+        let detalle = "No se pudo guardar el área de trabajo.";
         try {
           const datosError = (await respuesta.json()) as Record<string, unknown>;
           if (typeof datosError.detail === "string") {
@@ -405,7 +405,7 @@ export default function EditWorkAreaPage() {
       setPuntosPoligono(poligonoActualizado);
       setFechaCreacion(areaActualizada.created_at ?? fechaCreacion);
       setNombreIncidente(areaActualizada.incident_name ?? incidenteSeleccionado);
-      setExito("Area de trabajo guardada correctamente.");
+      setExito("Área de trabajo guardada correctamente.");
       setEdicionDesbloqueada(false);
     } finally {
       setGuardando(false);
@@ -415,7 +415,7 @@ export default function EditWorkAreaPage() {
   if (cargando) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
-        <p className="text-[color:var(--cm-text-muted)]">Cargando area de trabajo...</p>
+        <p className="text-[color:var(--cm-text-muted)]">Cargando área de trabajo...</p>
       </div>
     );
   }
@@ -425,10 +425,10 @@ export default function EditWorkAreaPage() {
       <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Work Areas</p>
-            <h1 className="mt-1 text-2xl font-bold">Editar area de trabajo</h1>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Áreas de trabajo</p>
+            <h1 className="mt-1 text-2xl font-bold">Editar área de trabajo</h1>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-              Revisa, ajusta y guarda la configuracion geografica del area seleccionada.
+              Revisa, ajusta y guarda la configuración geográfica del área seleccionada.
             </p>
           </div>
 
@@ -454,7 +454,7 @@ export default function EditWorkAreaPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Nombre del area</label>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Nombre del área</label>
                   <input
                     value={nombreArea}
                     disabled={!edicionDesbloqueada}
@@ -493,15 +493,15 @@ export default function EditWorkAreaPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Tipo de area</label>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Tipo de área</label>
                   <select
                     value={tipoArea}
                     disabled={!edicionDesbloqueada}
                     onChange={(evento) => manejarCambioTipoArea(evento.target.value as TipoArea)}
                     className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                   >
-                    <option value="CIRCLE">Circulo</option>
-                    <option value="POLYGON">Poligono</option>
+                    <option value="CIRCLE">Círculo</option>
+                    <option value="POLYGON">Polígono</option>
                   </select>
                 </div>
 
@@ -515,7 +515,7 @@ export default function EditWorkAreaPage() {
                       onChange={(evento) => setActiva(evento.target.checked)}
                       className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]"
                     />
-                    Area activa
+                    Área activa
                   </label>
                 </div>
 
@@ -539,8 +539,8 @@ export default function EditWorkAreaPage() {
                 <h2 className="mt-2 text-xl font-bold">Mapa editable</h2>
                 <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
                   {tipoArea === "CIRCLE"
-                    ? "Haz clic en el mapa para recolocar el centro del circulo."
-                    : "Haz clic en el mapa para agregar vertices al poligono."}
+                    ? "Haz clic en el mapa para recolocar el centro del círculo."
+                    : "Haz clic en el mapa para agregar vértices al polígono."}
                 </p>
               </div>
 
@@ -560,7 +560,7 @@ export default function EditWorkAreaPage() {
                     onClick={() => setPuntosPoligono([])}
                     className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3 py-2 text-sm transition hover:border-[color:var(--cm-info)] disabled:opacity-50"
                   >
-                    Limpiar poligono
+                    Limpiar polígono
                   </button>
                 </div>
               ) : null}
@@ -620,7 +620,7 @@ export default function EditWorkAreaPage() {
 
               <div className="mt-4 space-y-3 text-sm">
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Area</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Área</p>
                   <p className="mt-1 font-medium">{nombreArea || "Sin nombre"}</p>
                 </div>
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
@@ -629,7 +629,7 @@ export default function EditWorkAreaPage() {
                 </div>
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Tipo</p>
-                  <p className="mt-1 font-medium">{tipoArea === "CIRCLE" ? "Circulo" : "Poligono"}</p>
+                  <p className="mt-1 font-medium">{tipoArea === "CIRCLE" ? "Círculo" : "Polígono"}</p>
                 </div>
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Creada</p>
@@ -639,8 +639,8 @@ export default function EditWorkAreaPage() {
             </section>
 
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Posicion</p>
-              <h2 className="mt-2 text-lg font-bold">Referencia geografica</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Posición</p>
+              <h2 className="mt-2 text-lg font-bold">Referencia geográfica</h2>
 
               <div className="mt-4 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Centro</p>
@@ -649,7 +649,7 @@ export default function EditWorkAreaPage() {
                 </p>
               </div>
               <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Vertices del poligono</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Vértices del polígono</p>
                 <p className="mt-1 font-medium">{puntosPoligono.length}</p>
               </div>
               <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">

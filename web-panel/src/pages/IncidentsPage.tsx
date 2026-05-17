@@ -302,13 +302,13 @@ function obtenerEtiquetaTipoAlerta(tipo: string) {
     case "SOS":
       return "SOS";
     case "MAN_DOWN":
-      return "Operativo caido";
+      return "Operativo caído";
     case "LOST":
       return "Operativo desorientado";
     case "GEOFENCE":
       return "Fuera de zona";
     case "ANOMALY":
-      return "Anomalia";
+      return "Anomalía";
     default:
       return "Otra";
   }
@@ -486,7 +486,7 @@ export default function IncidentsPage() {
         : "-";
       const imagenMapa = await generarImagenMapaIncidente(incidente);
 
-      const descripcionTexto = incidente.description || "Sin descripcion.";
+      const descripcionTexto = incidente.description || "Sin descripción.";
       const direccionTexto = incidente.location_address || "-";
 
       if (posicionY > 20) {
@@ -500,10 +500,10 @@ export default function IncidentsPage() {
           "Nombre",
           "Tipo",
           "Estado",
-          "Organizacion",
-          "Direccion",
+          "Organización",
+          "Dirección",
           "Coordenadas",
-          "Descripcion",
+          "Descripción",
         ]],
         body: [[
           incidente.name,
@@ -553,10 +553,10 @@ export default function IncidentsPage() {
             "Nombre",
             "Tipo",
             "Estado",
-            "Organizacion",
-            "Direccion",
+            "Organización",
+            "Dirección",
             "Coordenadas",
-            "Descripcion",
+            "Descripción",
           ]],
           body: [[
             incidente.name,
@@ -846,7 +846,7 @@ export default function IncidentsPage() {
                   setConsulta(e.target.value);
                   setPaginaActual(1);
                 }}
-                placeholder="Buscar por nombre, tipo, estado o ubicacion..."
+                placeholder="Buscar por nombre, tipo, estado o ubicación..."
                 className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
               />
             </div>
@@ -898,7 +898,7 @@ export default function IncidentsPage() {
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
-                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Organizacion</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Organización</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Inicio</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acciones</th>
                 </tr>
@@ -1030,8 +1030,8 @@ export default function IncidentsPage() {
                 longitud={incidenteSeleccionado.parsedLocation[1]}
                 etiqueta={
                   incidenteSeleccionado.name
-                    ? `Ubicacion del incidente ${incidenteSeleccionado.name}`
-                    : "Ubicacion del incidente"
+                    ? `Ubicación del incidente ${incidenteSeleccionado.name}`
+                    : "Ubicación del incidente"
                 }
               />
             )}
@@ -1070,12 +1070,12 @@ export default function IncidentsPage() {
                   <div>
                     <p className="text-slate-400">Activo</p>
                     <p className="text-slate-100">
-                      {incidenteSeleccionado.is_active ? "Si" : "No"}
+                      {incidenteSeleccionado.is_active ? "Sí" : "No"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-slate-400">Organizacion</p>
+                    <p className="text-slate-400">Organización</p>
                     <p className="text-slate-100">
                       {incidenteSeleccionado.owner_organization || "-"}
                     </p>
@@ -1084,20 +1084,20 @@ export default function IncidentsPage() {
 
                 <div className="space-y-2 text-sm">
                   <div>
-                    <p className="text-slate-400">Descripcion</p>
+                    <p className="text-slate-400">Descripción</p>
                     <p className="text-slate-100">{incidenteSeleccionado.description || "-"}</p>
                   </div>
 
                   <div>
-                    <p className="text-slate-400">Direccion</p>
+                    <p className="text-slate-400">Dirección</p>
                     <p className="text-slate-100">{incidenteSeleccionado.location_address || "-"}</p>
                   </div>
 
                   <div>
-                    <p className="text-slate-400">Ubicacion legible</p>
+                    <p className="text-slate-400">Ubicación legible</p>
                     <p className="text-slate-100">
                       {resolviendoUbicacion
-                        ? "Buscando direccion..."
+                        ? "Buscando dirección..."
                         : ubicacionResuelta || incidenteSeleccionado.location_address || "-"}
                     </p>
                   </div>
@@ -1194,7 +1194,7 @@ export default function IncidentsPage() {
                         </div>
 
                         <p className="mt-3 text-sm leading-6 text-slate-300">
-                          {alerta.descripcion || "Sin descripcion adicional."}
+                          {alerta.descripcion || "Sin descripción adicional."}
                         </p>
 
                         <div className="mt-3 text-xs text-slate-500">
@@ -1219,7 +1219,7 @@ export default function IncidentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <button
             type="button"
-            aria-label="Cerrar confirmacion"
+            aria-label="Cerrar confirmación"
             onClick={() => {
               if (!incidenteEliminandoId) setIncidentePendienteEliminarId("");
             }}
@@ -1245,7 +1245,7 @@ export default function IncidentsPage() {
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-300/80">
-                    Confirmacion de borrado
+                    Confirmación de borrado
                   </p>
                   <h2 id="delete-incident-title" className="mt-2 text-2xl font-bold text-slate-50">
                     Eliminar incidente
@@ -1295,7 +1295,7 @@ export default function IncidentsPage() {
                   disabled={Boolean(incidenteEliminandoId)}
                   className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {incidenteEliminandoId === incidentePendienteEliminar.id ? "Eliminando..." : "Si, eliminar incidente"}
+                  {incidenteEliminandoId === incidentePendienteEliminar.id ? "Eliminando..." : "Sí, eliminar incidente"}
                 </button>
               </div>
             </div>

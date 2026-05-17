@@ -157,35 +157,6 @@ const OPCIONES_PROVINCIA_PORTUGAL = [
   { value: "Madeira", label: "Madeira" },
 ];
 
-// FRANCIA
-const OPCIONES_PROVINCIA_FRANCIA = [
-  { value: "", label: "Selecciona una región" },
-  { value: "Île-de-France", label: "Île-de-France" },
-  { value: "Provence-Alpes-Côte d'Azur", label: "Provence-Alpes-Côte d'Azur" },
-  { value: "Nouvelle-Aquitaine", label: "Nouvelle-Aquitaine" },
-  { value: "Occitanie", label: "Occitanie" },
-  { value: "Auvergne-Rhône-Alpes", label: "Auvergne-Rhône-Alpes" },
-];
-
-// ITALIA
-const OPCIONES_PROVINCIA_ITALIA = [
-  { value: "", label: "Selecciona una región" },
-  { value: "Lombardia", label: "Lombardia" },
-  { value: "Lazio", label: "Lazio" },
-  { value: "Campania", label: "Campania" },
-  { value: "Sicilia", label: "Sicilia" },
-  { value: "Veneto", label: "Veneto" },
-];
-
-// ALEMANIA
-const OPCIONES_PROVINCIA_ALEMANIA = [
-  { value: "", label: "Selecciona un estado" },
-  { value: "Baviera", label: "Baviera" },
-  { value: "Berlín", label: "Berlín" },
-  { value: "Hamburgo", label: "Hamburgo" },
-  { value: "Hesse", label: "Hesse" },
-  { value: "Sajonia", label: "Sajonia" },
-];
 
 const OPCIONES_PROVINCIA_FRANCIA_COMPLETA = [
   { value: "", label: "Selecciona una region" },
@@ -450,7 +421,7 @@ export default function EditUnitPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setError("Unidad no valida.");
+        setError("Unidad no válida.");
         setCargando(false);
         return;
       }
@@ -529,7 +500,7 @@ export default function EditUnitPage() {
     evento.preventDefault();
 
     if (!id) {
-      setError("Unidad no valida.");
+      setError("Unidad no válida.");
       return;
     }
 
@@ -1031,7 +1002,7 @@ export default function EditUnitPage() {
                 </div>  
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Direccion registrada</label>
+                  <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Dirección registrada</label>
                   <input
                     value={ultimaUbicacion}
                     disabled ={!edicionDesbloqueada}
@@ -1122,20 +1093,20 @@ export default function EditUnitPage() {
 
                 <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organización</p>
-                  <p className="mt-1 font-medium">{organizacion || "Sin organizacion"}</p>
+                  <p className="mt-1 font-medium">{organizacion || "Sin organización"}</p>
                 </div>
               </div>
             </section>
 
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion</p>
-              <h2 className="mt-2 text-lg font-bold">Posicion actual</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicación</p>
+              <h2 className="mt-2 text-lg font-bold">Posición actual</h2>
 
               <div className="mt-4">
                 <MapaMiniUnidad
                   latitud={latitudUbicacionActual}
                   longitud={longitudUbicacionActual}
-                  etiqueta={nombreUsuario ? `Ubicacion actual de ${nombreReal} (${nombreUsuario})` : "Ubicacion actual de la unidad"}
+                  etiqueta={nombreUsuario ? `Ubicación actual de ${nombreReal} (${nombreUsuario})` : "Ubicación actual de la unidad"}
                 />
               </div>
 
@@ -1148,8 +1119,8 @@ export default function EditUnitPage() {
                 </p>
               </div>
               <div className="mt-3 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Direccion legible</p>
-                <p className="mt-1 font-medium">{direccionLegible || "No hay direccion disponible"}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Dirección legible</p>
+                <p className="mt-1 font-medium">{direccionLegible || "No hay dirección disponible"}</p>
               </div>
             </section>
 

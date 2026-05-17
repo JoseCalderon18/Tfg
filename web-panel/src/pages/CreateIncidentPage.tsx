@@ -38,9 +38,9 @@ const PUNTO_FINAL_ORGANIZACIONES = "/organizations/";
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
   { value: "WILDFIRE", label: "Incendio forestal" },
-  { value: "SEARCH", label: "Busqueda de persona" },
+  { value: "SEARCH", label: "Búsqueda de persona" },
   { value: "RESCUE", label: "Rescate" },
-  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "MEDICAL", label: "Emergencia médica" },
   { value: "NATURAL_DISASTER", label: "Desastre natural" },
   { value: "OTHER", label: "Otro" },
 ];
@@ -148,11 +148,11 @@ export default function CreateIncidentPage() {
     const lonParseada = longitud.trim() ? Number(longitud) : undefined;
 
     if (latParseada !== undefined && Number.isNaN(latParseada)) {
-      setErrorMensaje("La latitud no es valida.");
+      setErrorMensaje("La latitud no es válida.");
       return;
     }
     if (lonParseada !== undefined && Number.isNaN(lonParseada)) {
-      setErrorMensaje("La longitud no es valida.");
+      setErrorMensaje("La longitud no es válida.");
       return;
     }
     if (latParseada !== undefined && (latParseada < -90 || latParseada > 90)) {
@@ -165,11 +165,11 @@ export default function CreateIncidentPage() {
     }
 
     if (organizaciones.length === 0) {
-      setErrorMensaje("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la pagina.");
+      setErrorMensaje("No se puede crear un incidente sin cargar el listado de organizaciones. Intenta recargar la página.");
       return;
     }
     if (!organizacionResponsable) {
-      setErrorMensaje("Debes seleccionar una organizacion responsable.");
+      setErrorMensaje("Debes seleccionar una organización responsable.");
       return;
     }
 
@@ -255,7 +255,7 @@ export default function CreateIncidentPage() {
           <div>
             <p className="text-sm text-slate-400">Operaciones · Supervisores</p>
             <h1 className="text-3xl font-bold tracking-tight">Crear nuevo incidente</h1>
-            <p className="mt-2 text-slate-300">Completa la informacion operativa para registrar el incidente.</p>
+            <p className="mt-2 text-slate-300">Completa la información operativa para registrar el incidente.</p>
           </div>
           <button
             type="button"
@@ -322,7 +322,7 @@ export default function CreateIncidentPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Descripcion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Descripción</label>
                 <textarea
                   value={descripcion}
                   onChange={(event) => setDescripcion(event.target.value)}
@@ -333,7 +333,7 @@ export default function CreateIncidentPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Direccion / ubicacion textual</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Dirección / ubicación textual</label>
                 <input
                   value={direccionUbicacion}
                   onChange={(event) => setDireccionUbicacion(event.target.value)}
@@ -365,7 +365,7 @@ export default function CreateIncidentPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Organizacion responsable</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Organización responsable</label>
                 <select
                   value={organizacionResponsable}
                   onChange={(event) => setOrganizacionResponsable(event.target.value)}
@@ -373,7 +373,7 @@ export default function CreateIncidentPage() {
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="" className="bg-slate-900">
-                    {cargandoOrganizaciones ? "Cargando organizaciones..." : "Sin organizacion"}
+                    {cargandoOrganizaciones ? "Cargando organizaciones..." : "Sin organización"}
                   </option>
                   {organizaciones.map((organization) => (
                     <option key={organization.id} value={organization.id} className="bg-slate-900">
@@ -394,8 +394,8 @@ export default function CreateIncidentPage() {
 
             <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-400">
               {tieneCoordenadas
-                ? "Se enviaran coordenadas geograficas para generar el Point en backend."
-                : "Si no informas coordenadas, el incidente se guardara sin Point geografico."}
+                ? "Se enviarán coordenadas geográficas para generar el Point en backend."
+                : "Si no informas coordenadas, el incidente se guardará sin Point geográfico."}
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

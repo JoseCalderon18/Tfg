@@ -39,7 +39,7 @@ export default function EditUserPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setError("Usuario no valido.");
+        setError("Usuario no válido.");
         setCargando(false);
         return;
       }
@@ -156,7 +156,7 @@ export default function EditUserPage() {
         <p className="text-sm text-slate-400">Administración</p>
             <h1 className="text-2xl font-bold">Editar usuario</h1>
             <p className="mt-1 text-sm text-slate-400">
-              Aqui solo se modifican los datos basicos almacenados en la tabla users.
+              Aqui solo se modifican los datos básicos almacenados en la tabla users.
             </p>
           </div>
           <button
@@ -226,7 +226,7 @@ export default function EditUserPage() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Telefono</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Teléfono</label>
                 <input
                   value={telefono}
                   onChange={(evento) => setTelefono(evento.target.value)}

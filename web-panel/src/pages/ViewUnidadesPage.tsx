@@ -334,7 +334,7 @@ export function ViewUnidadesPage() {
     const conteo = new Map<string, number>();
 
     unidadesFiltradas.forEach((unidad) => {
-      const organizacion = unidad.organization_name ?? "Sin organizacion";
+      const organizacion = unidad.organization_name ?? "Sin organización";
       conteo.set(organizacion, (conteo.get(organizacion) ?? 0) + 1);
     });
 
@@ -451,7 +451,7 @@ export function ViewUnidadesPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por usuario, email, dni, rol u organizacion"
+                  placeholder="Buscar por usuario, email, dni, rol u organización"
                   className="min-w-0 w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-accent)]"
                 />
                 <input
@@ -496,7 +496,7 @@ export function ViewUnidadesPage() {
                     onChange={(e) => setFiltroSinOrganizacion(e.target.checked)}
                     className="h-4 w-4 rounded border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]"
                   />
-                  Sin organizacion
+                  Sin organización
                 </label>
                 <label className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm text-[color:var(--cm-text)]">
                   <input
@@ -562,7 +562,7 @@ export function ViewUnidadesPage() {
                       onClick={() => manejarOrden("organization_name")}
                       className="inline-flex items-center gap-2 transition hover:text-[color:var(--cm-text)]"
                     >
-                      Organizacion
+                      Organización
                       <span className="text-[10px]">{obtenerIndicadorOrden("organization_name")}</span>
                     </button>
                   </th>
@@ -587,7 +587,7 @@ export function ViewUnidadesPage() {
                       <span className="text-[10px]">{obtenerIndicadorOrden("created_at")}</span>
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Accion</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -612,7 +612,7 @@ export function ViewUnidadesPage() {
                             {obtenerEtiquetaRol(unidad.role)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 whitespace-nowrap">{unidad.organization_name ?? "Sin organizacion"}</td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">{unidad.organization_name ?? "Sin organización"}</td>
                         <td className="px-4 py-3">
                           <span className={unidad.is_active ? "cm-badge-success rounded-full px-2.5 py-1 text-xs" : "cm-badge-warning rounded-full px-2.5 py-1 text-xs"}>
                             {unidad.is_active ? "Disponible" : "No disponible"}
@@ -753,7 +753,7 @@ export function ViewUnidadesPage() {
               ¿Quieres borrar esta unidad?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente la unidad
+              Se eliminará definitivamente la unidad
               {unidadPendienteEliminar.username ? ` "${unidadPendienteEliminar.username}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">

@@ -53,10 +53,10 @@ type DetalleAlerta = {
 
 const ALERT_TYPE_OPTIONS = [
   { value: "SOS", label: "SOS" },
-  { value: "MAN_DOWN", label: "Hombre caido" },
-  { value: "LOST", label: "Perdida / desorientado" },
+  { value: "MAN_DOWN", label: "Hombre caído" },
+  { value: "LOST", label: "Pérdida / desorientado" },
   { value: "GEOFENCE", label: "Geofence" },
-  { value: "ANOMALY", label: "Anomalia" },
+  { value: "ANOMALY", label: "Anomalía" },
   { value: "OTHER", label: "Otro" },
 ];
 
@@ -314,7 +314,7 @@ export default function EditAlertPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setError("Alerta no valida.");
+        setError("Alerta no válida.");
         setCargando(false);
         return;
       }
@@ -491,7 +491,7 @@ export default function EditAlertPage() {
     event.preventDefault();
 
     if (!id) {
-      setError("Alerta no valida.");
+      setError("Alerta no válida.");
       return;
     }
 
@@ -576,7 +576,7 @@ export default function EditAlertPage() {
               <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Alertas</p>
               <h1 className="text-2xl font-bold">Detalle de alerta</h1>
               <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-                Consulta la informacion de la alerta y su ubicacion antes de habilitar cambios.
+                Consulta la información de la alerta y su ubicación antes de habilitar cambios.
               </p>
             </div>
 
@@ -710,8 +710,8 @@ export default function EditAlertPage() {
                     <input
                       value={
                         resolviendoUbicacion
-                          ? "Buscando direccion..."
-                          : ubicacionLegible || valorUbicacion || "No hay ubicacion registrada"
+                          ? "Buscando dirección..."
+                          : ubicacionLegible || valorUbicacion || "No hay ubicación registrada"
                       }
                       disabled
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none"
@@ -759,12 +759,12 @@ export default function EditAlertPage() {
               <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                 <div className="mb-5">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Contenido</p>
-                  <h2 className="mt-2 text-xl font-bold">Descripcion y seguimiento</h2>
+                  <h2 className="mt-2 text-xl font-bold">Descripción y seguimiento</h2>
                 </div>
 
                 <div className="grid gap-4">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Descripcion</label>
+                    <label className="mb-1 block text-sm font-medium text-[color:var(--cm-text)]">Descripción</label>
                     <textarea
                       value={descripcion}
                       disabled={!edicionDesbloqueada}
@@ -798,8 +798,8 @@ export default function EditAlertPage() {
 
               <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                 <div className="mb-5">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion</p>
-                  <h2 className="mt-2 text-xl font-bold">Posicion registrada</h2>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicación</p>
+                  <h2 className="mt-2 text-xl font-bold">Posición registrada</h2>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -826,18 +826,18 @@ export default function EditAlertPage() {
                   <MapaMiniUnidad
                     latitud={ubicacionAnalizada?.lat ?? latitud}
                     longitud={ubicacionAnalizada?.lng ?? longitud}
-                    etiqueta={titulo ? `Ubicacion de la alerta: ${titulo}` : "Ubicacion de la alerta"}
+                    etiqueta={titulo ? `Ubicación de la alerta: ${titulo}` : "Ubicación de la alerta"}
                   />
                 </div>
 
                 <div className="mt-4 rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion legible</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicación legible</p>
                   <p className="mt-1 font-medium">
                     {(ubicacionAnalizada?.lat ?? latitud) == null || (ubicacionAnalizada?.lng ?? longitud) == null
                       ? "No hay coordenadas registradas"
                       : resolviendoUbicacion
-                      ? "Buscando direccion..."
-                      : ubicacionLegible || "No se pudo resolver una direccion legible"}
+                      ? "Buscando dirección..."
+                      : ubicacionLegible || "No se pudo resolver una dirección legible"}
                   </p>
                 </div>
               </section>

@@ -191,7 +191,7 @@ export default function ViewOrganizationsPage() {
     try {
       const response = await apiFetch(`/organizations/${organizationId}/`, { method: "DELETE" });
       if (!response.ok) {
-        let detail = "No se pudo borrar la organizacion.";
+        let detail = "No se pudo borrar la organización.";
         try {
           const data = (await response.json()) as Record<string, unknown>;
           if (typeof data.detail === "string") {
@@ -229,7 +229,7 @@ export default function ViewOrganizationsPage() {
             <>
               <Button onClick={() => navigate("/")}>Volver</Button>
               <Button tone="primary" onClick={() => navigate("/createorganization")}>
-                Crear organizacion
+                Crear organización
               </Button>
             </>
           }
@@ -280,8 +280,8 @@ export default function ViewOrganizationsPage() {
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Nombre</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Email</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Telefono</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Direccion</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Teléfono</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Dirección</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Estado</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Creada</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Acciones</th>
@@ -368,15 +368,15 @@ export default function ViewOrganizationsPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="organizacion-eliminar-titulo"
+          aria-labelledby="organización-eliminar-titulo"
         >
           <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar organizacion</p>
-            <h2 id="organizacion-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
-              ¿Quieres borrar esta organizacion?
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar organización</p>
+            <h2 id="organización-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
+              ¿Quieres borrar esta organización?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente la organizacion
+              Se eliminará definitivamente la organización
               {organizacionPendienteEliminar.name ? ` "${organizacionPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">

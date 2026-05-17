@@ -483,7 +483,7 @@ export default function JourneysPage() {
                     <p className="mt-1 font-medium">{obtenerEtiquetaRol(selectedUser?.role)}</p>
                   </div>
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organizacion</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Organización</p>
                     <p className="mt-1 font-medium">{selectedUser?.organization_name ?? "-"}</p>
                   </div>
                   <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
@@ -505,7 +505,7 @@ export default function JourneysPage() {
 
                 <div className="grid gap-4 xl:grid-cols-2">
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion de inicio</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicación de inicio</p>
                     <MapaMiniUnidad
                       latitud={ JornadaSeleccionada.startCoords?.lat ?? null}
                       longitud={JornadaSeleccionada.startCoords?.lng ?? null}
@@ -513,7 +513,7 @@ export default function JourneysPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicacion de fin</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Ubicación de fin</p>
                     <MapaMiniUnidad
                       latitud={JornadaSeleccionada.stopCoords?.lat ?? null}
                       longitud={JornadaSeleccionada.stopCoords?.lng ?? null}
@@ -553,7 +553,7 @@ export default function JourneysPage() {
               ¿Quieres borrar esta jornada?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente la jornada #{jornadaPendienteEliminar.id}.
+              Se eliminará definitivamente la jornada #{jornadaPendienteEliminar.id}.
             </p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">Esta acción no se puede deshacer.</p>
 

@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
     }
 
     if (nuevaPassword !== confirmacionPassword) {
-      setErrorNuevaPassword("La confirmacion de la password no coincide.");
+      setErrorNuevaPassword("La confirmación de la password no coincide.");
       return;
     }
 
@@ -207,7 +207,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)]/60 p-3 text-sm text-[color:var(--cm-text-muted)]">
-            Coloque la direccion de correo electronico asociada a su cuenta y le enviaremos un enlace con un codigo de verificacion. Luego podra usar ese codigo para establecer una nueva password.
+            Coloque la dirección de correo electrónico asociada a su cuenta y le enviaremos un enlace con un código de verificación. Luego podrá usar ese código para establecer una nueva password.
           </div>
 
           {errorPagina ? <div className="cm-badge-danger rounded-lg p-3 text-sm">{errorPagina}</div> : null}
@@ -233,7 +233,7 @@ export default function ResetPasswordPage() {
       {modalNuevaPasswordAbierto ? (
         <ModalBase
           titulo="Nueva password"
-          descripcion="Introduce la nueva password y confirmala para completar el cambio."
+          descripcion="Introduce la nueva password y confírmala para completar el cambio."
         >
           <div className="space-y-4">
             <div>

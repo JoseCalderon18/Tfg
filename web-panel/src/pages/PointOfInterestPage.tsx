@@ -114,7 +114,7 @@ function normalizePoints(raw: unknown): PointOfInterestRow[] {
       id: row.id,
       name: row.name?.trim() || "Punto sin nombre",
       poiType: row.poi_type ?? "OTHER",
-      description: row.description?.trim() || "Sin descripcion adicional.",
+      description: row.description?.trim() || "Sin descripción adicional.",
       incidentId: row.incident ?? null,
       incidentName: row.incident_name ?? null,
       createdBy: row.created_by ?? null,
@@ -201,7 +201,7 @@ export default function PointOfInterestPage() {
     try {
       const response = await apiFetch(`/points-of-interest/${id}/`, { method: "DELETE" });
       if (!response.ok) {
-        let detail = "No se pudo eliminar el punto de interes.";
+        let detail = "No se pudo eliminar el punto de interés.";
         try {
           const data = (await response.json()) as Record<string, unknown>;
           if (typeof data.detail === "string") {
@@ -218,7 +218,7 @@ export default function PointOfInterestPage() {
       setSelectedId((prev) => (prev === id ? null : prev));
       setPuntoPendienteEliminarId(null);
     } catch {
-      setError("Error de red al eliminar el punto de interes. Intenta de nuevo.");
+      setError("Error de red al eliminar el punto de interés. Intenta de nuevo.");
     } finally {
       setPuntoEliminandoId(null);
     }
@@ -240,7 +240,7 @@ export default function PointOfInterestPage() {
 
         const response = await apiFetch("/points-of-interest/");
         if (!response.ok) {
-          setError("No se pudieron cargar los puntos de interes.");
+          setError("No se pudieron cargar los puntos de interés.");
           setLoading(false);
           return;
         }
@@ -249,7 +249,7 @@ export default function PointOfInterestPage() {
         setPoints(rows);
         setSelectedId(rows[0]?.id ?? null);
       } catch {
-        setError("Error de red al cargar puntos de interes.");
+        setError("Error de red al cargar puntos de interés.");
       } finally {
         setLoading(false);
       }
@@ -286,7 +286,7 @@ export default function PointOfInterestPage() {
   if (loading) {
     return (
       <div className="cm-shell grid min-h-screen place-items-center">
-        <p className="text-[color:var(--cm-text-muted)]">Cargando puntos de interes...</p>
+        <p className="text-[color:var(--cm-text-muted)]">Cargando puntos de interés...</p>
       </div>
     );
   }
@@ -353,7 +353,7 @@ export default function PointOfInterestPage() {
         <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           {!selectedPoint ? (
             <div className="grid h-full min-h-[320px] place-items-center text-sm text-[color:var(--cm-text-muted)]">
-              Selecciona un punto de interes en el mapa para ver su informacion.
+              Selecciona un punto de interés en el mapa para ver su información.
             </div>
           ) : (
             <div className="space-y-5">
@@ -382,7 +382,7 @@ export default function PointOfInterestPage() {
               </div>
 
               <div className="rounded-xl bg-[color:var(--cm-surface-2)] px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Descripcion</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Descripción</p>
                 <p className="mt-2 text-sm leading-6">{selectedPoint.description}</p>
               </div>
 
@@ -428,7 +428,7 @@ export default function PointOfInterestPage() {
         </section>
         <div>
           <button type="button" onClick={() => navigate("/createPointOfInterest")} className="rounded-xl bg-[color:var(--cm-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110">
-            Crear nuevo punto de interes
+            Crear nuevo punto de interés
           </button>
         </div>
       </div>
@@ -441,12 +441,12 @@ export default function PointOfInterestPage() {
           aria-labelledby="punto-eliminar-titulo"
         >
           <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] lg:mr-4">
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar punto de interes</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar punto de interés</p>
             <h2 id="punto-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
-              ¿Quieres borrar este punto de interes?
+              ¿Quieres borrar este punto de interés?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente
+              Se eliminará definitivamente
               {puntoPendienteEliminar.name ? ` "${puntoPendienteEliminar.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">

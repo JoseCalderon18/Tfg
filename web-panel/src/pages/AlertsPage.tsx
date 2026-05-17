@@ -277,13 +277,13 @@ export default function AlertsPage() {
                       {alerta.alert_type === "SOS"
                         ? "SOS"
                         : alerta.alert_type === "MAN_DOWN"
-                        ? "Hombre caido"
+                        ? "Hombre caído"
                         : alerta.alert_type === "GEOFENCE"
                         ? "Geofence"
                         : alerta.alert_type === "LOST"
-                        ? "Perdida"
+                        ? "Pérdida"
                         : alerta.alert_type === "ANOMALY"
-                        ? "Anomalia"
+                        ? "Anomalía"
                         : alerta.alert_type === "OTHER"
                         ? "Otro"
                         : "Desconocido"}
@@ -372,7 +372,7 @@ export default function AlertsPage() {
               ¿Quieres borrar esta alerta?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente la alerta
+              Se eliminará definitivamente la alerta
               {alertaPendienteEliminar.title ? ` "${alertaPendienteEliminar.title}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">

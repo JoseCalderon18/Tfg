@@ -324,7 +324,7 @@ export default function WorkAreasPage() {
     try {
       const response = await apiFetch(`/workareas/${areaId}/`, { method: "DELETE" });
       if (!response.ok) {
-        let detail = "No se pudo borrar el area de trabajo.";
+        let detail = "No se pudo borrar el área de trabajo.";
         try {
           const data = (await response.json()) as Record<string, unknown>;
           if (typeof data.detail === "string") {
@@ -355,7 +355,7 @@ export default function WorkAreasPage() {
     <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Work Areas</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Áreas de trabajo</p>
           <h1 className="mt-1 text-2xl font-bold">Áreas de trabajo</h1>
           <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
             Selecciona un área para ver su localización en el mapa y revisar sus datos.
@@ -455,13 +455,13 @@ export default function WorkAreasPage() {
               role="dialog"
               aria-labelledby="workarea-eliminar-inline-titulo"
             >
-              <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar area</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar área</p>
               <h2 id="workarea-eliminar-inline-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
-                ¿Quieres borrar esta area de trabajo?
+                ¿Quieres borrar esta área de trabajo?
               </h2>
               <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-                Se eliminara definitivamente el area
-                {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
+                Se eliminará definitivamente el área
+                {workAreaPendienteEliminar?.name ? ` "${workAreaPendienteEliminar?.name}"` : ""}.
               </p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
                 Esta acción no se puede deshacer.
@@ -567,7 +567,7 @@ export default function WorkAreasPage() {
             disabled={!areaSeleccionada || workAreaEliminandoId != null}
             className="mt-4 ml-2 inline-flex rounded-lg bg-[color:var(--cm-danger)] px-4 py-2 text-white transition hover:brightness-110 disabled:bg-slate-600 disabled:text-slate-300 disabled:cursor-not-allowed"
           >
-            {areaSeleccionada && workAreaEliminandoId === areaSeleccionada.id ? "Borrando..." : "Borrar area de trabajo"}
+            {areaSeleccionada && workAreaEliminandoId === areaSeleccionada.id ? "Borrando..." : "Borrar área de trabajo"}
           </button>
           <button
             type="button"
@@ -586,13 +586,13 @@ export default function WorkAreasPage() {
           aria-labelledby="workarea-eliminar-titulo"
         >
           <div className="w-full max-w-md rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar area</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Eliminar área</p>
             <h2 id="workarea-eliminar-titulo" className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">
-              ¿Quieres borrar esta area de trabajo?
+              ¿Quieres borrar esta área de trabajo?
             </h2>
             <p className="mt-3 text-sm text-[color:var(--cm-text-muted)]">
-              Se eliminara definitivamente el area
-              {workAreaPendienteEliminar && workAreaPendienteEliminar.name ? ` "${workAreaPendienteEliminar.name}"` : ""}.
+              Se eliminará definitivamente el área
+              {workAreaPendienteEliminar?.name ? ` "${workAreaPendienteEliminar?.name}"` : ""}.
             </p>
             <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
               Esta acción no se puede deshacer.

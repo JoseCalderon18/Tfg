@@ -21,15 +21,15 @@ type AlertaCreada = {
 
 const ALERT_TYPE_OPTIONS: Array<{ value: TipoAlerta; label: string; description: string }> = [
   { value: "SOS", label: "SOS", description: "Emergencia inmediata o peticion directa de ayuda." },
-  { value: "MAN_DOWN", label: "Hombre caido", description: "Posible baja, inmovilidad o perdida de respuesta." },
-  { value: "LOST", label: "Perdida", description: "Operativo desorientado o fuera de referencia." },
+  { value: "MAN_DOWN", label: "Hombre caído", description: "Posible baja, inmovilidad o pérdida de respuesta." },
+  { value: "LOST", label: "Pérdida", description: "Operativo desorientado o fuera de referencia." },
   { value: "GEOFENCE", label: "Geofence", description: "Salida o entrada en zona delimitada." },
-  { value: "ANOMALY", label: "Anomalia", description: "Lectura irregular o comportamiento no esperado." },
+  { value: "ANOMALY", label: "Anomalía", description: "Lectura irregular o comportamiento no esperado." },
   { value: "OTHER", label: "Otro", description: "Aviso operativo que no encaja en otra categoria." },
 ];
 
 const SEVERITY_OPTIONS = [
-  { value: 1, label: "Critica", help: "Riesgo alto e intervencion inmediata." },
+  { value: 1, label: "Crítica", help: "Riesgo alto e intervencion inmediata." },
   { value: 2, label: "Alta", help: "Prioridad elevada con seguimiento urgente." },
   { value: 3, label: "Media", help: "Requiere supervision operativa." },
   { value: 4, label: "Baja", help: "Incidencia menor o preventiva." },
@@ -136,7 +136,7 @@ export default function CreateAlertPage() {
     }
 
     if (!description.trim()) {
-      setErrorMensaje("La descripcion es obligatoria para que el equipo tenga contexto.");
+      setErrorMensaje("La descripción es obligatoria para que el equipo tenga contexto.");
       return;
     }
 
@@ -214,7 +214,7 @@ export default function CreateAlertPage() {
             <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Alertas</p>
             <h1 className="mt-1 text-2xl font-bold">Crear alerta operativa</h1>
             <p className="mt-1 max-w-2xl text-sm text-[color:var(--cm-text-muted)]">
-              Registra un aviso con severidad, contexto e ubicacion para que quede trazado en el centro de alertas.
+              Registra un aviso con severidad, contexto e ubicación para que quede trazado en el centro de alertas.
             </p>
           </div>
           <button
@@ -315,11 +315,11 @@ export default function CreateAlertPage() {
               </label>
 
               <label className="sm:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[color:var(--cm-text)]">Descripcion</span>
+                <span className="mb-1 block text-sm font-semibold text-[color:var(--cm-text)]">Descripción</span>
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Describe que ocurre, a quien afecta y que accion se espera."
+                  placeholder="Describe que ocurre, a quien afecta y que acción se espera."
                   rows={5}
                   className="w-full resize-y rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
                   required
@@ -363,7 +363,7 @@ export default function CreateAlertPage() {
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Trazabilidad</p>
               <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-                Al crearla se guarda como alerta abierta y se redirige al detalle para revisar estado, responsable y ubicacion.
+                Al crearla se guarda como alerta abierta y se redirige al detalle para revisar estado, responsable y ubicación.
               </p>
             </section>
           </aside>

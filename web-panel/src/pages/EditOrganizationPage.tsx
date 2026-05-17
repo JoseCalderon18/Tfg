@@ -7,7 +7,7 @@ const TIPOS_ORGANIZACION = [
   { value: "POLICE", label: "Departamento de Policia" },
   { value: "RESCUE", label: "Servicio de Rescate" },
   { value: "MEDICAL", label: "Servicio Medico" },
-  { value: "OTHER", label: "Otra organizacion" },
+  { value: "OTHER", label: "Otra organización" },
   { value: "GOV", label: "Agencia Gubernamental" },
   { value: "NGO", label: "Organización No Gubernamental" },
   { value: "PRIVATE", label: "Empresa Privada" },
@@ -54,7 +54,7 @@ export default function EditOrganizationPage() {
     });
 
     if (!respuesta.ok) {
-        let detalle = "No se pudo guardar la organizacion.";
+        let detalle = "No se pudo guardar la organización.";
         try {
           const datosError = await respuesta.json();
           if (datosError?.detail) {
@@ -81,7 +81,7 @@ export default function EditOrganizationPage() {
   useEffect(() => {
     (async () => {
       if (!id) {
-        setError("Organizacion no valida.");
+        setError("Organización no válida.");
         setCargando(false);
         return;
       }
@@ -100,7 +100,7 @@ export default function EditOrganizationPage() {
 
       const respuestaOrganizacion = await apiFetch(`/organizations/${id}/`);
       if (!respuestaOrganizacion.ok) {
-        setError("No se pudo cargar la organizacion.");
+        setError("No se pudo cargar la organización.");
         setCargando(false);
         return;
       }
@@ -121,7 +121,7 @@ export default function EditOrganizationPage() {
   if (cargando) {
     return (
       <div className="min-h-screen grid place-items-center bg-slate-950 text-slate-100">
-        <p className="text-slate-300">Cargando organizacion...</p>
+        <p className="text-slate-300">Cargando organización...</p>
       </div>
     );
   }
@@ -132,7 +132,7 @@ export default function EditOrganizationPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
         <p className="text-sm text-slate-400">Administración</p>
-            <h1 className="text-2xl font-bold">Editar organizacion</h1>
+            <h1 className="text-2xl font-bold">Editar organización</h1>
           </div>
 
           <button
@@ -153,14 +153,14 @@ export default function EditOrganizationPage() {
 
           <div className="mb-6">
             <p className="text-sm text-slate-400">
-              Modifica los datos generales, la informacion de contacto y el estado operativo de la organizacion.
+              Modifica los datos generales, la información de contacto y el estado operativo de la organización.
             </p>
           </div>
 
           <form className="space-y-6" onSubmit={manejarEnvio}>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organizacion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organización</label>
                 <input
                   type="text"
                   value={nombre}
@@ -171,7 +171,7 @@ export default function EditOrganizationPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organizacion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organización</label>
                 <select
                   value={tipo}
                   onChange={(evento) => setTipo(evento.target.value)}
@@ -194,13 +194,13 @@ export default function EditOrganizationPage() {
                   type="email"
                   value={email}
                   onChange={(evento) => setEmail(evento.target.value)}
-                  placeholder="contacto@organizacion.local"
+                  placeholder="contacto@organización.local"
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Telefono de contacto</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Teléfono de contacto</label>
                 <input
                   type="tel"
                   value={telefono}
@@ -212,12 +212,12 @@ export default function EditOrganizationPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">Direccion</label>
+              <label className="mb-1 block text-sm font-medium text-slate-300">Dirección</label>
               <textarea
                 rows={4}
                 value={direccion}
                 onChange={(evento) => setDireccion(evento.target.value)}
-                placeholder="Introduce la direccion completa de la organizacion"
+                placeholder="Introduce la dirección completa de la organización"
                 className="w-full rounded-xl bg-slate-950/40 px-4 py-3 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
@@ -226,7 +226,7 @@ export default function EditOrganizationPage() {
               <div className="rounded-2xl bg-slate-950/30 p-4 ring-1 ring-slate-800">
                 <p className="text-sm font-medium text-slate-200">Estado operativo</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  Marca si la organizacion esta disponible y activa dentro del sistema.
+                  Marca si la organización está disponible y activa dentro del sistema.
                 </p>
                 <label className="mt-4 inline-flex items-center gap-3 text-sm text-slate-200">
                   <input
@@ -235,7 +235,7 @@ export default function EditOrganizationPage() {
                     onChange={(evento) => setIsActive(evento.target.checked)}
                     className="h-4 w-4 rounded border-slate-700 bg-slate-950/40"
                   />
-                  Organizacion activa
+                  Organización activa
                 </label>
               </div>
 

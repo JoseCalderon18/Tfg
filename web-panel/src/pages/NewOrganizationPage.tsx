@@ -75,7 +75,7 @@ export default function NewOrganizationPage() {
     setEnviado("");
 
     if (!nombre.trim()) {
-      setError("El nombre de la organizacion es obligatorio.");
+      setError("El nombre de la organización es obligatorio.");
       return;
     }
 
@@ -97,7 +97,7 @@ export default function NewOrganizationPage() {
       });
 
       if (!res.ok) {
-        let detail = "No se pudo crear la organizacion.";
+        let detail = "No se pudo crear la organización.";
         try {
           const data = (await res.json()) as Record<string, unknown>;
           if (typeof data?.detail === "string") {
@@ -118,7 +118,7 @@ export default function NewOrganizationPage() {
         return;
       }
 
-      setEnviado("Organizacion creada correctamente.");
+      setEnviado("Organización creada correctamente.");
       setNombre("");
       setTipoOrganizacion("OTHER");
       setEmailContacto("");
@@ -152,8 +152,8 @@ export default function NewOrganizationPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
         <p className="text-sm text-slate-400">Administración · Organizaciones</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear nueva organizacion</h1>
-            <p className="mt-2 text-slate-300">Completa los datos basicos para registrar una organizacion en el sistema.</p>
+            <h1 className="text-3xl font-bold tracking-tight">Crear nueva organización</h1>
+            <p className="mt-2 text-slate-300">Completa los datos básicos para registrar una organización en el sistema.</p>
           </div>
           <button
             type="button"
@@ -179,7 +179,7 @@ export default function NewOrganizationPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organizacion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organización</label>
                 <input
                   value={nombre}
                   onChange={(event) => setNombre(event.target.value)}
@@ -190,7 +190,7 @@ export default function NewOrganizationPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organizacion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organización</label>
                 <select
                   value={tipoOrganizacion}
                   onChange={(event) => setTipoOrganizacion(event.target.value as TipoOrganzacion)}
@@ -212,7 +212,7 @@ export default function NewOrganizationPage() {
                     onChange={(event) => setIsActive(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-700 bg-slate-900"
                   />
-                  Organizacion activa
+                  Organización activa
                 </label>
               </div>
 
@@ -224,12 +224,12 @@ export default function NewOrganizationPage() {
                   onChange={(event) => setEmailContacto(event.target.value)}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="contacto@organizacion.local"
+                  placeholder="contacto@organización.local"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Telefono de contacto</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Teléfono de contacto</label>
                 <input
                   value={contactPhone}
                   onChange={(event) => setContactPhone(normalizarTelefono(event.target.value))}
@@ -241,7 +241,7 @@ export default function NewOrganizationPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Direccion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Dirección</label>
                 <textarea
                   value={direccion}
                   onChange={(event) => setDireccion(event.target.value)}
@@ -281,7 +281,7 @@ export default function NewOrganizationPage() {
                 disabled={enviando}
                 className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-60 transition"
                 >
-                {enviando ? "Creando..." : "Crear organizacion"}
+                {enviando ? "Creando..." : "Crear organización"}
                 </button>
             </div>
             </div>

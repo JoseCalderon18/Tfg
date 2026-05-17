@@ -123,12 +123,12 @@ export default function CreatePointOfInterestPage() {
     setSuccess("");
 
     if (!name.trim()) {
-      setError("Debes indicar un nombre para el punto de interes.");
+      setError("Debes indicar un nombre para el punto de interés.");
       return;
     }
 
     if (!selectedPoint) {
-      setError("Haz clic en el mapa para marcar la ubicacion del punto.");
+      setError("Haz clic en el mapa para marcar la ubicación del punto.");
       return;
     }
 
@@ -150,7 +150,7 @@ export default function CreatePointOfInterestPage() {
       });
 
       if (!respuesta.ok) {
-        let detail = "No se pudo crear el punto de interes.";
+        let detail = "No se pudo crear el punto de interés.";
         try {
           const data = (await respuesta.json()) as Record<string, unknown>;
           if (typeof data.detail === "string") {
@@ -169,7 +169,7 @@ export default function CreatePointOfInterestPage() {
         return;
       }
 
-      setSuccess("Punto de interes creado correctamente.");
+      setSuccess("Punto de interés creado correctamente.");
       setIncidentId("");
       setName("");
       setPoiType("OTHER");
@@ -191,9 +191,9 @@ export default function CreatePointOfInterestPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm text-slate-400">Terreno · Supervisores</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear nuevo punto de interes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Crear nuevo punto de interés</h1>
             <p className="mt-2 text-slate-300">
-              Registra una referencia operativa y marca su posicion exacta sobre el mapa.
+              Registra una referencia operativa y marca su posición exacta sobre el mapa.
             </p>
           </div>
           <button
@@ -216,7 +216,7 @@ export default function CreatePointOfInterestPage() {
               <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
                 <p className="font-semibold">{success}</p>
                 <p className="mt-1 text-emerald-100/90">
-                  El punto de interes se ha creado correctamente y ya esta disponible en el listado.
+                  El punto de interés se ha creado correctamente y ya está disponible en el listado.
                 </p>
               </div>
             ) : null}
@@ -269,7 +269,7 @@ export default function CreatePointOfInterestPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Descripcion</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Descripción</label>
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
@@ -281,8 +281,8 @@ export default function CreatePointOfInterestPage() {
 
               <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-400">
                 {selectedPoint
-                  ? `Ubicacion marcada en lat ${selectedPoint[0].toFixed(6)}, lng ${selectedPoint[1].toFixed(6)}.`
-                  : "Haz clic en el mapa para marcar la ubicacion del punto de interes."}
+                  ? `Ubicación marcada en lat ${selectedPoint[0].toFixed(6)}, lng ${selectedPoint[1].toFixed(6)}.`
+                  : "Haz clic en el mapa para marcar la ubicación del punto de interés."}
               </div>
 
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -298,7 +298,7 @@ export default function CreatePointOfInterestPage() {
                   disabled={submitting}
                   className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-500 disabled:opacity-60 transition"
                 >
-                  {submitting ? "Creando..." : "Crear punto de interes"}
+                  {submitting ? "Creando..." : "Crear punto de interés"}
                 </button>
               </div>
             </form>
@@ -308,7 +308,7 @@ export default function CreatePointOfInterestPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Mapa</p>
-                <h2 className="mt-1 text-lg font-bold">{name.trim() || "Nuevo punto de interes"}</h2>
+                <h2 className="mt-1 text-lg font-bold">{name.trim() || "Nuevo punto de interés"}</h2>
                 <p className="mt-1 text-sm text-slate-400">{selectedIncidentName || "Sin incidente asociado"}</p>
               </div>
               <div className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">

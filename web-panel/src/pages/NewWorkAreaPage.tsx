@@ -168,7 +168,7 @@ export default function NewWorkAreaPage() {
     }
 
     if (!name.trim()) {
-      setError("Debes indicar un nombre para el area de trabajo.");
+      setError("Debes indicar un nombre para el área de trabajo.");
       return;
     }
 
@@ -181,7 +181,7 @@ export default function NewWorkAreaPage() {
 
     if (areaType === "CIRCLE") {
       if (!circleCenter) {
-        setError("Haz clic en el mapa para marcar el centro del circulo.");
+        setError("Haz clic en el mapa para marcar el centro del círculo.");
         return;
       }
       if (Number.isNaN(parsedRadius) || parsedRadius <= 0) {
@@ -196,7 +196,7 @@ export default function NewWorkAreaPage() {
 
     if (areaType === "POLYGON") {
       if (!polygonReady) {
-        setError("Marca al menos 3 puntos en el mapa para definir el poligono.");
+        setError("Marca al menos 3 puntos en el mapa para definir el polígono.");
         return;
       }
       payload.polygon_points = polygonPoints.map(([lat, lng]) => [lat, lng]);
@@ -211,7 +211,7 @@ export default function NewWorkAreaPage() {
       });
 
       if (!response.ok) {
-        let detail = "No se pudo crear el area de trabajo.";
+        let detail = "No se pudo crear el área de trabajo.";
         try {
           const data = (await response.json()) as Record<string, unknown>;
           if (typeof data.detail === "string") {
@@ -230,7 +230,7 @@ export default function NewWorkAreaPage() {
         return;
       }
 
-      setSuccess("Area de trabajo creada correctamente.");
+      setSuccess("Área de trabajo creada correctamente.");
       setName("");
       setAreaType("CIRCLE");
       setRadiusM("250");
@@ -253,9 +253,9 @@ export default function NewWorkAreaPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm text-slate-400">Operaciones · Supervisores</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear nueva area de trabajo</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Crear nueva área de trabajo</h1>
             <p className="mt-2 text-slate-300">
-              Selecciona el incidente y dibuja en el mapa el circulo o poligono exacto que quieres guardar.
+              Selecciona el incidente y dibuja en el mapa el círculo o polígono exacto que quieres guardar.
             </p>
           </div>
           <button
@@ -304,7 +304,7 @@ export default function NewWorkAreaPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre del area</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre del área</label>
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -315,7 +315,7 @@ export default function NewWorkAreaPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de area</label>
+                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de área</label>
                 <select
                   value={areaType}
                   onChange={(event) => {
@@ -326,10 +326,10 @@ export default function NewWorkAreaPage() {
                   className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="CIRCLE" className="bg-slate-900">
-                    Circulo
+                    Círculo
                   </option>
                   <option value="POLYGON" className="bg-slate-900">
-                    Poligono
+                    Polígono
                   </option>
                 </select>
               </div>
@@ -344,13 +344,13 @@ export default function NewWorkAreaPage() {
                     className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="250"
                   />
-                  <p className="mt-1 text-xs text-slate-400">Haz clic en el mapa para colocar el centro del circulo.</p>
+                  <p className="mt-1 text-xs text-slate-400">Haz clic en el mapa para colocar el centro del círculo.</p>
                 </div>
               ) : (
                 <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                  <p className="text-sm font-medium text-slate-300">Dibujo de poligono</p>
+                  <p className="text-sm font-medium text-slate-300">Dibujo de polígono</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    Haz clic en el mapa para ir agregando vertices. Necesitas al menos 3 puntos.
+                    Haz clic en el mapa para ir agregando vértices. Necesitas al menos 3 puntos.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -367,7 +367,7 @@ export default function NewWorkAreaPage() {
                       disabled={polygonPoints.length === 0}
                       className="rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700 disabled:opacity-50"
                     >
-                      Limpiar poligono
+                      Limpiar polígono
                     </button>
                   </div>
                   <p className="mt-3 text-xs text-slate-400">Puntos marcados: {polygonPoints.length}</p>
@@ -381,17 +381,17 @@ export default function NewWorkAreaPage() {
                   onChange={(event) => setActive(event.target.checked)}
                   className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-orange-500 focus:ring-orange-500"
                 />
-                Area activa al crear
+                Área activa al crear
               </label>
 
               <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-400">
                 {areaType === "CIRCLE"
                   ? circleCenter
                     ? `Centro marcado en lat ${circleCenter[0].toFixed(6)}, lng ${circleCenter[1].toFixed(6)}.`
-                    : "Aun no has marcado el centro del circulo."
+                    : "Aún no has marcado el centro del círculo."
                   : polygonReady
-                    ? `Poligono listo para guardar con ${polygonPoints.length} vertices.`
-                    : `Aun faltan puntos para el poligono. Llevas ${polygonPoints.length} vertices.`}
+                    ? `Polígono listo para guardar con ${polygonPoints.length} vértices.`
+                    : `Aún faltan puntos para el polígono. Llevas ${polygonPoints.length} vértices.`}
               </div>
 
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -407,7 +407,7 @@ export default function NewWorkAreaPage() {
                   disabled={submitting || incidentsLoading}
                   className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 hover:bg-orange-500 disabled:opacity-60 transition"
                 >
-                  {submitting ? "Creando..." : "Crear area de trabajo"}
+                  {submitting ? "Creando..." : "Crear área de trabajo"}
                 </button>
               </div>
             </form>
@@ -417,11 +417,11 @@ export default function NewWorkAreaPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Mapa</p>
-                <h2 className="mt-1 text-lg font-bold">{name.trim() || "Nueva area de trabajo"}</h2>
+                <h2 className="mt-1 text-lg font-bold">{name.trim() || "Nueva área de trabajo"}</h2>
                 <p className="mt-1 text-sm text-slate-400">{selectedIncidentName || "Selecciona un incidente"}</p>
               </div>
               <div className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
-                {areaType === "CIRCLE" ? "Modo circulo" : "Modo poligono"}
+                {areaType === "CIRCLE" ? "Modo círculo" : "Modo polígono"}
               </div>
             </div>
 

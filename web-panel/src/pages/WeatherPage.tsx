@@ -57,21 +57,21 @@ function obtenerEtiquetaTipoIncidente(tipo: string) {
     case "SOS":
       return "SOS";
     case "SEARCH":
-      return "Busqueda";
+      return "Búsqueda";
     case "MEDICAL":
-      return "Emergencia medica";
+      return "Emergencia médica";
     case "WILDFIRE":
       return "Incendio forestal";
     case "NATURAL_DISASTER":
       return "Desastre natural";
     case "MAN_DOWN":
-      return "Operativo caido";
+      return "Operativo caído";
     case "LOST":
       return "Operativo desorientado";
     case "GEOFENCE":
       return "Fuera de zona";
     case "ANOMALY":
-      return "Anomalia";
+      return "Anomalía";
     default:
       return "Otra";
   }
@@ -127,9 +127,9 @@ export default function WeatherPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
           <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Meteorología</p>
-            <h1 className="text-2xl font-bold tracking-tight">Mapa meteorologico</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Mapa meteorológico</h1>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-              Visualizacion directa con Windy para viento, nubosidad y lluvia.
+              Visualización directa con Windy para viento, nubosidad y lluvia.
             </p>
           </div>
 
@@ -153,7 +153,7 @@ export default function WeatherPage() {
           <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 xl:sticky xl:top-5 xl:h-[calc(100vh-7rem)] xl:overflow-hidden">
             <h2 className="text-base font-semibold">Incidentes</h2>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
-              Selecciona un incidente para centrar el mapa meteorologico.
+              Selecciona un incidente para centrar el mapa meteorológico.
             </p>
 
             <div className="mt-4 max-h-[60vh] space-y-2 overflow-auto xl:max-h-[calc(100%-3.75rem)]">
@@ -188,7 +188,7 @@ export default function WeatherPage() {
               <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6">
                 <div className="flex items-center gap-3">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--cm-text-muted)] border-t-transparent" />
-                  <span className="text-[color:var(--cm-text-muted)]">Preparando mapa meteorologico...</span>
+                  <span className="text-[color:var(--cm-text-muted)]">Preparando mapa meteorológico...</span>
                 </div>
               </div>
             ) : error ? (
@@ -206,7 +206,7 @@ export default function WeatherPage() {
                     <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Incidente activo</p>
                     <h2 className="mt-1 text-2xl font-semibold">{incidenteSeleccionado.name}</h2>
                     <p className="mt-2 text-sm text-[color:var(--cm-text-muted)]">
-                      {incidenteSeleccionado.location_address || "Sin direccion disponible"}
+                      {incidenteSeleccionado.location_address || "Sin dirección disponible"}
                     </p>
                   </div>
 
@@ -227,7 +227,7 @@ export default function WeatherPage() {
                   </div>
 
                   <div className="relative h-[74vh] min-h-[620px] w-full bg-slate-950">
-                    <iframe title="Mapa meteorologico Windy" src={mapaUrl} className="h-full w-full" loading="lazy" />
+                    <iframe title="Mapa meteorológico Windy" src={mapaUrl} className="h-full w-full" loading="lazy" />
                   </div>
                 </div>
 
