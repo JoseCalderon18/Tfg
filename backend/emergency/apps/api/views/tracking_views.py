@@ -8,6 +8,8 @@ from django.utils import timezone
 
 from emergency.apps.core.models import PuntoRastreo, Incidente
 from ..serializers import PuntoRastreoSerializer, PuntoRastreoCreateSerializer
+from emergency.apps.core.models import UltimaPosicion
+from django.contrib.gis.geos import Point as GeoPoint
 
 
 class PuntoRastreoCreateView(generics.CreateAPIView):
@@ -121,3 +123,79 @@ class IncidentTrackingView(APIView):
 
         serializer = PuntoRastreoSerializer(points, many=True)
         return Response(serializer.data)
+
+
+class LocationPublishView(APIView):
+    """Endpoint para que el cliente publique su ubicación (y actualizar UltimaPosicion)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        # Aceptamos payload con latitude/longitude o lat/lng
+        latitude = data.get('latitude') if data.get('latitude') is not None else data.get('lat')
+        longitude = data.get('longitude') if data.get('longitude') is not None else data.get('lng')
+        incident_id = data.get('incident_id') or data.get('incident')
+
+        if latitude is None or longitude is None:
+            return Response({'error': 'latitude and longitude required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Crear PuntoRastreo usando el serializer existente
+        serializer = PuntoRastreoCreateSerializer(data={
+            'latitude': latitude,
+            'longitude': longitude,
+            'accuracy_m': data.get('accuracy'),
+            'altitude': data.get('altitude'),
+            'speed': data.get('speed'),
+            'recorded_at': data.get('timestamp'),
+            'incident': incident_id,
+        }, context={'request': request})
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        track_point = serializer.save()
+
+        # Actualizar UltimaPosicion
+        try:
+            point = GeoPoint(float(longitude), float(latitude), srid=4326)
+        except Exception:
+            point = None
+
+        UltimaPosicion.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'incident_id': incident_id,
+                'location': point,
+                'accuracy_m': data.get('accuracy'),
+                'altitude': data.get('altitude'),
+                'speed': data.get('speed'),
+                'heading': data.get('heading'),
+            }
+        )
+
+        # Broadcast via channels if available (optional)
+        try:
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            channel_layer = get_channel_layer()
+            if channel_layer and incident_id:
+                message = {
+                    'type': 'position.update',
+                    'payload': {
+                        'user_id': str(request.user.id),
+                        'display_name': getattr(request.user, 'username', '') or '',
+                        'incident_id': incident_id,
+                        'latitude': float(latitude),
+                        'longitude': float(longitude),
+                        'accuracy': data.get('accuracy'),
+                        'speed': data.get('speed'),
+                        'heading': data.get('heading'),
+                        'timestamp': data.get('timestamp'),
+                    }
+                }
+                async_to_sync(channel_layer.group_send)(f'incident:{incident_id}:locations', message)
+        except Exception:
+            # no bloquear en caso de fallo en el envío al canal
+            pass
+
+        return Response({'status': 'ok', 'id': str(track_point.id)})

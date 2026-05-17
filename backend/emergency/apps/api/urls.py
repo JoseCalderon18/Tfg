@@ -57,6 +57,7 @@ urlpatterns = [
     path("tracking/point/", tracking_views.PuntoRastreoCreateView.as_view(), name="tracking_point"),
     path("tracking/batch/", tracking_views.PuntoRastreoBatchCreateView.as_view(), name="tracking_batch"),
     path("tracking/last/", tracking_views.LastPositionView.as_view(), name="tracking_last"),
+    path("tracking/publish/", tracking_views.LocationPublishView.as_view(), name="tracking_publish"),
     path("tracking/route/", tracking_views.RouteView.as_view(), name="tracking_route"),
     path(
         "tracking/incident/<uuid:incident_id>/",
