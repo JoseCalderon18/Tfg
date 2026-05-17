@@ -643,7 +643,7 @@ export default function DashboardPage() {
   const [recursosExpandidos, setRecursosExpandidos] = useState(false);
   const [unitsExpanded, setUnitsExpanded] = useState(false);
   const [trackPoints, setTrackPoints] = useState<TrackPointRow[]>([]);
-  const [showAllTracks, setShowAllTracks] = useState(true);
+  const [showAllTracks] = useState(true);
   const navigate = useNavigate();
 
   const positionedIncidents = useMemo(() =>

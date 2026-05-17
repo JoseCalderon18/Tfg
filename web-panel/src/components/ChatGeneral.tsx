@@ -96,7 +96,7 @@ export default function ChatGeneral() {
   const currentProfileId = user?.profile_id ?? "";
   const [cargandoChats, setCargandoChats] = useState(true);
   const [cargandoMensajes, setCargandoMensajes] = useState(false);
-  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
+  const [, setCargandoUsuarios] = useState(true);
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
   const [creandoChat, setCreandoChat] = useState(false);
   const [guardandoMensajes, setGuardandoMensajes] = useState(false);
