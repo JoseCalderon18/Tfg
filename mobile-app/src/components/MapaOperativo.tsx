@@ -32,6 +32,8 @@ type AlertaMapa = {
 type MapaOperativoProps = {
   mostrarCabecera?: boolean;
   modoLigero?: boolean;
+  alertaEnfocada?: AlertaMapa | null;
+  centrarEnAlerta?: boolean;
 };
 
 type MarcadorPlano = {
@@ -171,6 +173,8 @@ function renderizarMarcadores(marcadores: MarcadorPlano[]) {
 export default function MapaOperativo({
   mostrarCabecera = true,
   modoLigero = false,
+  alertaEnfocada = null,
+  centrarEnAlerta = false,
 }: MapaOperativoProps) {
   const mapaRef = useRef<MapView | null>(null);
   const { location } = useLocation();
@@ -261,11 +265,46 @@ export default function MapaOperativo({
   );
 
   const marcadores = useMemo(
-    () => crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude),
-    [alertas, incidentes, location]
+    () => {
+      const base = crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude);
+      const puntoEnfocado = crearPuntoDesdeUbicacion(alertaEnfocada?.location);
+
+      if (!alertaEnfocada || !puntoEnfocado) {
+        return base;
+      }
+
+      const yaExiste = base.some((marcador) => marcador.tipo === 'alerta' && marcador.id === alertaEnfocada.id);
+      if (yaExiste) {
+        return base;
+      }
+
+      return [
+        {
+          id: alertaEnfocada.id,
+          titulo: alertaEnfocada.title,
+          latitud: puntoEnfocado.latitude,
+          longitud: puntoEnfocado.longitude,
+          color: colors.danger,
+          tipo: 'alerta' as const,
+        },
+        ...base,
+      ];
+    },
+    [alertaEnfocada, alertas, incidentes, location]
   );
 
-  const regionAjustada = useMemo(() => calcularRegionAjustada(marcadores, regionBase), [marcadores, regionBase]);
+  const marcadoresRegion = useMemo(() => {
+    if (!centrarEnAlerta || !alertaEnfocada) {
+      return marcadores;
+    }
+
+    return marcadores.filter((marcador) => marcador.tipo === 'alerta' && marcador.id === alertaEnfocada.id);
+  }, [alertaEnfocada, centrarEnAlerta, marcadores]);
+
+  const regionAjustada = useMemo(
+    () => calcularRegionAjustada(marcadoresRegion.length ? marcadoresRegion : marcadores, regionBase),
+    [marcadores, marcadoresRegion, regionBase]
+  );
 
   useEffect(() => {
     if (!mapaListo || !mapaRef.current) {
