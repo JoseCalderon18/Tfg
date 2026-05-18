@@ -34,6 +34,8 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   HAZARD: "Peligro ambiental",
   FATIGUE: "Fatiga extrema",
   WEATHER: "Clima peligroso",
+  BATTERY: "Bateria baja",
+  MOVEMENT: "Inmovilidad prolongada",
   LOST: "Operativo perdido",
   GEOFENCE: "Fuera de zona segura",
   ANOMALY: "Anomalia detectada",
@@ -42,7 +44,7 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
 
 function obtenerEtiquetaTipoAlerta(type?: string | null) {
   if (!type) return "Desconocido";
-  return ALERT_TYPE_LABELS[type] ?? type;
+  return ALERT_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
 }
 
 function obtenerBadgeAlerta(type?: string | null) {
@@ -51,36 +53,6 @@ function obtenerBadgeAlerta(type?: string | null) {
   if (type === "GEOFENCE" || type === "FIRE_SPREAD" || type === "SMOKE" || type === "WEATHER" || type === "HAZARD") return "cm-badge-warning";
   if (type === "OTHER") return "cm-badge-special";
   return "cm-badge-info";
-}
-
-function obtenerEtiquetaTipoAlerta(type?: string | null) {
-  const labels: Record<string, string> = {
-    SOS: "SOS",
-    MAN_DOWN: "Hombre caido",
-    LOST: "Operativo perdido",
-    GEOFENCE: "Fuera de zona",
-    ANOMALY: "Anomalia",
-    FIRE_SPREAD: "Cambio de fuego",
-    SMOKE: "Humo",
-    INJURY: "Operativo herido",
-    DEATH: "Operativo fallecido",
-    EVACUATION: "Evacuacion",
-    MEDICAL: "Emergencia medica",
-    TRAPPED: "Operativo atrapado",
-    VEHICLE: "Vehicular",
-    ANIMAL: "Animal peligroso",
-    ANIMAL_INJURY: "Animal herido",
-    LOW_SUPPLIES: "Recursos bajos",
-    COMM_LOSS: "Comunicacion",
-    HAZARD: "Peligro ambiental",
-    FATIGUE: "Fatiga",
-    WEATHER: "Clima",
-    BATTERY: "Bateria baja",
-    MOVEMENT: "Inmovilidad",
-    OTHER: "Otro",
-  };
-
-  return type ? labels[type] ?? type.replace(/_/g, " ") : "Desconocido";
 }
 
 function obtenerBadgeEstado(status?: string | null) {
