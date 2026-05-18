@@ -52,12 +52,29 @@ type DetalleAlerta = {
 };
 
 const ALERT_TYPE_OPTIONS = [
-  { value: "SOS", label: "SOS" },
+  { value: "SOS", label: "SOS emergencia" },
   { value: "MAN_DOWN", label: "Hombre caido" },
-  { value: "LOST", label: "Perdida / desorientado" },
-  { value: "GEOFENCE", label: "Geofence" },
-  { value: "ANOMALY", label: "Anomalia" },
-  { value: "OTHER", label: "Otro" },
+  { value: "LOST", label: "Operativo perdido/desorientado" },
+  { value: "GEOFENCE", label: "Fuera de zona segura" },
+  { value: "ANOMALY", label: "Anomalia detectada" },
+  { value: "FIRE_SPREAD", label: "Cambio de fuego" },
+  { value: "SMOKE", label: "Humo en incidente" },
+  { value: "INJURY", label: "Operativo herido" },
+  { value: "DEATH", label: "Operativo fallecido" },
+  { value: "EVACUATION", label: "Evacuacion" },
+  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "TRAPPED", label: "Operativo atrapado" },
+  { value: "VEHICLE", label: "Incidente vehicular" },
+  { value: "ANIMAL", label: "Animal peligroso" },
+  { value: "ANIMAL_INJURY", label: "Animal herido" },
+  { value: "LOW_SUPPLIES", label: "Recursos bajos" },
+  { value: "COMM_LOSS", label: "Perdida de comunicacion" },
+  { value: "HAZARD", label: "Peligro ambiental" },
+  { value: "FATIGUE", label: "Fatiga extrema" },
+  { value: "WEATHER", label: "Clima peligroso" },
+  { value: "BATTERY", label: "Bateria baja" },
+  { value: "MOVEMENT", label: "Inmovilidad prolongada" },
+  { value: "OTHER", label: "Otra alerta" },
 ];
 
 const STATUS_OPTIONS = [

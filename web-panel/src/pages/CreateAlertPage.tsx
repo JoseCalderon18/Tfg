@@ -8,24 +8,37 @@ type Incident = {
   status?: string | null;
 };
 
-type AlertType =
-  | "SOS"
-  | "MAN_DOWN"
-  | "LOST"
-  | "GEOFENCE"
-  | "BATERY"
-  | "MOVEMENT"
-  | "OTHER";
+type AlertType = string;
 
 const ALERT_TYPES: Array<{ value: AlertType; label: string }> = [
   { value: "SOS", label: "SOS emergencia" },
   { value: "MAN_DOWN", label: "Hombre caido" },
   { value: "LOST", label: "Operativo perdido" },
   { value: "GEOFENCE", label: "Fuera de zona segura" },
-  { value: "BATERY", label: "Bateria baja" },
-  { value: "MOVEMENT", label: "Inmovilidad" },
+  { value: "ANOMALY", label: "Anomalia detectada" },
+  { value: "FIRE_SPREAD", label: "Cambio de fuego" },
+  { value: "SMOKE", label: "Humo en incidente" },
+  { value: "INJURY", label: "Operativo herido" },
+  { value: "DEATH", label: "Operativo fallecido" },
+  { value: "EVACUATION", label: "Evacuacion" },
+  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "TRAPPED", label: "Operativo atrapado" },
+  { value: "VEHICLE", label: "Incidente vehicular" },
+  { value: "ANIMAL", label: "Animal peligroso" },
+  { value: "ANIMAL_INJURY", label: "Animal herido" },
+  { value: "LOW_SUPPLIES", label: "Recursos bajos" },
+  { value: "COMM_LOSS", label: "Perdida de comunicacion" },
+  { value: "HAZARD", label: "Peligro ambiental" },
+  { value: "FATIGUE", label: "Fatiga extrema" },
+  { value: "WEATHER", label: "Clima peligroso" },
+  { value: "BATTERY", label: "Bateria baja" },
+  { value: "MOVEMENT", label: "Inmovilidad prolongada" },
   { value: "OTHER", label: "Otra alerta" },
 ];
+
+function getAlertTypeLabel(value: AlertType) {
+  return ALERT_TYPES.find((option) => option.value === value)?.label ?? value;
+}
 
 function normalizeList<T>(payload: T[] | { results?: T[] }) {
   return Array.isArray(payload) ? payload : payload.results ?? [];
@@ -99,7 +112,7 @@ export default function CreateAlertPage() {
           incident: incidentId || null,
           alert_type: alertType,
           severity: parsedSeverity,
-          title: title.trim() || `Alerta ${alertType}`,
+          title: title.trim() || getAlertTypeLabel(alertType),
           description: description.trim(),
           lat: parsedLat,
           lng: parsedLng,

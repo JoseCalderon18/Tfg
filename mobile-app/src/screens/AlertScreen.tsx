@@ -7,6 +7,40 @@ import { useOfflineSync } from '../context/OfflineSyncContext';
 import { sendSosAlert as dispatchSosAlert } from '../services/sos';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
+const ALERT_TYPES = [
+  { label: 'SOS Emergencia', value: 'SOS' },
+  { label: 'Operativo caido', value: 'MAN_DOWN' },
+  { label: 'Operativo perdido/desorientado', value: 'LOST' },
+  { label: 'Fuera de zona segura', value: 'GEOFENCE' },
+  { label: 'Anomalia detectada', value: 'ANOMALY' },
+  { label: 'Cambio de fuego', value: 'FIRE_SPREAD' },
+  { label: 'Humo en incidente', value: 'SMOKE' },
+  { label: 'Operativo herido', value: 'INJURY' },
+  { label: 'Operativo fallecido', value: 'DEATH' },
+  { label: 'Evacuacion', value: 'EVACUATION' },
+  { label: 'Emergencia medica', value: 'MEDICAL' },
+  { label: 'Operativo atrapado', value: 'TRAPPED' },
+  { label: 'Incidente vehicular', value: 'VEHICLE' },
+  { label: 'Animal peligroso', value: 'ANIMAL' },
+  { label: 'Animal herido', value: 'ANIMAL_INJURY' },
+  { label: 'Recursos bajos', value: 'LOW_SUPPLIES' },
+  { label: 'Perdida de comunicacion', value: 'COMM_LOSS' },
+  { label: 'Peligro ambiental', value: 'HAZARD' },
+  { label: 'Fatiga extrema', value: 'FATIGUE' },
+  { label: 'Clima peligroso', value: 'WEATHER' },
+  { label: 'Bateria baja', value: 'BATTERY' },
+  { label: 'Inmovilidad prolongada', value: 'MOVEMENT' },
+  { label: 'Otro', value: 'OTHER' },
+];
+
+function getAlertTypeLabel(value: string) {
+  return ALERT_TYPES.find((alertType) => alertType.value === value)?.label ?? value;
+}
+
+function isInvalidAlertTypeError(error?: string) {
+  return Boolean(error && error.toLowerCase().includes('alert_type') && error.toLowerCase().includes('valid choice'));
+}
+
 export default function AlertScreen({ navigation, route }: any) {
   // Estado del formulario de alertas en campo.
   const [tipoAlerta, setTipoAlerta] = useState('SOS');
@@ -32,7 +66,7 @@ export default function AlertScreen({ navigation, route }: any) {
         return;
       }
 
-      const result =
+      let result =
         tipoAlerta === 'SOS'
           ? await dispatchSosAlert({
               queueAlert,
@@ -44,14 +78,32 @@ export default function AlertScreen({ navigation, route }: any) {
               incidentId,
             })
           : await queueAlert({
-              incident: incidentId,
+              incident: incidentId ?? null,
               alert_type: tipoAlerta,
               severity: severidad,
-              title: `Alerta ${tipoAlerta}`,
+              title: getAlertTypeLabel(tipoAlerta),
               description: descripcion,
               lat: location.coords.latitude,
               lng: location.coords.longitude,
             });
+
+      if (!result.ok && tipoAlerta !== 'SOS' && isInvalidAlertTypeError(result.error)) {
+        const selectedTypeLabel = getAlertTypeLabel(tipoAlerta);
+        const fallbackDescription = [
+          `Tipo solicitado: ${selectedTypeLabel} (${tipoAlerta}).`,
+          descripcion,
+        ].filter(Boolean).join('\n\n');
+
+        result = await queueAlert({
+          incident: incidentId ?? null,
+          alert_type: 'OTHER',
+          severity: severidad,
+          title: selectedTypeLabel,
+          description: fallbackDescription,
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+      }
 
       if (!result.ok) {
         throw new Error(result.error ?? 'No se pudo registrar la alerta.');
@@ -89,10 +141,9 @@ export default function AlertScreen({ navigation, route }: any) {
                 onValueChange={setTipoAlerta} 
                 style={styles.picker}
               >
-                <Picker.Item label="🆘 Emergencia SOS" value="SOS" />
-                <Picker.Item label="👤 Hombre caído" value="MAN_DOWN" />
-                <Picker.Item label="🔴 Perdido" value="LOST" />
-                <Picker.Item label="📋 Otro" value="OTHER" />
+                {ALERT_TYPES.map((alertType) => (
+                  <Picker.Item key={alertType.value} label={alertType.label} value={alertType.value} />
+                ))}
               </Picker>
             </View>
           </View>

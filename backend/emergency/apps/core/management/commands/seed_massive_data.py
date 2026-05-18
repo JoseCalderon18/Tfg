@@ -267,7 +267,31 @@ class Command(BaseCommand):
         if not users:
             return
 
-        alert_types = ["SOS", "MAN_DOWN", "LOST", "GEOFENCE", "ANOMALY", "OTHER"]
+        alert_types = [
+            "SOS",
+            "MAN_DOWN",
+            "LOST",
+            "GEOFENCE",
+            "ANOMALY",
+            "FIRE_SPREAD",
+            "SMOKE",
+            "INJURY",
+            "DEATH",
+            "EVACUATION",
+            "MEDICAL",
+            "TRAPPED",
+            "VEHICLE",
+            "ANIMAL",
+            "ANIMAL_INJURY",
+            "LOW_SUPPLIES",
+            "COMM_LOSS",
+            "HAZARD",
+            "FATIGUE",
+            "WEATHER",
+            "BATTERY",
+            "MOVEMENT",
+            "OTHER",
+        ]
         status_choices = ["OPEN", "ACK", "CLOSED"]
         rows = []
 

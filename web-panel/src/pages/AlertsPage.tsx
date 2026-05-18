@@ -24,6 +24,36 @@ function obtenerBadgeAlerta(type?: string | null) {
   return "cm-badge-info";
 }
 
+function obtenerEtiquetaTipoAlerta(type?: string | null) {
+  const labels: Record<string, string> = {
+    SOS: "SOS",
+    MAN_DOWN: "Hombre caido",
+    LOST: "Operativo perdido",
+    GEOFENCE: "Fuera de zona",
+    ANOMALY: "Anomalia",
+    FIRE_SPREAD: "Cambio de fuego",
+    SMOKE: "Humo",
+    INJURY: "Operativo herido",
+    DEATH: "Operativo fallecido",
+    EVACUATION: "Evacuacion",
+    MEDICAL: "Emergencia medica",
+    TRAPPED: "Operativo atrapado",
+    VEHICLE: "Vehicular",
+    ANIMAL: "Animal peligroso",
+    ANIMAL_INJURY: "Animal herido",
+    LOW_SUPPLIES: "Recursos bajos",
+    COMM_LOSS: "Comunicacion",
+    HAZARD: "Peligro ambiental",
+    FATIGUE: "Fatiga",
+    WEATHER: "Clima",
+    BATTERY: "Bateria baja",
+    MOVEMENT: "Inmovilidad",
+    OTHER: "Otro",
+  };
+
+  return type ? labels[type] ?? type.replace(/_/g, " ") : "Desconocido";
+}
+
 function obtenerBadgeEstado(status?: string | null) {
   return getAlertStatusBadge(status);
 }
@@ -256,19 +286,7 @@ export default function AlertsPage() {
                 <tr key={alerta.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
                   <td className="px-4 py-3.5">
                     <span className={`${obtenerBadgeAlerta(alerta.alert_type)} rounded-full px-2.5 py-1 text-xs`}>
-                      {alerta.alert_type === "SOS"
-                        ? "SOS"
-                        : alerta.alert_type === "MAN_DOWN"
-                        ? "Hombre caido"
-                        : alerta.alert_type === "GEOFENCE"
-                        ? "Geofence"
-                        : alerta.alert_type === "LOST"
-                        ? "Perdida"
-                        : alerta.alert_type === "ANOMALY"
-                        ? "Anomalia"
-                        : alerta.alert_type === "OTHER"
-                        ? "Otro"
-                        : "Desconocido"}
+                      {obtenerEtiquetaTipoAlerta(alerta.alert_type)}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 font-medium">{alerta.title || "Alerta sin titulo"}</td>

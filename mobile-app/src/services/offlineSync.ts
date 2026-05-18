@@ -89,10 +89,32 @@ async function shouldQueueResponse(response: Response) {
   return false;
 }
 
+function formatErrorValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map(formatErrorValue).join(', ');
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([field, fieldValue]) => `${field}: ${formatErrorValue(fieldValue)}`)
+      .join(' | ');
+  }
+
+  return String(value);
+}
+
 async function getResponseErrorMessage(response: Response) {
   try {
-    const payload = await parseJsonResponse<{ detail?: string; error?: string }>(response);
-    return payload.detail ?? payload.error ?? `Error ${response.status}`;
+    const payload = await parseJsonResponse<Record<string, unknown>>(response);
+    if (typeof payload.detail === 'string') return payload.detail;
+    if (typeof payload.error === 'string') return payload.error;
+
+    const entries = Object.entries(payload);
+    if (entries.length > 0) {
+      return entries.map(([field, value]) => `${field}: ${formatErrorValue(value)}`).join(' | ');
+    }
+
+    return `Error ${response.status}`;
   } catch {
     return `Error ${response.status}`;
   }
