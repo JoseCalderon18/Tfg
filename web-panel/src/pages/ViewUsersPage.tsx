@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
 
 type MeResponse = {
   authenticated: boolean;
@@ -79,61 +80,87 @@ export default function ViewUsersPage() {
   }, [paginaActual, totalPaginas]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-        <p className="text-slate-300">Cargando usuarios...</p>
-      </div>
-    );
+    return <LoadingState label="Cargando usuarios..." />;
   }
 
   return (
     <div className="cm-shell min-h-screen">
-      <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Administración</p>
-            <h1 className="text-2xl font-bold">Usuarios del sistema</h1>
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="cm-page w-full">
+        <PageHeader
+          eyebrow="Administración"
+          title="Usuarios del sistema"
+          actions={
+            <>
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
+              className="cm-btn cm-btn-secondary"
             >
               Volver
             </button>
             <button
               type="button"
               onClick={() => navigate("/newuser")}
-              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+              className="cm-btn cm-btn-primary"
             >
               Crear Usuario
             </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
-        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPaginaActual(1);
-            }}
-            placeholder="Buscar por username, email o rol..."
-            className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-[color:var(--cm-text)] outline-none transition focus:border-[color:var(--cm-info)]"
+        <SearchBar
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPaginaActual(1);
+          }}
+          onClear={() => {
+            setQuery("");
+            setPaginaActual(1);
+          }}
+          placeholder="Buscar por username, email o rol..."
+          resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
+        />
+
+        {error ? <ErrorBanner message={error} className="mt-4" /> : null}
+
+        {filteredUsers.length === 0 ? (
+          <EmptyState
+            title="No hay usuarios para mostrar"
+            description={query ? "Prueba con otra búsqueda o limpia el filtro." : "Cuando haya usuarios aparecerán en este listado."}
           />
-        </div>
-
-        {error && (
-          <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">
-            {error}
+        ) : (
+          <div className="mt-4 grid gap-3 md:hidden">
+            {usuariosPaginados.map((u) => (
+              <article key={u.id} className="cm-card cm-card-pad">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold">{u.username}</h2>
+                    <p className="mt-1 break-all text-sm text-[color:var(--cm-text-muted)]">{u.email}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ring-1 ${u.is_active ? "cm-badge-success" : "cm-badge-warning"}`}>
+                    {u.is_active ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 text-sm text-[color:var(--cm-text-muted)]">
+                  <p>Rol: {u.role ?? "Sin rol asignado"}</p>
+                  <p>Creado: {u.created_at ? new Date(u.created_at).toLocaleString() : "Fecha desconocida"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/edituser/${u.id}`)}
+                  className="cm-btn cm-btn-primary mt-4 w-full"
+                >
+                  Editar usuario
+                </button>
+              </article>
+            ))}
           </div>
         )}
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-          <table className="min-w-[1050px] w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-[color:var(--cm-surface-2)] text-[color:var(--cm-text-muted)]">
+        <DataTable minWidth="1050px" wrapperClassName="mt-4 hidden md:block">
+            <thead>
               <tr>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Username</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.18em]">Email</th>
@@ -145,14 +172,10 @@ export default function ViewUsersPage() {
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--cm-text-muted)]">
-                    No hay usuarios para mostrar.
-                  </td>
-                </tr>
+                <EmptyState colSpan={6} title="No hay usuarios para mostrar" />
               ) : (
                 usuariosPaginados.map((u) => (
-                  <tr key={u.id} className="border-t border-[color:var(--cm-border)] transition hover:bg-[color:var(--cm-surface-2)]/60">
+                  <tr key={u.id}>
                     <td className="px-4 py-3.5 font-medium whitespace-nowrap">{u.username}</td>
                     <td className="px-4 py-3.5 text-[color:var(--cm-text-muted)] whitespace-nowrap">{u.email}</td>
                     <td className="px-4 py-3.5 whitespace-nowrap">{u.role ?? "Sin rol asignado"}</td>
@@ -174,7 +197,7 @@ export default function ViewUsersPage() {
                       <button
                         type="button"
                         onClick={() => navigate(`/edituser/${u.id}`)}
-                        className="rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-info)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:brightness-110"
+                        className="cm-btn cm-btn-sm cm-btn-primary"
                       >
                         Editar usuario
                       </button>
@@ -183,36 +206,17 @@ export default function ViewUsersPage() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+        </DataTable>
 
-        {filteredUsers.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[color:var(--cm-text-muted)]">
-              Página {paginaActual} de {totalPaginas} · Mostrando {usuariosPaginados.length} de {filteredUsers.length} usuarios
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
-                disabled={paginaActual === 1}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Anterior
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
-                disabled={paginaActual === totalPaginas}
-                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={paginaActual}
+          totalPages={totalPaginas}
+          visibleCount={usuariosPaginados.length}
+          totalCount={filteredUsers.length}
+          itemLabel="usuarios"
+          onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+          onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+        />
       </div>
     </div>
   );

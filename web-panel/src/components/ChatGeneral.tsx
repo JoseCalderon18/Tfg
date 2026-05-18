@@ -96,7 +96,7 @@ export default function ChatGeneral() {
   const currentProfileId = user?.profile_id ?? "";
   const [cargandoChats, setCargandoChats] = useState(true);
   const [cargandoMensajes, setCargandoMensajes] = useState(false);
-  const [, setCargandoUsuarios] = useState(true);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
   const [enviandoMensaje, setEnviandoMensaje] = useState(false);
   const [creandoChat, setCreandoChat] = useState(false);
   const [guardandoMensajes, setGuardandoMensajes] = useState(false);
@@ -565,13 +565,13 @@ export default function ChatGeneral() {
                   </button>
 
                   <div className="max-h-[34rem] space-y-2 overflow-auto pr-1">
-                    {cargandoMensajes ? (
+                    {cargandoUsuarios ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                         Cargando usuarios...
                       </div>
                     ) : null}
 
-                    {!cargandoMensajes &&
+                    {!cargandoUsuarios &&
                       filteredUsers.map((current) => {
                         const profileId = current.profile_id?.trim() || "";
                         const checked = MimebrosSeleccionados.includes(profileId);
@@ -596,7 +596,7 @@ export default function ChatGeneral() {
                         );
                       })}
 
-                    {!cargandoMensajes && filteredUsers.length === 0 ? (
+                    {!cargandoUsuarios && filteredUsers.length === 0 ? (
                       <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] p-4 text-sm text-[color:var(--cm-text-muted)]">
                     No hay usuarios que coincidan con la búsqueda.
                       </div>

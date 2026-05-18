@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
 
 type MeResponse = {
@@ -22,9 +23,9 @@ const CREATE_ORGANIZATION_ENDPOINT = "/organizations/";
 
 const organizacionTipos: Array<{ value: TipoOrganzacion; label: string }> = [
   { value: "FIRE_DEPT", label: "Cuerpo de bomberos" },
-  { value: "POLICE", label: "Policia" },
+  { value: "POLICE", label: "Policía" },
   { value: "RESCUE", label: "Equipo de rescate" },
-  { value: "MEDICAL", label: "Servicios medicos" },
+  { value: "MEDICAL", label: "Servicios médicos" },
   { value: "OTHER", label: "Otro" },
 ];
 
@@ -51,6 +52,17 @@ export default function NewOrganizationPage() {
     return `${tienePrefijo ? "+" : ""}${soloDigitos}`;
   }
 
+  function limpiarFormulario() {
+    setNombre("");
+    setTipoOrganizacion("OTHER");
+    setEmailContacto("");
+    setContactPhone("");
+    setDireccion("");
+    setIsActive(true);
+    setError("");
+    setEnviado("");
+  }
+
   useEffect(() => {
     (async () => {
       const meRes = await apiFetch("/auth/panel/me/");
@@ -75,7 +87,7 @@ export default function NewOrganizationPage() {
     setEnviado("");
 
     if (!nombre.trim()) {
-      setError("El nombre de la organizacion es obligatorio.");
+      setError("El nombre de la organización es obligatorio.");
       return;
     }
 
@@ -97,7 +109,7 @@ export default function NewOrganizationPage() {
       });
 
       if (!res.ok) {
-        let detail = "No se pudo crear la organizacion.";
+        let detail = "No se pudo crear la organización.";
         try {
           const data = (await res.json()) as Record<string, unknown>;
           if (typeof data?.detail === "string") {
@@ -118,7 +130,7 @@ export default function NewOrganizationPage() {
         return;
       }
 
-      setEnviado("Organizacion creada correctamente.");
+      setEnviado("Organización creada correctamente.");
       setNombre("");
       setTipoOrganizacion("OTHER");
       setEmailContacto("");
@@ -131,70 +143,46 @@ export default function NewOrganizationPage() {
   }
 
   if (cargando) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
-          <p className="text-slate-300">Cargando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none fixed inset-0 opacity-25">
-        <div className="absolute -top-24 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-blue-600 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-emerald-600 blur-3xl" />
-      </div>
+    <div className="cm-shell cm-page">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <PageHeader
+          eyebrow="Administración · Organizaciones"
+          title="Crear nueva organización"
+          description="Completa los datos básicos para registrar una organización en el sistema."
+          actions={
+            <button type="button" onClick={() => navigate("/vieworganizations")} className="cm-btn cm-btn-secondary">
+              Volver
+            </button>
+          }
+        />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-6 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-        <p className="text-sm text-slate-400">Administración · Organizaciones</p>
-            <h1 className="text-3xl font-bold tracking-tight">Crear nueva organizacion</h1>
-            <p className="mt-2 text-slate-300">Completa los datos basicos para registrar una organizacion en el sistema.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/vieworganizations")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
-        </div>
+        {error ? <ErrorBanner message={error} /> : null}
+        {enviado ? <SuccessBanner message={enviado} /> : null}
 
-        <div className="mt-8 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
-          {error ? (
-            <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
-            </div>
-          ) : null}
-          {enviado ? (
-            <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-              {enviado}
-            </div>
-          ) : null}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormSection title="Datos principales" description="Identificación y tipo operativo de la organización.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Nombre de la organizacion</label>
+                <label className="cm-field-label">Nombre de la organización</label>
                 <input
                   value={nombre}
                   onChange={(event) => setNombre(event.target.value)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="cm-input"
                   placeholder="Unidad Operativa Madrid Norte"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Tipo de organizacion</label>
+                <label className="cm-field-label">Tipo de organización</label>
                 <select
                   value={tipoOrganizacion}
                   onChange={(event) => setTipoOrganizacion(event.target.value as TipoOrganzacion)}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="cm-select"
                 >
                   {organizacionTipos.map((option) => (
                     <option key={option.value} value={option.value} className="bg-slate-900">
@@ -205,88 +193,71 @@ export default function NewOrganizationPage() {
               </div>
 
               <div className="flex items-end">
-                <label className="inline-flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-200">
+                <label className="inline-flex min-h-11 w-full items-center gap-3 rounded-lg border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-4 py-3 text-sm text-[color:var(--cm-text)]">
                   <input
                     type="checkbox"
                     checked={isActive}
                     onChange={(event) => setIsActive(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-700 bg-slate-900"
                   />
-                  Organizacion activa
+                  Organización activa
                 </label>
               </div>
+            </div>
+          </FormSection>
 
+          <FormSection title="Contacto y ubicación" description="Datos opcionales para localizar o contactar con la organización.">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Correo de contacto</label>
+                <label className="cm-field-label">Correo de contacto</label>
                 <input
                   type="email"
                   value={emailContacto}
                   onChange={(event) => setEmailContacto(event.target.value)}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="cm-input"
                   placeholder="contacto@organizacion.local"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-300">Telefono de contacto</label>
+                <label className="cm-field-label">Teléfono de contacto</label>
                 <input
                   value={contactPhone}
                   onChange={(event) => setContactPhone(normalizarTelefono(event.target.value))}
                   inputMode="tel"
                   placeholder="+34600000000"
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="cm-input"
                 />
-
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-300">Direccion</label>
+                <label className="cm-field-label">Dirección</label>
                 <textarea
                   value={direccion}
                   onChange={(event) => setDireccion(event.target.value)}
                   rows={4}
-                  className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Calle, numero, ciudad y observaciones de sede"
+                  className="cm-textarea"
+                  placeholder="Calle, número, ciudad y observaciones de sede"
                 />
               </div>
             </div>
-            <div className="border-t border-slate-800 pt-4 flex items-center justify-between">
-            <button
-                type="button"
-                onClick={() => {
-                setNombre("");
-                setTipoOrganizacion("OTHER");
-                setEmailContacto("");
-                setContactPhone("");
-                setDireccion("");
-                setIsActive(true);
-                setError("");
-                setEnviado("");
-                }}
-                className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-            >
-                Limpiar formulario
+          </FormSection>
+
+          <FormActions className="sm:justify-between">
+            <button type="button" onClick={limpiarFormulario} className="cm-btn cm-btn-secondary">
+              Limpiar formulario
             </button>
-            <div className="flex gap-3">
-                <button
-                type="button"
-                onClick={() => navigate("/vieworganizations")}
-                className="rounded-xl bg-slate-900/60 px-5 py-2.5 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-                >
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <button type="button" onClick={() => navigate("/vieworganizations")} className="cm-btn cm-btn-secondary">
                 Cancelar
-                </button>
-                <button
-                type="submit"
-                disabled={enviando}
-                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:opacity-60 transition"
-                >
-                {enviando ? "Creando..." : "Crear organizacion"}
-                </button>
+              </button>
+              <button type="submit" disabled={enviando} className="cm-btn cm-btn-primary">
+                {enviando ? "Creando..." : "Crear organización"}
+              </button>
             </div>
-            </div>
-          </form>
-        </div>
+          </FormActions>
+        </form>
       </div>
     </div>
   );
