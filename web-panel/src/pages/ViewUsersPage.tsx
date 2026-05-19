@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
+import HelpButton from "../components/HelpButton";
 
 type MeResponse = {
   authenticated: boolean;
@@ -91,6 +92,18 @@ export default function ViewUsersPage() {
           title="Usuarios del sistema"
           actions={
             <>
+            <HelpButton
+              title="Usuarios del sistema"
+              content={
+                <>
+                  <p>Gestiona los usuarios que acceden al panel web y a la app móvil.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">ADMIN</strong> — acceso completo al panel y administración.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">COMMAND</strong> — supervisión operativa sin gestión de usuarios.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">OPERATIVE</strong> — solo acceso a la app móvil para trabajo de campo.</p>
+                  <p>Para crear un usuario, pulsa 'Crear Usuario' y rellena el formulario. Recuerda asignar una organización.</p>
+                </>
+              }
+            />
             <button
               type="button"
               onClick={() => navigate("/")}
@@ -105,7 +118,7 @@ export default function ViewUsersPage() {
             >
               Crear Usuario
             </button>
-            </>
+</>
           }
         />
 

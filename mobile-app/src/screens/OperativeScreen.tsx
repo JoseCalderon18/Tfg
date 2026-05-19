@@ -251,6 +251,9 @@ export default function OperativeScreen({ navigation }: any) {
       case 'startBreak':
         navigation.navigate('StartBreak');
         break;
+      case 'help':
+        navigation.navigate('Help');
+        break;
       case 'logout':
         Alert.alert('Cerrar sesion', 'Desea cerrar sesion?', [
           { text: 'Cancelar', style: 'cancel' },
@@ -513,6 +516,13 @@ export default function OperativeScreen({ navigation }: any) {
                 }}
               >
                 <Text style={styles.menuOptionText}>⚙ Configuracion</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={() => handleMenuOption('help')}
+              >
+                <Text style={styles.menuOptionText}>❓ Ayuda y tutoriales</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

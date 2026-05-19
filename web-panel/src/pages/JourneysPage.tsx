@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
+import HelpButton from "../components/HelpButton";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -301,6 +302,18 @@ export default function JourneysPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <HelpButton
+              title="Centro de jornadas"
+              content={
+                <>
+                  <p>Seguimiento de los turnos de trabajo iniciados desde la app móvil.</p>
+                  <p>Cada jornada registra hora de inicio, ubicación GPS, descansos y hora de finalización.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">Inicio</strong> — el operativo activa la jornada desde el menú de la app.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">Descanso</strong> — pausa opcional que interrumpe el registro de movimiento.</p>
+                  <p><strong className="text-[color:var(--cm-text)]">Parar</strong> — cierra la jornada y guarda el resumen completo.</p>
+                </>
+              }
+            />
             <button
               type="button"
               onClick={() => navigate("/viewunidades")}

@@ -4,6 +4,7 @@ import { Circle, MapContainer, Polygon, TileLayer, useMap } from "react-leaflet"
 import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import HelpButton from "../components/HelpButton";
 
 type WorkAreaAPIFila = {
   id: number;
@@ -364,6 +365,17 @@ export default function WorkAreasPage() {
             Selecciona un área para ver su localización en el mapa y revisar sus datos.
           </p>
         </div>
+        <HelpButton
+          title="Áreas de trabajo"
+          content={
+            <>
+              <p>Define zonas geográficas de actuación para los operativos en campo.</p>
+              <p><strong className="text-[color:var(--cm-text)]">Circular</strong> — se define por un punto central y un radio en metros.</p>
+              <p><strong className="text-[color:var(--cm-text)]">Poligonal</strong> — forma irregular dibujada directamente sobre el mapa.</p>
+              <p>Cuando un operativo sale de su área asignada, el sistema genera automáticamente una alerta de tipo <strong className="text-[color:var(--cm-text)]">GEOFENCE</strong> y bloquea la app del operativo.</p>
+            </>
+          }
+        />
       </div>
 
       {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}

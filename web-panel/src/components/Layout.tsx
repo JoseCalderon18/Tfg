@@ -60,6 +60,15 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
       { label: "Reportes", to: "/risk-reports" },
     ],
   },
+  {
+    id: "help",
+    label: "Ayuda",
+    items: [
+      { label: "Ayuda general", to: "/help" },
+      { label: "Preguntas frecuentes", to: "/faq" },
+      { label: "Tutoriales", to: "/tutorials" },
+    ],
+  },
 ];
 
 function getDefaultOpenSections(pathname: string) {

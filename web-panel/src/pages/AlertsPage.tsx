@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
+import HelpButton from "../components/HelpButton";
 
 type FilaAlerta = {
   id: string;
@@ -224,10 +225,22 @@ export default function AlertsPage() {
           title="Centro de alertas operativas"
           description="Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido."
           actions={
-            <div className="flex flex-wrap gap-2 text-xs">
-            <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
-            <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
-            <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
+              <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
+              <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
+              <HelpButton
+                title="Alertas operativas"
+                content={
+                  <>
+                    <p>Las alertas se generan automáticamente desde la app móvil o manualmente desde el panel.</p>
+                    <p><strong className="text-[color:var(--cm-text)]">SOS</strong> — emergencia crítica activada por el operativo (4 segundos).</p>
+                    <p><strong className="text-[color:var(--cm-text)]">GEOFENCE</strong> — el operativo ha salido de su área de trabajo asignada.</p>
+                    <p><strong className="text-[color:var(--cm-text)]">MOVEMENT</strong> — movimiento anómalo detectado por el acelerómetro.</p>
+                    <p>Usa 'Reconocer' para acusar recibo y 'Cerrar' cuando esté resuelta.</p>
+                  </>
+                }
+              />
             </div>
           }
         />

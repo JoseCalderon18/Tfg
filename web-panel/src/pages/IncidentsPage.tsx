@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
+import HelpButton from "../components/HelpButton";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -790,6 +791,18 @@ export default function IncidentsPage() {
           </div>
 
                   <div className="flex flex-wrap items-center gap-3">
+          <HelpButton
+            title="Incidentes"
+            content={
+              <>
+                <p>Gestiona el ciclo de vida completo de los incidentes operativos.</p>
+                <p><strong className="text-[color:var(--cm-text)]">ABIERTO</strong> — incidente activo en curso.</p>
+                <p><strong className="text-[color:var(--cm-text)]">EN EVALUACIÓN</strong> — bajo análisis, pendiente de resolución.</p>
+                <p><strong className="text-[color:var(--cm-text)]">CERRADO</strong> — incidente finalizado.</p>
+                <p>Desde la ficha de cada incidente puedes ver sus alertas asociadas y asignar áreas de trabajo. Usa 'Exportar PDF' para descargar el informe.</p>
+              </>
+            }
+          />
           <button
             type="button"
             onClick={exportarIncidentesPdf}
@@ -798,7 +811,6 @@ export default function IncidentsPage() {
           >
             Exportar PDF
           </button>
-
 
           <button
             type="button"
