@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -191,6 +191,7 @@ export default function PantallaAlertas({ navigation, route }: any) {
   const [cargando, setCargando] = useState(true);
   const [cargandoIncidentes, setCargandoIncidentes] = useState(true);
   const [refrescando, setRefrescando] = useState(false);
+  const [alertaActualizandoId, setAlertaActualizandoId] = useState('');
   const [error, setError] = useState('');
   const [errorIncidentes, setErrorIncidentes] = useState('');
 
@@ -325,6 +326,59 @@ export default function PantallaAlertas({ navigation, route }: any) {
     [navigation]
   );
 
+  const cambiarEstadoAlerta = useCallback(
+    async (alerta: AlertaMovil, accion: 'acknowledge' | 'close') => {
+      if (!token || alertaActualizandoId) return;
+
+      setAlertaActualizandoId(alerta.id);
+      setError('');
+
+      try {
+        const respuesta = await apiFetch(`/alerts/${alerta.id}/${accion}/`, {
+          method: 'POST',
+          token,
+          timeoutMs: 12000,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(accion === 'acknowledge' ? { ack_notes: '' } : { close_notes: '' }),
+        });
+
+        const datos = await parseJsonResponse<AlertaMovil & { detail?: string; error?: string }>(respuesta);
+
+        if (!respuesta.ok) {
+          throw new Error(
+            datos.detail ||
+              datos.error ||
+              (accion === 'acknowledge' ? 'No se pudo reconocer la alerta.' : 'No se pudo cerrar la alerta.')
+          );
+        }
+
+        setAlertas((actuales) => actuales.map((item) => (item.id === alerta.id ? { ...item, ...datos } : item)));
+      } catch (siguienteError) {
+        const mensaje =
+          siguienteError instanceof Error
+            ? siguienteError.message
+            : accion === 'acknowledge'
+              ? 'No se pudo reconocer la alerta.'
+              : 'No se pudo cerrar la alerta.';
+        setError(mensaje);
+        Alert.alert('Error', mensaje);
+      } finally {
+        setAlertaActualizandoId('');
+      }
+    },
+    [alertaActualizandoId, token]
+  );
+
+  const confirmarCierreAlerta = useCallback(
+    (alerta: AlertaMovil) => {
+      Alert.alert('Cerrar alerta', 'Quieres marcar esta alerta como cerrada?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar', style: 'destructive', onPress: () => void cambiarEstadoAlerta(alerta, 'close') },
+      ]);
+    },
+    [cambiarEstadoAlerta]
+  );
+
   useEffect(() => {
     void cargarIncidentesAsignados();
   }, [cargarIncidentesAsignados]);
@@ -406,6 +460,9 @@ export default function PantallaAlertas({ navigation, route }: any) {
         ) : (
           alertasOrdenadas.map((alerta) => {
             const punto = extraerPuntoAlerta(alerta);
+            const actualizandoEstaAlerta = alertaActualizandoId === alerta.id;
+            const puedeReconocer = alerta.status === 'OPEN';
+            const puedeCerrar = alerta.status !== 'CLOSED';
             return (
               <View key={alerta.id} style={estilos.tarjeta}>
                 <View style={estilos.cabeceraTarjeta}>
@@ -446,6 +503,33 @@ export default function PantallaAlertas({ navigation, route }: any) {
                 >
                   <Text style={estilos.textoBotonMapa}>{punto ? 'Abrir alerta en mapa' : 'Sin ubicacion para mapa'}</Text>
                 </TouchableOpacity>
+
+                {puedeReconocer || puedeCerrar ? (
+                  <View style={estilos.filaAccionesAlerta}>
+                    {puedeReconocer ? (
+                      <TouchableOpacity
+                        style={[estilos.botonAccionAlerta, estilos.botonReconocer, actualizandoEstaAlerta && estilos.botonAccionDeshabilitado]}
+                        disabled={actualizandoEstaAlerta}
+                        onPress={() => void cambiarEstadoAlerta(alerta, 'acknowledge')}
+                      >
+                        <Text style={estilos.textoBotonAccionAlerta}>
+                          {actualizandoEstaAlerta ? 'Guardando...' : 'Reconocer'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                    {puedeCerrar ? (
+                      <TouchableOpacity
+                        style={[estilos.botonAccionAlerta, estilos.botonCerrar, actualizandoEstaAlerta && estilos.botonAccionDeshabilitado]}
+                        disabled={actualizandoEstaAlerta}
+                        onPress={() => confirmarCierreAlerta(alerta)}
+                      >
+                        <Text style={estilos.textoBotonAccionAlerta}>
+                          {actualizandoEstaAlerta ? 'Guardando...' : 'Cerrar'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ) : null}
               </View>
             );
           })
@@ -539,4 +623,18 @@ const estilos = StyleSheet.create({
   },
   botonMapaDeshabilitado: { backgroundColor: colors.borderStrong },
   textoBotonMapa: { color: colors.white, fontSize: 14, fontWeight: '800' },
+  filaAccionesAlerta: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  botonAccionAlerta: {
+    flexGrow: 1,
+    flexBasis: '46%',
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  botonReconocer: { backgroundColor: colors.warning },
+  botonCerrar: { backgroundColor: colors.success },
+  botonAccionDeshabilitado: { opacity: 0.65 },
+  textoBotonAccionAlerta: { color: colors.white, fontSize: 13, fontWeight: '800' },
 });
