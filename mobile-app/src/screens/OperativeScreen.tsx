@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -41,7 +41,8 @@ export default function OperativeScreen({ navigation }: any) {
   const [sosModalVisible, setSosModalVisible] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(SOS_COUNTDOWN_SECONDS);
   const [isSendingSos, setIsSendingSos] = useState(false);
-  const [activeIncident, setActiveIncident] = useState<ActiveIncident | null>(null);
+  const [activeIncidents, setActiveIncidents] = useState<ActiveIncident[]>([]);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const { user, token, logout } = useAuth();
   const {
     isTracking,
@@ -55,15 +56,20 @@ export default function OperativeScreen({ navigation }: any) {
   } = useLocation();
   const { pendingCount, isSyncing, lastError, queueAlert } = useOfflineSync();
   const sosCancelledRef = useRef(false);
+  const activeIncident = useMemo(
+    () => activeIncidents.find((incident) => incident.id === selectedIncidentId) ?? null,
+    [activeIncidents, selectedIncidentId]
+  );
 
   const handleAlertPress = () => {
     navigation.navigate('Alert');
   };
 
-  const loadActiveIncident = useCallback(async () => {
+  const loadActiveIncidents = useCallback(async () => {
     if (!token || !user?.organization_id) {
-      setActiveIncident(null);
-      return null;
+      setActiveIncidents([]);
+      setSelectedIncidentId(null);
+      return [];
     }
 
     const organizationId = encodeURIComponent(user.organization_id);
@@ -76,15 +82,25 @@ export default function OperativeScreen({ navigation }: any) {
       throw new Error('No se pudo consultar el incidente activo.');
     }
 
-    const incidents = normalizeIncidentList(await parseJsonResponse<IncidentListResponse>(response));
-    const nextIncident = incidents.find((incident) => incident.is_active !== false) ?? null;
-    setActiveIncident(nextIncident);
-    return nextIncident;
+    const incidents = normalizeIncidentList(await parseJsonResponse<IncidentListResponse>(response)).filter(
+      (incident) => incident.is_active !== false
+    );
+
+    setActiveIncidents(incidents);
+    setSelectedIncidentId((currentSelectedId) => {
+      if (incidents.length === 0) return null;
+      if (incidents.length === 1) return incidents[0].id;
+      if (currentSelectedId && incidents.some((incident) => incident.id === currentSelectedId)) {
+        return currentSelectedId;
+      }
+      return null;
+    });
+    return incidents;
   }, [token, user?.organization_id]);
 
   useEffect(() => {
-    void loadActiveIncident().catch(() => undefined);
-  }, [loadActiveIncident]);
+    void loadActiveIncidents().catch(() => undefined);
+  }, [loadActiveIncidents]);
 
   const closeSosModal = () => {
     sosCancelledRef.current = true;
@@ -107,9 +123,20 @@ export default function OperativeScreen({ navigation }: any) {
       }
 
       setIsSendingSos(true);
-      const incident = await loadActiveIncident().catch(() => activeIncident);
+      const incidents = await loadActiveIncidents().catch(() => activeIncidents);
+      const selectedIncident =
+        incidents.find((incident) => incident.id === selectedIncidentId) ??
+        (incidents.length === 1 ? incidents[0] : activeIncident);
 
-      if (!incident?.id) {
+      if (incidents.length > 1 && !selectedIncident?.id) {
+        Alert.alert(
+          'Selecciona un incidente',
+          'Hay varios incidentes abiertos. Elige primero a cual pertenece el SOS para no enviarlo al incidente equivocado.'
+        );
+        return;
+      }
+
+      if (!selectedIncident?.id) {
         Alert.alert(
           'Sin incidente activo',
           'No hay un incidente abierto asociado a tu organizacion. No se enviara el SOS sin incidente asignado.'
@@ -121,8 +148,8 @@ export default function OperativeScreen({ navigation }: any) {
         queueAlert,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        incidentId: incident.id,
-        description: `SOS enviado desde el boton principal del operativo para ${incident.name ?? 'incidente activo'}.`,
+        incidentId: selectedIncident.id,
+        description: `SOS enviado desde el boton principal del operativo para ${selectedIncident.name ?? 'incidente activo'}.`,
       });
 
       if (!result.ok) {
@@ -267,6 +294,46 @@ export default function OperativeScreen({ navigation }: any) {
               ? 'Dentro'
               : 'Fuera'}
         </Text>
+        <View style={styles.incidentSelectorCard}>
+          <Text style={styles.incidentSelectorTitle}>Incidente para SOS</Text>
+          {activeIncidents.length === 0 ? (
+            <Text style={styles.incidentSelectorHelp}>No hay incidentes abiertos para tu organizacion.</Text>
+          ) : activeIncidents.length === 1 ? (
+            <Text style={styles.incidentSelectorHelp}>{activeIncidents[0].name ?? 'Incidente activo'}</Text>
+          ) : (
+            <>
+              <Text style={styles.incidentSelectorHelp}>
+                Hay varios abiertos. Selecciona el correcto antes de enviar un SOS.
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.incidentChipsRow}
+              >
+                {activeIncidents.map((incident) => (
+                  <TouchableOpacity
+                    key={incident.id}
+                    style={[
+                      styles.incidentChip,
+                      selectedIncidentId === incident.id ? styles.incidentChipSelected : null,
+                    ]}
+                    onPress={() => setSelectedIncidentId(incident.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.incidentChipText,
+                        selectedIncidentId === incident.id ? styles.incidentChipTextSelected : null,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {incident.name ?? 'Incidente sin nombre'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
+        </View>
         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
         {!errorMsg && lastError ? <Text style={styles.errorText}>{lastError}</Text> : null}
 
@@ -600,6 +667,53 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     fontSize: 13,
     fontWeight: '700',
+  },
+  incidentSelectorCard: {
+    width: '100%',
+    marginTop: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 14,
+  },
+  incidentSelectorTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  incidentSelectorHelp: {
+    marginTop: 6,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  incidentChipsRow: {
+    gap: 8,
+    paddingTop: 10,
+    paddingRight: 8,
+  },
+  incidentChip: {
+    maxWidth: 220,
+    minHeight: 38,
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 14,
+  },
+  incidentChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  incidentChipText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  incidentChipTextSelected: {
+    color: colors.primary,
   },
   errorText: {
     marginTop: 10,
