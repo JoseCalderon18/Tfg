@@ -76,7 +76,7 @@ TaskManager.defineTask(BACKGROUND_WORKAREA_TASK, ({ data, error }) => {
 interface LocationContextType {
   location: Location.LocationObject | null;
   isTracking: boolean;
-  startTracking: () => Promise<void>;
+  startTracking: () => Promise<boolean>;
   stopTracking: () => void;
   pauseJourney: () => void;
   foregroundPermissionStatus: Location.PermissionStatus | null;
@@ -456,7 +456,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       const hasPermissions = await requestLocationPermissions();
       if (!hasPermissions) {
         setIsTracking(false);
-        return;
+        return false;
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
@@ -512,9 +512,11 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setLocationSubscription(subscription);
       setIsTracking(true);
       setErrorMsg(null);
+      return true;
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : 'Error starting tracking');
       setIsTracking(false);
+      return false;
     }
   };
 
