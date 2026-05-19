@@ -8,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 
 from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
-from emergency.apps.core.models import Incidente, IncidentMember, IncidentMessage
+from emergency.apps.core.models import User, Incidente, IncidentMember, IncidentMessage
 from .auth_views import _has_panel_full_access
 from ..serializers import (
     IncidenteSerializer,
@@ -135,6 +135,48 @@ class IncidentViewSet(viewsets.ModelViewSet):
         members = incident.incident_members.select_related('user').all()
         serializer = IncidentMemberSerializer(members, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='assign-members')
+    def assign_members(self, request, pk=None):
+        """Asignar unidades sueltas al incidente desde el panel."""
+        incident = self.get_object()
+        if not _has_panel_full_access(request.user):
+            return Response({"detail": "No autorizado para asignar unidades."}, status=status.HTTP_403_FORBIDDEN)
+
+        user_ids = request.data.get("user_ids", [])
+        if isinstance(user_ids, str):
+            user_ids = [user_ids]
+        if not isinstance(user_ids, list) or not user_ids:
+            return Response({"detail": "Selecciona al menos una unidad."}, status=status.HTTP_400_BAD_REQUEST)
+
+        role = request.data.get("role", "OPERATIVE")
+        if role not in {"SUPERVISOR", "OPERATIVE", "SUPPORT"}:
+            role = "OPERATIVE"
+
+        users = User.objects.filter(id__in=user_ids, is_active=True).exclude(profile__role="ADMIN")
+        if not users.exists():
+            return Response({"detail": "No se encontraron unidades activas para asignar."}, status=status.HTTP_400_BAD_REQUEST)
+
+        for user in users:
+            member, _created = IncidentMember.objects.get_or_create(
+                incident=incident,
+                user=user,
+                defaults={"role_in_incident": role, "is_active": True},
+            )
+            if not member.is_active or member.role_in_incident != role:
+                member.is_active = True
+                member.left_at = None
+                member.role_in_incident = role
+                member.save(update_fields=["is_active", "left_at", "role_in_incident"])
+
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} asigno {users.count()} unidad(es) al incidente '{incident.name}'.",
+        )
+
+        members = incident.incident_members.select_related('user').all()
+        serializer = IncidentMemberSerializer(members, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get", "post"])
     def messages(self, request, pk=None):
