@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } fro
 import * as Location from 'expo-location';
 
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from '../context/LocationContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
 import { registrarInicioJornadaActividad } from '../services/journeyActivity';
 import { colors } from '../theme';
@@ -18,6 +19,7 @@ export default function StartJourneyScreen({ navigation }: any) {
   const [locationPermission, setLocationPermission] = useState(false);
   const [notesText, setNotesText] = useState('');
   const { token, user } = useAuth();
+  const { isTracking, startTracking } = useLocation();
 
   useEffect(() => {
     void requestLocationPermission();
@@ -95,6 +97,10 @@ export default function StartJourneyScreen({ navigation }: any) {
           longitude: location.coords.longitude,
         },
       });
+
+      if (!isTracking) {
+        await startTracking();
+      }
 
       Alert.alert('Exito', 'Jornada iniciada', [
         { text: 'OK', onPress: () => navigation.goBack() },
