@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
 import AlertsPage from './pages/AlertsPage';
+import CreateAlertPage from './pages/CreateAlertPage';
 import WeatherPage from './pages/WeatherPage';
 import Layout from './components/Layout';
 import NewUserPage from './pages/NewUserPage';
@@ -57,6 +58,7 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="alerts" element={<AlertsPage />} />
+        <Route path="createAlert" element={<CreateAlertPage />} />
         <Route path="weather" element={<WeatherPage />} />
         <Route path="newuser" element={<NewUserPage />} />
         <Route path="viewusers" element={<ViewUsersPage />} />

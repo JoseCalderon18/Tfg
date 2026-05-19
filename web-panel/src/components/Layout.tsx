@@ -33,6 +33,7 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
       { label: "Chat", to: "/chats" },
       { label: "Jornadas", to: "/journeys" },
       { label: "Alertas", to: "/alerts" },
+      { label: "Crear alerta", to: "/createAlert" },
     ],
   },
   {
