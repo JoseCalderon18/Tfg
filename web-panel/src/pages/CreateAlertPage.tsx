@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type Incident = {
   id: string;
@@ -154,16 +155,27 @@ export default function CreateAlertPage() {
               Registra una alerta manual y vincularla a un incidente abierto cuando corresponda.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/alerts")}
-            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold hover:bg-[color:var(--cm-surface-2)]"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="create-alert-form"]',
+                  title: "Formulario de alerta",
+                  description: "Rellena los campos para crear una alerta manual: tipo (SOS, GEOFENCE, MOVEMENT), título descriptivo, severidad (LOW/MEDIUM/HIGH/CRITICAL) e incidente al que pertenece. Las alertas manuales son útiles para registrar situaciones que no se generaron automáticamente.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/alerts")}
+              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold hover:bg-[color:var(--cm-surface-2)]"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5">
+        <form data-tour="create-alert-form" onSubmit={handleSubmit} className="mt-5 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5">
           {error ? <div className="cm-badge-danger mb-4 rounded-xl p-3 text-sm">{error}</div> : null}
           {success ? <div className="cm-badge-success mb-4 rounded-xl p-3 text-sm">{success}</div> : null}
 

@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Manual de distribución y despliegue - RA7</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #172033;
+      background: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11.5pt;
+      line-height: 1.5;
+    }
+
+    .cover {
+      min-height: 245mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 2px solid #1f4e79;
+      padding: 30mm 22mm;
+      page-break-after: always;
+    }
+
+    .badge {
+      display: inline-block;
+      width: fit-content;
+      padding: 6px 10px;
+      margin-bottom: 20px;
+      color: #ffffff;
+      background: #1f4e79;
+      border-radius: 4px;
+      font-size: 10pt;
+      font-weight: bold;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      color: #12385c;
+      font-size: 29pt;
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      color: #526171;
+      font-size: 14pt;
+    }
+
+    .cover table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    .cover td {
+      padding: 8px 0;
+      border-bottom: 1px solid #d9e2ec;
+      vertical-align: top;
+    }
+
+    .cover td:first-child {
+      width: 34%;
+      color: #526171;
+      font-weight: bold;
+    }
+
+    h2 {
+      margin: 24px 0 10px;
+      padding-bottom: 5px;
+      color: #12385c;
+      border-bottom: 2px solid #d9e2ec;
+      font-size: 17pt;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      color: #1f4e79;
+      font-size: 13.5pt;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 10px;
+    }
+
+    ul, ol {
+      margin: 0 0 12px 22px;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    table {
+      width: 100%;
+      margin: 10px 0 16px;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      padding: 8px 9px;
+      border: 1px solid #cbd5df;
+      vertical-align: top;
+    }
+
+    th {
+      color: #ffffff;
+      background: #1f4e79;
+      text-align: left;
+    }
+
+    code {
+      color: #18324a;
+      background: #eef3f8;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 10.5pt;
+    }
+
+    pre {
+      margin: 10px 0 16px;
+      padding: 10px 12px;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+      color: #18324a;
+      background: #eef3f8;
+      border-left: 4px solid #1f4e79;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+
+    .note {
+      margin: 12px 0 16px;
+      padding: 10px 12px;
+      background: #f3f8fb;
+      border-left: 4px solid #1f4e79;
+    }
+
+    .capture {
+      min-height: 68px;
+      margin: 12px 0 16px;
+      padding: 12px 14px;
+      border: 1.5px dashed #7a8da0;
+      background: #fbfcfe;
+      page-break-inside: avoid;
+    }
+
+    .capture strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #12385c;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="badge">UT 7 - Distribución de aplicaciones</div>
+    <h1>Manual de distribución y despliegue del proyecto</h1>
+    <p class="subtitle">Plataforma de Gestión Operativa para Emergencias</p>
+    <table>
+      <tr>
+        <td>Integrantes</td>
+        <td>José Calderón, Adrián Poyatos y Gonzalo Cuenca</td>
+      </tr>
+      <tr>
+        <td>Curso</td>
+        <td>2.º Desarrollo de Aplicaciones Multiplataforma</td>
+      </tr>
+      <tr>
+        <td>Asignatura</td>
+        <td>Desarrollo de interfaces</td>
+      </tr>
+      <tr>
+        <td>Módulos incluidos</td>
+        <td>Panel web, aplicación móvil, backend y base de datos</td>
+      </tr>
+      <tr>
+        <td>Servicios usados</td>
+        <td>Vercel, Render y Supabase</td>
+      </tr>
+    </table>
+  </section>
+
+  <h2>1. Introducción</h2>
+  <p>
+    En este documento explicamos cómo hemos preparado la distribución y el despliegue de nuestro proyecto.
+    La aplicación está formada por varios módulos que trabajan juntos: un panel web para supervisión,
+    una aplicación móvil para los operativos, un backend que centraliza la lógica del sistema y una base
+    de datos donde se guarda la información.
+  </p>
+  <p>
+    Para la distribución hemos usado servicios reales de despliegue: Vercel para el panel web, Render para
+    el backend, Supabase para la base de datos y un APK de Android para la aplicación móvil. La intención es
+    que el proyecto no se quede solo funcionando en local, sino que pueda ejecutarse desde un entorno preparado
+    para una demostración real.
+  </p>
+
+  <h2>2. Arquitectura de distribución</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Parte del proyecto</th>
+        <th>Tecnología</th>
+        <th>Servicio o formato de distribución</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Panel web</td>
+        <td>React, TypeScript y Vite</td>
+        <td>Vercel</td>
+      </tr>
+      <tr>
+        <td>Backend</td>
+        <td>Django y Django REST Framework</td>
+        <td>Render</td>
+      </tr>
+      <tr>
+        <td>Base de datos</td>
+        <td>PostgreSQL</td>
+        <td>Supabase</td>
+      </tr>
+      <tr>
+        <td>Aplicación móvil</td>
+        <td>React Native y Expo</td>
+        <td>APK Android</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>El flujo general de funcionamiento es el siguiente:</p>
+  <ol>
+    <li>El usuario accede al panel web desde la URL pública de Vercel.</li>
+    <li>El panel web se comunica con el backend desplegado en Render.</li>
+    <li>El backend lee y escribe información en la base de datos de Supabase.</li>
+    <li>La aplicación móvil instalada mediante APK también se comunica con el mismo backend.</li>
+  </ol>
+  <p>
+    De esta manera, el panel web y la app móvil comparten la misma información y trabajan sobre los mismos datos.
+  </p>
+  <div class="capture">
+    <strong>Captura 1 pendiente: arquitectura general.</strong>
+    Insertar un esquema o captura donde se señale: Vercel como panel web, Render como backend,
+    Supabase como base de datos y APK como distribución móvil.
+  </div>
+
+  <h2 class="page-break">3. Distribución del panel web en Vercel</h2>
+  <p>
+    El panel web se encuentra en la carpeta <code>web-panel</code>. Está desarrollado con React, TypeScript y Vite,
+    por lo que el resultado final del despliegue es una aplicación web estática generada en la carpeta <code>dist</code>.
+  </p>
+  <p>Antes de desplegarlo, comprobamos que el proyecto compila correctamente ejecutando:</p>
+  <pre>cd web-panel
+npm install
+npm run build</pre>
+  <p>
+    El comando <code>npm run build</code> ejecuta TypeScript y genera la versión final del panel. Si termina sin errores,
+    Vite crea la carpeta <code>dist</code>, que es la que se publica en producción.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Campo de Vercel</th>
+        <th>Valor utilizado</th>
+        <th>Dónde se comprueba en el proyecto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Framework Preset</td>
+        <td>Vite</td>
+        <td><code>web-panel/package.json</code>, por las dependencias <code>vite</code> y <code>@vitejs/plugin-react</code></td>
+      </tr>
+      <tr>
+        <td>Root Directory</td>
+        <td><code>web-panel</code></td>
+        <td>Carpeta donde está el panel web</td>
+      </tr>
+      <tr>
+        <td>Build Command</td>
+        <td><code>npm run build</code></td>
+        <td><code>web-panel/package.json</code>, dentro de <code>scripts.build</code></td>
+      </tr>
+      <tr>
+        <td>Output Directory</td>
+        <td><code>dist</code></td>
+        <td>Se genera al ejecutar <code>npm run build</code> desde <code>web-panel</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Además, el panel necesita conocer la dirección del backend. Para ello se configura la variable de entorno:
+  </p>
+  <pre>VITE_API_BASE_URL=https://URL-DEL-BACKEND-EN-RENDER/api</pre>
+  <p>En local, esta variable aparece como ejemplo en el archivo:</p>
+  <pre>web-panel/.env.example</pre>
+  <p>
+    En producción, el valor definitivo se configura en Vercel, dentro de <strong>Settings &gt; Environment Variables</strong>.
+    Es decir, el archivo del repositorio sirve como referencia, pero el valor real de producción se guarda en Vercel
+    para que el panel apunte al backend desplegado en Render.
+  </p>
+  <p>
+    En el proyecto también se incluye el archivo <code>web-panel/vercel.json</code>, que permite que las rutas internas
+    del panel funcionen correctamente aunque se recargue la página desde una ruta como <code>/incidents</code>,
+    <code>/alerts</code> o <code>/chats</code>.
+  </p>
+  <pre>{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}</pre>
+  <p>
+    Esta configuración es importante porque el panel usa React Router. Sin este archivo, algunas rutas podrían fallar al
+    recargar la página directamente desde el navegador.
+  </p>
+  <div class="capture">
+    <strong>Captura 2 pendiente: proyecto en Vercel.</strong>
+    Insertar una captura del panel de Vercel donde se vea el proyecto desplegado correctamente. Señalar el estado del
+    despliegue, la URL pública y la rama usada.
+  </div>
+  <div class="capture">
+    <strong>Captura 3 pendiente: variables de entorno de Vercel.</strong>
+    Insertar una captura de las variables de entorno. Señalar <code>VITE_API_BASE_URL</code>. No mostrar contraseñas
+    ni claves privadas.
+  </div>
+  <div class="capture">
+    <strong>Captura 4 pendiente: panel web en producción.</strong>
+    Insertar una captura del panel web abierto en producción, preferiblemente en la pantalla de login o en el dashboard.
+  </div>
+
+  <h2>4. Despliegue del backend en Render</h2>
+  <p>
+    El backend se encuentra en la carpeta <code>backend</code>. Está desarrollado con Django y Django REST Framework,
+    y es el encargado de exponer la API que usan tanto el panel web como la aplicación móvil.
+  </p>
+  <p>
+    Para desplegarlo en Render, el servicio se configura como aplicación web. El backend necesita instalar sus dependencias,
+    aplicar la configuración de producción y arrancar el servidor.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Campo de Render</th>
+        <th>Valor utilizado</th>
+        <th>Dónde se comprueba en el proyecto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Tipo de servicio</td>
+        <td>Web Service</td>
+        <td>Configuración del servicio en Render</td>
+      </tr>
+      <tr>
+        <td>Carpeta raíz</td>
+        <td><code>backend</code></td>
+        <td>Carpeta donde está el backend</td>
+      </tr>
+      <tr>
+        <td>Entorno</td>
+        <td>Python</td>
+        <td><code>backend/requirements.txt</code></td>
+      </tr>
+      <tr>
+        <td>Comando de instalación</td>
+        <td><code>pip install -r requirements.txt</code></td>
+        <td><code>backend/requirements.txt</code></td>
+      </tr>
+      <tr>
+        <td>Comando de arranque</td>
+        <td>Comando de arranque del servidor Django en producción</td>
+        <td><code>backend/manage.py</code> y configuración del servicio en Render</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>En Render se configuran también las variables de entorno necesarias para que Django funcione correctamente:</p>
+  <pre>DJANGO_SECRET_KEY=clave-secreta-de-produccion
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=dominio-de-render
+DB_HOST=host-de-supabase
+DB_NAME=postgres
+DB_USER=usuario-de-supabase
+DB_PASSWORD=contraseña-de-supabase
+DB_PORT=5432
+DB_SSLMODE=require</pre>
+  <p>La referencia de estas variables está en:</p>
+  <pre>backend/.env.example</pre>
+  <p>
+    En ese archivo se ve que la base de datos está preparada para conectarse a Supabase mediante el pooler de PostgreSQL.
+    En Render no se sube el archivo <code>.env</code> real con contraseñas, sino que se copian esas variables en el
+    apartado <strong>Environment</strong> del servicio.
+  </p>
+  <p>
+    En producción es importante que <code>DJANGO_DEBUG</code> esté en <code>False</code>, porque si se deja activado se
+    podrían mostrar datos internos del servidor cuando ocurre un error.
+  </p>
+  <p>
+    Después del despliegue, comprobamos que el backend responde accediendo a una ruta de la API. Aunque algunas rutas
+    devuelvan <code>401 Unauthorized</code> si no hay sesión iniciada, eso significa que el servidor está vivo y que la API
+    está respondiendo.
+  </p>
+  <div class="capture">
+    <strong>Captura 5 pendiente: servicio de Render.</strong>
+    Insertar una captura del servicio desplegado correctamente. Señalar el estado del servicio, la URL pública y el último
+    despliegue correcto.
+  </div>
+  <div class="capture">
+    <strong>Captura 6 pendiente: variables de entorno de Render.</strong>
+    Insertar una captura de las variables de entorno. Señalar <code>DJANGO_DEBUG</code>, <code>DJANGO_ALLOWED_HOSTS</code>
+    y las variables de conexión a Supabase. Ocultar contraseñas y claves secretas.
+  </div>
+  <div class="capture">
+    <strong>Captura 7 pendiente: respuesta de la API.</strong>
+    Insertar una captura del navegador o de una herramienta como Postman mostrando una respuesta de la API desplegada.
+  </div>
+
+  <h2 class="page-break">5. Base de datos en Supabase</h2>
+  <p>
+    Para la base de datos usamos Supabase, que ofrece PostgreSQL como servicio gestionado. Esto nos permite tener la base
+    de datos separada del backend y disponible desde Render mediante las variables de conexión.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>DB_HOST</code></td>
+        <td>Host de conexión a Supabase</td>
+      </tr>
+      <tr>
+        <td><code>DB_NAME</code></td>
+        <td>Nombre de la base de datos</td>
+      </tr>
+      <tr>
+        <td><code>DB_USER</code></td>
+        <td>Usuario de conexión</td>
+      </tr>
+      <tr>
+        <td><code>DB_PASSWORD</code></td>
+        <td>Contraseña de la base de datos</td>
+      </tr>
+      <tr>
+        <td><code>DB_PORT</code></td>
+        <td>Puerto de PostgreSQL</td>
+      </tr>
+      <tr>
+        <td><code>DB_SSLMODE</code></td>
+        <td>Modo SSL, normalmente <code>require</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Estas variables aparecen referenciadas en:</p>
+  <pre>backend/.env.example</pre>
+  <p>La estructura de la base de datos también queda documentada en:</p>
+  <pre>schema.sql</pre>
+  <p>
+    El backend utiliza estas variables para conectarse a Supabase. De esta forma, los datos de usuarios, incidentes,
+    alertas, jornadas, puntos de interés y chats quedan centralizados en una base de datos externa.
+  </p>
+  <div class="capture">
+    <strong>Captura 8 pendiente: base de datos en Supabase.</strong>
+    Insertar una captura del panel de Supabase donde se vea la base de datos del proyecto. Señalar las tablas principales
+    o la zona de conexión. No mostrar contraseñas.
+  </div>
+
+  <h2>6. Distribución de la aplicación móvil</h2>
+  <p>
+    La aplicación móvil está en la carpeta <code>mobile-app</code>. Está desarrollada con React Native y Expo. Para
+    distribuirla se ha generado un archivo APK instalable en Android.
+  </p>
+  <p>El archivo de distribución está en la raíz del proyecto:</p>
+  <pre>emergency-mobile-release.apk</pre>
+  <p>La configuración de nombre, versión, paquete y permisos de Android se encuentra en:</p>
+  <pre>mobile-app/app.json</pre>
+  <p>Las variables de conexión que puede usar la app móvil están documentadas en:</p>
+  <pre>mobile-app/.env.example</pre>
+  <p>
+    Este archivo permite instalar la app en un dispositivo Android sin necesidad de ejecutar el proyecto desde el ordenador.
+    Es la forma más sencilla de entregar y probar la aplicación móvil.
+  </p>
+  <h3>Instalación manual</h3>
+  <ol>
+    <li>Copiar el archivo <code>emergency-mobile-release.apk</code> al móvil.</li>
+    <li>Abrir el archivo desde el explorador de archivos del dispositivo.</li>
+    <li>Permitir la instalación desde fuentes desconocidas si Android lo solicita.</li>
+    <li>Pulsar en instalar.</li>
+    <li>Abrir la aplicación desde el menú de aplicaciones.</li>
+  </ol>
+  <h3>Instalación con ADB</h3>
+  <pre>adb install emergency-mobile-release.apk</pre>
+  <p>
+    La aplicación móvil necesita permisos de ubicación para poder enviar la posición del operativo y detectar si sale de
+    una zona de trabajo. También puede solicitar permisos de notificaciones, dependiendo de la versión de Android.
+  </p>
+  <p>Antes de distribuir una nueva versión del APK, verificamos que el proyecto no tenga errores de TypeScript:</p>
+  <pre>cd mobile-app
+.\node_modules\.bin\tsc.cmd -p tsconfig.json --noEmit</pre>
+  <p>El comando anterior utiliza la configuración TypeScript de:</p>
+  <pre>mobile-app/tsconfig.json</pre>
+  <div class="capture">
+    <strong>Captura 9 pendiente: archivo APK.</strong>
+    Insertar una captura del archivo <code>emergency-mobile-release.apk</code> en la carpeta del proyecto. Señalar el nombre
+    del archivo.
+  </div>
+  <div class="capture">
+    <strong>Captura 10 pendiente: app instalada.</strong>
+    Insertar una captura de la aplicación instalada en Android, por ejemplo la pantalla de login o el menú principal.
+  </div>
+  <div class="capture">
+    <strong>Captura 11 pendiente: permisos de Android.</strong>
+    Insertar una captura de Android pidiendo o mostrando permisos de ubicación, si es posible.
+  </div>
+
+  <h2 class="page-break">7. Configuración entre servicios</h2>
+  <p>Para que todo funcione correctamente, los servicios tienen que apuntarse entre sí:</p>
+  <ul>
+    <li>Vercel debe apuntar al backend de Render mediante <code>VITE_API_BASE_URL</code>; la referencia está en <code>web-panel/.env.example</code> y el valor real se guarda en Vercel.</li>
+    <li>Render debe apuntar a Supabase mediante las variables de conexión de base de datos; la referencia está en <code>backend/.env.example</code> y el valor real se guarda en Render.</li>
+    <li>La app móvil debe apuntar al mismo backend que usa el panel web; la referencia está en <code>mobile-app/.env.example</code>.</li>
+  </ul>
+  <p>
+    La configuración correcta de estas URLs es fundamental. Si el panel web o la app móvil apuntan a una URL incorrecta,
+    la interfaz puede cargar, pero no se podrán iniciar sesión ni consultar datos.
+  </p>
+
+  <h2>8. Comprobaciones después del despliegue</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Prueba</th>
+        <th>Resultado esperado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Abrir la URL del panel en Vercel</td>
+        <td>Se muestra la pantalla de login</td>
+      </tr>
+      <tr>
+        <td>Iniciar sesión desde el panel</td>
+        <td>Se accede al dashboard</td>
+      </tr>
+      <tr>
+        <td>Entrar a incidentes desde el panel</td>
+        <td>Se cargan los datos desde el backend</td>
+      </tr>
+      <tr>
+        <td>Entrar a alertas desde el panel</td>
+        <td>Se muestran las alertas registradas</td>
+      </tr>
+      <tr>
+        <td>Abrir la URL del backend en Render</td>
+        <td>La API responde</td>
+      </tr>
+      <tr>
+        <td>Comprobar conexión con Supabase</td>
+        <td>El backend puede consultar y guardar datos</td>
+      </tr>
+      <tr>
+        <td>Instalar el APK en Android</td>
+        <td>La app se instala sin errores</td>
+      </tr>
+      <tr>
+        <td>Iniciar sesión desde la app móvil</td>
+        <td>Se accede a la pantalla operativa</td>
+      </tr>
+      <tr>
+        <td>Activar GPS desde la app</td>
+        <td>Se solicita permiso y se inicia el seguimiento</td>
+      </tr>
+      <tr>
+        <td>Consultar datos compartidos</td>
+        <td>Web y móvil usan la misma información</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="capture">
+    <strong>Captura 12 pendiente: panel web con datos reales.</strong>
+    Insertar una captura del panel web mostrando datos cargados desde la API.
+  </div>
+  <div class="capture">
+    <strong>Captura 13 pendiente: app móvil conectada.</strong>
+    Insertar una captura de la app móvil conectada al backend, por ejemplo mostrando incidentes, mapa, jornada o alertas.
+  </div>
+
+  <h2>9. Problemas posibles y soluciones</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Problema</th>
+        <th>Causa probable</th>
+        <th>Solución</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>El panel carga, pero el login falla</td>
+        <td>La variable <code>VITE_API_BASE_URL</code> no apunta al backend correcto</td>
+        <td>Revisar la variable en Vercel y volver a desplegar</td>
+      </tr>
+      <tr>
+        <td>Una ruta del panel da error al recargar</td>
+        <td>Falta el rewrite de React Router</td>
+        <td>Revisar <code>web-panel/vercel.json</code></td>
+      </tr>
+      <tr>
+        <td>El backend no conecta con la base de datos</td>
+        <td>Variables de Supabase incorrectas</td>
+        <td>Revisar host, usuario, contraseña y SSL</td>
+      </tr>
+      <tr>
+        <td>Render muestra error de arranque</td>
+        <td>Comando de inicio incorrecto o variable faltante</td>
+        <td>Revisar los logs de Render</td>
+      </tr>
+      <tr>
+        <td>La app móvil no inicia sesión</td>
+        <td>El APK apunta a una URL de backend incorrecta</td>
+        <td>Recompilar el APK con la URL correcta</td>
+      </tr>
+      <tr>
+        <td>Android no deja instalar el APK</td>
+        <td>Fuentes desconocidas desactivadas</td>
+        <td>Activar el permiso para instalar APKs</td>
+      </tr>
+      <tr>
+        <td>El GPS no funciona</td>
+        <td>Permisos de ubicación denegados</td>
+        <td>Conceder permisos desde ajustes del dispositivo</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>10. Conclusión</h2>
+  <p>
+    Con este despliegue hemos conseguido que el proyecto pueda usarse fuera del entorno local. El panel web queda publicado
+    en Vercel, el backend se ejecuta en Render, la base de datos está alojada en Supabase y la aplicación móvil se distribuye
+    mediante un APK instalable.
+  </p>
+  <p>
+    Esta distribución permite probar el funcionamiento completo del sistema: el supervisor trabaja desde el panel web, el
+    operativo usa la app móvil y ambos módulos se comunican con el mismo backend y la misma base de datos. Por tanto, el
+    proyecto queda preparado para una demostración real y para una entrega evaluable de distribución.
+  </p>
+</body>
+</html>

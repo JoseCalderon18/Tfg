@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type Incidente = {
   id: string;
@@ -133,7 +134,27 @@ export default function WeatherPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-1 text-xs shadow-lg">
+          <div className="flex items-center gap-2 self-start">
+          <TourButton
+            steps={[
+              {
+                selector: '[data-tour="weather-tabs"]',
+                title: "Capas meteorológicas",
+                description: "Selecciona la capa a visualizar en el mapa: Viento (velocidad y dirección del viento), Nubes (cobertura nubosa) o Lluvia (precipitaciones previstas). Cambia de capa con un solo clic.",
+              },
+              {
+                selector: '[data-tour="weather-incidents"]',
+                title: "Incidentes asociados",
+                description: "Selecciona un incidente para centrar el mapa meteorológico sobre su zona de operaciones. El panel muestra la lista de incidentes activos con su ubicación.",
+              },
+              {
+                selector: '[data-tour="weather-map"]',
+                title: "Mapa meteorológico",
+                description: "Mapa interactivo en tiempo real con datos meteorológicos de Windy. Puedes hacer zoom, desplazarte y cambiar la capa para analizar las condiciones en la zona de emergencia.",
+              },
+            ]}
+          />
+          <div className="flex items-center gap-1 rounded-full border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-1 text-xs shadow-lg" data-tour="weather-tabs">
             {(["wind", "clouds", "rain"] as VistaMeteo[]).map((vista) => (
               <button
                 key={vista}
@@ -147,10 +168,11 @@ export default function WeatherPage() {
               </button>
             ))}
           </div>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-5 xl:grid-cols-[250px_1fr]">
-          <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 xl:sticky xl:top-5 xl:h-[calc(100vh-7rem)] xl:overflow-hidden">
+          <aside data-tour="weather-incidents" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 xl:sticky xl:top-5 xl:h-[calc(100vh-7rem)] xl:overflow-hidden">
             <h2 className="text-base font-semibold">Incidentes</h2>
             <p className="mt-1 text-sm text-[color:var(--cm-text-muted)]">
               Selecciona un incidente para centrar el mapa meteorologico.
@@ -183,7 +205,7 @@ export default function WeatherPage() {
             </div>
           </aside>
 
-          <section className="space-y-4">
+          <section data-tour="weather-map" className="space-y-4">
             {cargando ? (
               <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-6">
                 <div className="flex items-center gap-3">

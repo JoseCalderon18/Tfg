@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type UnidadOperativa = {
   id: string;
@@ -396,6 +397,20 @@ export function ViewUnidadesPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="units-metrics"]',
+                  title: "Indicadores de unidades",
+                  description: "Resumen estadístico: total de unidades cargadas, cuántas están activas, cuántas tienen organización asignada, cuántas tienen GPS activo ahora mismo y cuántas están en jornada.",
+                },
+                {
+                  selector: '[data-tour="units-list"]',
+                  title: "Listado de unidades",
+                  description: "Tabla de operativos y supervisores del sistema con su organización, rol, estado y disponibilidad. Usa el buscador y los filtros para encontrar rápidamente una unidad. Pulsa sobre una fila para ver el detalle completo de la unidad.",
+                },
+              ]}
+            />
             <button
               type="button"
               onClick={() => navigate("/viewusers")}
@@ -413,7 +428,7 @@ export function ViewUnidadesPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <div data-tour="units-metrics" className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-4">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Total cargado</p>
             <p className="mt-2 text-2xl font-bold">{total}</p>
@@ -440,7 +455,7 @@ export function ViewUnidadesPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 2xl:grid-cols-[1.65fr_0.95fr]">
+        <div data-tour="units-list" className="mt-5 grid gap-4 2xl:grid-cols-[1.65fr_0.95fr]">
           <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
               <div className="grid gap-3 md:grid-cols-2">
                 <input

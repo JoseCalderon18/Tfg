@@ -4,6 +4,7 @@ import { Circle, CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMa
 import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type TipoArea = "CIRCLE" | "POLYGON";
 
@@ -432,19 +433,30 @@ export default function EditWorkAreaPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/workarea")}
-            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
-          >
-            Volver a areas
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="edit-workarea-form"]',
+                  title: "Editar área de trabajo",
+                  description: "Modifica los parámetros del área: nombre, incidente asociado, tipo (circular o poligonal) y geometría en el mapa. Para áreas circulares ajusta el radio en metros. Para poligonales, edita los vértices directamente en el mapa.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/workarea")}
+              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
+            >
+              Volver a areas
+            </button>
+          </div>
         </div>
 
         {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
         {exito ? <div className="mt-4 cm-badge-success rounded-xl p-3 text-sm">{exito}</div> : null}
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div data-tour="edit-workarea-form" className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-4">
             <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <div className="mb-5">

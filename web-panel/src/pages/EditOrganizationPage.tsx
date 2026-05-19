@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 const TIPOS_ORGANIZACION = [
   { value: "FIRE_DEPT", label: "Departamento de Bomberos" },
@@ -135,16 +136,27 @@ export default function EditOrganizationPage() {
             <h1 className="text-2xl font-bold">Editar organizacion</h1>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/vieworganizations")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="edit-org-form"]',
+                  title: "Editar organización",
+                  description: "Modifica los datos de la organización: nombre, tipo, descripción y responsable. Los cambios se aplican inmediatamente a todos los miembros de la organización.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/vieworganizations")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800">
+        <div data-tour="edit-org-form" className="mt-6 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800">
           {error && (
             <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
               {error}

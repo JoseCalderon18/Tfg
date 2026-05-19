@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -154,16 +155,27 @@ export default function NewOrganizationPage() {
           title="Crear nueva organización"
           description="Completa los datos básicos para registrar una organización en el sistema."
           actions={
-            <button type="button" onClick={() => navigate("/vieworganizations")} className="cm-btn cm-btn-secondary">
-              Volver
-            </button>
+            <div className="flex items-center gap-2">
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="new-org-form"]',
+                    title: "Formulario de organización",
+                    description: "Rellena los datos de la nueva organización: nombre, tipo (bomberos, policía, sanitarios…), descripción y contacto principal. Las organizaciones agrupan a los operativos y aparecen en el listado de recursos.",
+                  },
+                ]}
+              />
+              <button type="button" onClick={() => navigate("/vieworganizations")} className="cm-btn cm-btn-secondary">
+                Volver
+              </button>
+            </div>
           }
         />
 
         {error ? <ErrorBanner message={error} /> : null}
         {enviado ? <SuccessBanner message={enviado} /> : null}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form data-tour="new-org-form" onSubmit={handleSubmit} className="space-y-5">
           <FormSection title="Datos principales" description="Identificación y tipo operativo de la organización.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">

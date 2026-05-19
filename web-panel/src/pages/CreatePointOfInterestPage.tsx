@@ -4,6 +4,7 @@ import { CircleMarker, MapContainer, Marker, TileLayer, useMap, useMapEvents } f
 import type { LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type IncidentOption = {
   id: string;
@@ -196,16 +197,27 @@ export default function CreatePointOfInterestPage() {
               Registra una referencia operativa y marca su posicion exacta sobre el mapa.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/points")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="create-poi-form"]',
+                  title: "Crear punto de interés",
+                  description: "Registra un punto de referencia operativo: nombre, tipo (recurso, peligro, punto de reunión…), incidente asociado y posición exacta en el mapa. Haz clic en el mapa para fijar la ubicación o introduce coordenadas manualmente.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/points")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div data-tour="create-poi-form" className="mt-8 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <section className="rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
             {error ? (
               <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">

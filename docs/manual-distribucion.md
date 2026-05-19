@@ -44,6 +44,17 @@ Este rewrite redirige todas las rutas al `index.html`, permitiendo que React Rou
    - `VITE_API_BASE_URL` = URL pública del backend (p. ej. `https://mi-backend.com/api`)
 5. Pulsa **Deploy**.
 
+Archivos del proyecto donde se comprueba esta configuración:
+
+| Valor | Archivo o ruta |
+|---|---|
+| Framework Vite | `web-panel/package.json` |
+| Script `npm run build` | `web-panel/package.json`, dentro de `scripts.build` |
+| Carpeta del panel | `web-panel` |
+| Variable `VITE_API_BASE_URL` de referencia | `web-panel/.env.example` |
+| Rewrite para React Router | `web-panel/vercel.json` |
+| Carpeta generada para producción | `web-panel/dist` |
+
 Vercel construye automáticamente la app y la sirve desde su CDN global con HTTPS.
 
 ### 2.3 Despliegues posteriores
@@ -114,6 +125,16 @@ adb install emergency-mobile-release.apk
 
 La URL del backend está configurada en tiempo de compilación mediante `EXPO_PUBLIC_API_BASE_URL`. El APK precompilado apunta al backend de producción. Si necesitas apuntar a un backend diferente, recompila la app (ver manual de instalación).
 
+Archivos del proyecto donde se comprueba esta configuración:
+
+| Valor | Archivo o ruta |
+|---|---|
+| APK generado | `emergency-mobile-release.apk` |
+| Nombre, versión, paquete y permisos Android | `mobile-app/app.json` |
+| Variables de conexión de la app | `mobile-app/.env.example` |
+| Scripts de ejecución de Expo | `mobile-app/package.json` |
+| Configuración TypeScript | `mobile-app/tsconfig.json` |
+
 ---
 
 ## 4. Backend — Despliegue con Docker
@@ -139,6 +160,17 @@ DB_HOST=host-de-postgresql
 DB_PASSWORD=contraseña-segura
 DB_SSLMODE=require
 ```
+
+Archivos del proyecto donde se comprueba esta configuración:
+
+| Valor | Archivo o ruta |
+|---|---|
+| Variables de entorno de referencia | `backend/.env.example` |
+| Dependencias del backend | `backend/requirements.txt` |
+| Entrada de Django | `backend/manage.py` |
+| Docker del backend | `backend/Dockerfile` |
+| Despliegue local con contenedores | `backend/docker-compose.yml` |
+| Estructura de base de datos | `schema.sql` |
 
 > **Nunca** uses `DJANGO_DEBUG=True` en producción. Expone información sensible.
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, Pagination, SearchBar } from "../components/ui";
+import TourButton from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -224,6 +225,20 @@ export default function ViewOrganizationsPage() {
             <h1 className="cm-page-title">Organizaciones</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="orgs-kpis"]',
+                  title: "Indicadores de organizaciones",
+                  description: "Resumen estadístico: total de organizaciones registradas, cuántas están activas, cuántas tienen personal asignado y cuántos incidentes están asociados a ellas.",
+                },
+                {
+                  selector: '[data-tour="orgs-list"]',
+                  title: "Listado de organizaciones",
+                  description: "Tabla con todas las organizaciones del sistema: nombre, tipo, número de miembros y estado. Usa el buscador para filtrar por nombre o tipo. Pulsa Editar para modificar los datos o Crear organización para añadir una nueva.",
+                },
+              ]}
+            />
             <button
               type="button"
               onClick={() => navigate("/")}
@@ -241,7 +256,7 @@ export default function ViewOrganizationsPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div data-tour="orgs-kpis" className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <article className="cm-metric-card">
             <p className="cm-eyebrow">Organizaciones</p>
             <p className="mt-2 text-3xl font-bold text-[color:var(--cm-info)]">{organizationKpis.totalOrganizations}</p>
@@ -262,6 +277,7 @@ export default function ViewOrganizationsPage() {
           </article>
         </div>
 
+        <div data-tour="orgs-list">
         <SearchBar
           value={query}
           onChange={(e) => {
@@ -410,6 +426,7 @@ export default function ViewOrganizationsPage() {
           onPrevious={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
           onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
         />
+        </div>
       </div>
 
       {organizacionPendienteEliminar ? (

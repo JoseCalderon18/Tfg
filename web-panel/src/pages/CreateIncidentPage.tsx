@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -241,16 +242,27 @@ export default function CreateIncidentPage() {
           title="Crear nuevo incidente"
           description="Completa la información operativa para registrar el incidente."
           actions={
-            <button type="button" onClick={() => navegar("/incidents")} className="cm-btn cm-btn-secondary">
-              Volver
-            </button>
+            <div className="flex items-center gap-2">
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="create-incident-form"]',
+                    title: "Formulario de incidente",
+                    description: "Rellena los campos para registrar el incidente: nombre, tipo de emergencia (incendio, rescate, médico…), estado inicial, descripción y ubicación. Todos los campos marcados son obligatorios. Pulsa Guardar cuando hayas completado el formulario.",
+                  },
+                ]}
+              />
+              <button type="button" onClick={() => navegar("/incidents")} className="cm-btn cm-btn-secondary">
+                Volver
+              </button>
+            </div>
           }
         />
 
         {errorMensaje ? <ErrorBanner message={errorMensaje} /> : null}
         {mensajeExito ? <SuccessBanner message={mensajeExito} /> : null}
 
-        <form onSubmit={manejarEnvio} className="space-y-5">
+        <form data-tour="create-incident-form" onSubmit={manejarEnvio} className="space-y-5">
           <FormSection title="Datos del incidente" description="Información mínima para identificar y clasificar la emergencia.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">

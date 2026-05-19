@@ -6,6 +6,7 @@ import type { LatLngTuple } from "leaflet";
 
 import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type SeveridadRiesgo = "LOW" | "MEDIUM" | "HIGH";
 
@@ -665,20 +666,41 @@ export default function RiskReportsPage() {
         title="Reportes de riesgo"
         description="Modulo operativo que unifica risk_reports con alertas de tipo riesgo para registrar peligros sin duplicarlos."
         actions={
-          <button
-            type="button"
-            onClick={() => void cargarDatos()}
-            className="cm-btn cm-btn-secondary"
-          >
-            Recargar
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="risk-metrics"]',
+                  title: "Indicadores de riesgo",
+                  description: "Las 4 tarjetas muestran el resumen: reportes activos, cuántos son de riesgo alto, cuántos de riesgo medio y cuántos se generaron automáticamente a partir de alertas del sistema.",
+                },
+                {
+                  selector: '[data-tour="risk-list"]',
+                  title: "Listado de riesgos",
+                  description: "Tabla de reportes de riesgo con descripción, incidente asociado, severidad (LOW/MEDIUM/HIGH), estado y fecha. Filtra por severidad con el selector o busca por texto libre. Pulsa el botón de acción para ver el detalle completo o cerrar el reporte.",
+                },
+                {
+                  selector: '[data-tour="risk-map"]',
+                  title: "Mapa de riesgos",
+                  description: "Visualización geográfica de los puntos de riesgo activos. Cada marcador en el mapa corresponde a un reporte geolocalizado. Los colores indican la severidad: rojo alto, naranja medio, azul bajo.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => void cargarDatos()}
+              className="cm-btn cm-btn-secondary"
+            >
+              Recargar
+            </button>
+          </div>
         }
       />
 
       {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
       {exitoMensaje ? <div className="cm-badge-success mt-4 rounded-xl p-3 text-sm">{exitoMensaje}</div> : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="risk-metrics" className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Activos" value={indicadores.activos} tone="success" />
         <MetricCard label="Riesgo alto" value={indicadores.altos} tone="danger" />
         <MetricCard label="Riesgo medio" value={indicadores.medios} tone="warning" />
@@ -686,7 +708,7 @@ export default function RiskReportsPage() {
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.8fr)]">
-        <section className="space-y-4">
+        <section data-tour="risk-list" className="space-y-4">
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
             <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px]">
               <SearchBar
@@ -720,7 +742,7 @@ export default function RiskReportsPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]">
+          <div data-tour="risk-map" className="overflow-hidden rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]">
             <MapContainer center={centroMapa} zoom={puntosMapa.length ? 11 : 6} scrollWheelZoom style={{ height: "430px", width: "100%" }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

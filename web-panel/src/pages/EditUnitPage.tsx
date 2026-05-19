@@ -2,6 +2,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
+import TourButton from "../components/TourGuide";
 
 
 const OPCIONES_ROL = [
@@ -688,6 +689,15 @@ export default function EditUnitPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="edit-unit-form"]',
+                  title: "Editar unidad operativa",
+                  description: "Vista centralizada con toda la información de la unidad: datos personales, organización, rol, jornadas activas y mapa de última posición. Modifica los campos necesarios y pulsa Guardar. También puedes ver el historial de jornadas y la actividad reciente.",
+                },
+              ]}
+            />
             <button
               type="button"
               onClick={() => navigate("/viewunidades")}
@@ -698,7 +708,7 @@ export default function EditUnitPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
+        <div data-tour="edit-unit-form" className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
           <div className="space-y-4">
             {error ? <div className="cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
             {exito ? <div className="cm-badge-success rounded-xl p-3 text-sm">{exito}</div> : null}

@@ -6,6 +6,7 @@ import L from "leaflet";
 import type { LatLngTuple } from "leaflet";
 
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -301,12 +302,26 @@ export default function PointOfInterestPage() {
             Mapa general de referencias operativas registradas por las unidades.
           </p>
         </div>
+        <TourButton
+          steps={[
+            {
+              selector: '[data-tour="poi-list"]',
+              title: "Lista de puntos de interés",
+              description: "Tabla con todos los POI registrados: nombre, tipo, incidente asociado y operativo que lo creó. Filtra por nombre, tipo o incidente con el buscador. Pulsa cualquier fila para centrar el mapa en ese punto.",
+            },
+            {
+              selector: '[data-tour="poi-map"]',
+              title: "Mapa de puntos de interés",
+              description: "Visualización geográfica de todos los POI. Cada marcador muestra el nombre y tipo del punto. Haz clic en un marcador para ver sus detalles. El botón Crear nuevo permite añadir un nuevo punto de referencia.",
+            },
+          ]}
+        />
       </div>
 
       {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
-        <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <section data-tour="poi-list" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
             <input
               type="text"
@@ -350,7 +365,7 @@ export default function PointOfInterestPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <section data-tour="poi-map" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           {!selectedPoint ? (
             <div className="grid h-full min-h-[320px] place-items-center text-sm text-[color:var(--cm-text-muted)]">
               Selecciona un punto de interes en el mapa para ver su informacion.

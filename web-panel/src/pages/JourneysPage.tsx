@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
-import { FloatingTourButton } from "../components/TourGuide";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -302,6 +302,20 @@ export default function JourneysPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="journeys-stats"]',
+                  title: "Estadísticas de jornadas",
+                  description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día de un vistazo.",
+                },
+                {
+                  selector: '[data-tour="journeys-list"]',
+                  title: "Listado de jornadas",
+                  description: "Cada fila es una jornada: quién la inició, su correo, rol, hora de inicio y fin. Haz clic en una fila para ver su mapa GPS con el recorrido completo y los descansos. Usa el buscador para filtrar por unidad, correo o notas. Una jornada activa no tiene hora de fin y sigue actualizándose en tiempo real.",
+                },
+              ]}
+            />
             <button
               type="button"
               onClick={() => navigate("/viewunidades")}
@@ -580,20 +594,6 @@ export default function JourneysPage() {
         </div>
       ) : null}
 
-      <FloatingTourButton
-        steps={[
-          {
-            selector: '[data-tour="journeys-stats"]',
-            title: "Estadísticas de jornadas",
-            description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día de un vistazo.",
-          },
-          {
-            selector: '[data-tour="journeys-list"]',
-            title: "Listado de jornadas",
-            description: "Cada fila es una jornada: quién la inició, su correo, rol, hora de inicio y fin. Haz clic en una fila para ver su mapa GPS con el recorrido completo y los descansos. Usa el buscador para filtrar por unidad, correo o notas. Los botones Ver unidades y Volver están arriba a la derecha. Una jornada activa no tiene hora de fin y sigue actualizándose en tiempo real.",
-          },
-        ]}
-      />
     </div>
   );
 }
