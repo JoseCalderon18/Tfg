@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -789,7 +790,7 @@ export default function IncidentsPage() {
             <h1 className="text-2xl font-bold">Incidentes</h1>
           </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div data-tour="incidents-actions" className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={exportarIncidentesPdf}
@@ -798,8 +799,6 @@ export default function IncidentsPage() {
           >
             Exportar PDF
           </button>
-
-
           <button
             type="button"
             onClick={() => navegar("/createincident")}
@@ -811,7 +810,7 @@ export default function IncidentsPage() {
         </div>
 
         </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div data-tour="incidents-stats" className="mt-4 grid gap-3 md:grid-cols-3">
           <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
               Incidentes abiertos
@@ -849,7 +848,7 @@ export default function IncidentsPage() {
           </article>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
+        <div data-tour="incidents-list" className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
             <div>
               <input
@@ -1315,6 +1314,26 @@ export default function IncidentsPage() {
           </div>
         </div>
       ) : null}
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="incidents-actions"]',
+            title: "Botones de acción",
+            description: "Exportar PDF descarga un informe completo de todos los incidentes visibles. Nuevo incidente abre el formulario de creación donde defines nombre, tipo (incendio, rescate, médico…) y estado inicial.",
+          },
+          {
+            selector: '[data-tour="incidents-stats"]',
+            title: "KPIs de incidentes",
+            description: "Las 3 tarjetas muestran el recuento actual por estado: Abiertos (activos en campo ahora mismo), En evaluación (pendientes de decisión del mando) y Cerrados (finalizados y archivados). Se actualizan en tiempo real.",
+          },
+          {
+            selector: '[data-tour="incidents-list"]',
+            title: "Búsqueda y selección",
+            description: "Escribe en el campo de búsqueda para filtrar por nombre, tipo, estado o dirección. Haz clic en cualquier incidente de la lista para cargar su ficha completa a la derecha del mapa.",
+          },
+        ]}
+      />
     </div>
   );
 }

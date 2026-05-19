@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -90,38 +91,40 @@ export default function ViewUsersPage() {
           eyebrow="Administración"
           title="Usuarios del sistema"
           actions={
-            <>
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="cm-btn cm-btn-secondary"
-            >
-              Volver
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/newuser")}
-              className="cm-btn cm-btn-primary"
-            >
-              Crear Usuario
-            </button>
-            </>
+            <div data-tour="users-actions" className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="cm-btn cm-btn-secondary"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/newuser")}
+                className="cm-btn cm-btn-primary"
+              >
+                Crear Usuario
+              </button>
+            </div>
           }
         />
 
-        <SearchBar
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPaginaActual(1);
-          }}
-          onClear={() => {
-            setQuery("");
-            setPaginaActual(1);
-          }}
-          placeholder="Buscar por username, email o rol..."
-          resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
-        />
+        <div data-tour="users-search">
+          <SearchBar
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPaginaActual(1);
+            }}
+            onClear={() => {
+              setQuery("");
+              setPaginaActual(1);
+            }}
+            placeholder="Buscar por username, email o rol..."
+            resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
+          />
+        </div>
 
         {error ? <ErrorBanner message={error} className="mt-4" /> : null}
 
@@ -159,6 +162,7 @@ export default function ViewUsersPage() {
           </div>
         )}
 
+        <div data-tour="users-table">
         <DataTable minWidth="1050px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
@@ -207,6 +211,7 @@ export default function ViewUsersPage() {
               )}
             </tbody>
         </DataTable>
+        </div>
 
         <Pagination
           page={paginaActual}
@@ -218,6 +223,26 @@ export default function ViewUsersPage() {
           onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
         />
       </div>
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="users-actions"]',
+            title: "Acciones de usuarios",
+            description: "Volver regresa al dashboard principal. Crear Usuario abre el formulario para registrar un nuevo usuario en el sistema con username, email, contraseña y rol.",
+          },
+          {
+            selector: '[data-tour="users-search"]',
+            title: "Búsqueda de usuarios",
+            description: "Escribe el nombre de usuario, correo electrónico o rol para filtrar la lista. El contador muestra cuántos resultados coinciden con tu búsqueda sobre el total.",
+          },
+          {
+            selector: '[data-tour="users-table"]',
+            title: "Tabla de usuarios",
+            description: "Lista completa de usuarios del sistema con su username, email, rol (ADMIN / COMMAND / OPERATIVE), estado activo o inactivo y fecha de registro. Pulsa Editar para modificar los datos o cambiar el estado de la cuenta.",
+          },
+        ]}
+      />
     </div>
   );
 }

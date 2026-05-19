@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -318,7 +319,7 @@ export default function JourneysPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div data-tour="journeys-stats" className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-4">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Total</p>
             <p className="mt-2 text-2xl font-bold">{jornada.length}</p>
@@ -338,7 +339,7 @@ export default function JourneysPage() {
         </div>
 
         <div className="mt-5 grid gap-4 2xl:grid-cols-[1.55fr_1fr]">
-          <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <section data-tour="journeys-list" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
               <input
                 value={busqueda}
@@ -578,6 +579,21 @@ export default function JourneysPage() {
           </div>
         </div>
       ) : null}
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="journeys-stats"]',
+            title: "Estadísticas de jornadas",
+            description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día de un vistazo.",
+          },
+          {
+            selector: '[data-tour="journeys-list"]',
+            title: "Listado de jornadas",
+            description: "Cada fila es una jornada: quién la inició, su correo, rol, hora de inicio y fin. Haz clic en una fila para ver su mapa GPS con el recorrido completo y los descansos. Usa el buscador para filtrar por unidad, correo o notas. Los botones Ver unidades y Volver están arriba a la derecha. Una jornada activa no tiene hora de fin y sigue actualizándose en tiempo real.",
+          },
+        ]}
+      />
     </div>
   );
 }
