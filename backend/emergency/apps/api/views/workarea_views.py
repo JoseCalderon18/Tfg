@@ -9,6 +9,7 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 import math
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import Alerta, WorkArea
 from ..serializers import WorkAreaCreateSerializer, WorkAreaSerializer
 
@@ -68,6 +69,25 @@ class WorkAreaViewSet(viewsets.ModelViewSet):
         if self.action in {"create", "update", "partial_update"}:
             return WorkAreaCreateSerializer
         return WorkAreaSerializer
+
+    def perform_create(self, serializer):
+        workarea = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo el area de trabajo '{workarea.name}'.",
+        )
+
+    def perform_update(self, serializer):
+        workarea = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico el area de trabajo '{workarea.name}'.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino el area de trabajo '{instance.name}'."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)
 
     @action(detail=False, methods=["post"], url_path="check-position")
     def check_position(self, request):
