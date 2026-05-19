@@ -7,8 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
-import HelpButton from "../components/HelpButton";
-import TourButton from "../components/TourGuide";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -791,33 +790,7 @@ export default function IncidentsPage() {
             <h1 className="text-2xl font-bold">Incidentes</h1>
           </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
-          <TourButton
-            steps={[
-              {
-                selector: '[data-tour="incidents-stats"]',
-                title: "Resumen de incidentes",
-                description: "Muestra el total de incidentes por estado: abiertos (activos ahora), en evaluación (pendientes de resolución) y cerrados (finalizados). Úsalos para tener un vistazo rápido del estado operativo.",
-              },
-              {
-                selector: '[data-tour="incidents-list"]',
-                title: "Lista y filtro de incidentes",
-                description: "Filtra incidentes por nombre, tipo, estado o ubicación. Haz clic en cualquier fila para ver su ficha completa con alertas asociadas, mapa y áreas de trabajo asignadas.",
-              },
-            ]}
-          />
-          <HelpButton
-            title="Incidentes"
-            content={
-              <>
-                <p>Gestiona el ciclo de vida completo de los incidentes operativos.</p>
-                <p><strong className="text-[color:var(--cm-text)]">ABIERTO</strong> — incidente activo en curso.</p>
-                <p><strong className="text-[color:var(--cm-text)]">EN EVALUACIÓN</strong> — bajo análisis, pendiente de resolución.</p>
-                <p><strong className="text-[color:var(--cm-text)]">CERRADO</strong> — incidente finalizado.</p>
-                <p>Desde la ficha de cada incidente puedes ver sus alertas asociadas y asignar áreas de trabajo. Usa 'Exportar PDF' para descargar el informe.</p>
-              </>
-            }
-          />
+                  <div data-tour="incidents-actions" className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={exportarIncidentesPdf}
@@ -826,7 +799,6 @@ export default function IncidentsPage() {
           >
             Exportar PDF
           </button>
-
           <button
             type="button"
             onClick={() => navegar("/createincident")}
@@ -1342,6 +1314,26 @@ export default function IncidentsPage() {
           </div>
         </div>
       ) : null}
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="incidents-actions"]',
+            title: "Botones de acción",
+            description: "Exportar PDF descarga un informe completo de todos los incidentes visibles. Nuevo incidente abre el formulario de creación donde defines nombre, tipo (incendio, rescate, médico…) y estado inicial.",
+          },
+          {
+            selector: '[data-tour="incidents-stats"]',
+            title: "KPIs de incidentes",
+            description: "Las 3 tarjetas muestran el recuento actual por estado: Abiertos (activos en campo ahora mismo), En evaluación (pendientes de decisión del mando) y Cerrados (finalizados y archivados). Se actualizan en tiempo real.",
+          },
+          {
+            selector: '[data-tour="incidents-list"]',
+            title: "Búsqueda y selección",
+            description: "Escribe en el campo de búsqueda para filtrar por nombre, tipo, estado o dirección. Haz clic en cualquier incidente de la lista para cargar su ficha completa a la derecha del mapa.",
+          },
+        ]}
+      />
     </div>
   );
 }

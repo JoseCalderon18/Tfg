@@ -194,3 +194,22 @@ export default function TourButton({ steps, className = "" }: TourButtonProps) {
     </>
   );
 }
+
+export function FloatingTourButton({ steps }: { steps: TourStep[] }) {
+  const [active, setActive] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setActive(true)}
+        className="fixed bottom-4 left-4 z-50 grid h-11 w-11 place-items-center rounded-full bg-[color:var(--cm-success)] text-xl font-bold text-white shadow-2xl transition hover:brightness-110 active:scale-95"
+        aria-label="Ayuda interactiva de esta página"
+        title="Ayuda interactiva"
+      >
+        ?
+      </button>
+      {active ? <TourOverlay steps={steps} onClose={() => setActive(false)} /> : null}
+    </>
+  );
+}

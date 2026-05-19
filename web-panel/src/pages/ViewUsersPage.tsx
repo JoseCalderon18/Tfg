@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
-import HelpButton from "../components/HelpButton";
-import TourButton from "../components/TourGuide";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -92,48 +91,22 @@ export default function ViewUsersPage() {
           eyebrow="Administración"
           title="Usuarios del sistema"
           actions={
-            <>
-            <TourButton
-              steps={[
-                {
-                  selector: '[data-tour="users-search"]',
-                  title: "Buscar usuarios",
-                  description: "Filtra la lista por nombre de usuario, email o rol en tiempo real. El resultado muestra cuántos usuarios coinciden con la búsqueda.",
-                },
-                {
-                  selector: '[data-tour="users-table"]',
-                  title: "Lista de usuarios",
-                  description: "Todos los usuarios del sistema con su username, email, rol (ADMIN, COMMAND, OPERATIVE) y estado activo/inactivo. Pulsa 'Editar usuario' en cualquier fila para modificarlo.",
-                },
-              ]}
-            />
-            <HelpButton
-              title="Usuarios del sistema"
-              content={
-                <>
-                  <p>Gestiona los usuarios que acceden al panel web y a la app móvil.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">ADMIN</strong> — acceso completo al panel y administración.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">COMMAND</strong> — supervisión operativa sin gestión de usuarios.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">OPERATIVE</strong> — solo acceso a la app móvil para trabajo de campo.</p>
-                  <p>Para crear un usuario, pulsa 'Crear Usuario' y rellena el formulario. Recuerda asignar una organización.</p>
-                </>
-              }
-            />
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="cm-btn cm-btn-secondary"
-            >
-              Volver
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/newuser")}
-              className="cm-btn cm-btn-primary"
-            >
-              Crear Usuario
-            </button>
-</>
+            <div data-tour="users-actions" className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="cm-btn cm-btn-secondary"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/newuser")}
+                className="cm-btn cm-btn-primary"
+              >
+                Crear Usuario
+              </button>
+            </div>
           }
         />
 
@@ -250,6 +223,26 @@ export default function ViewUsersPage() {
           onNext={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
         />
       </div>
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="users-actions"]',
+            title: "Acciones de usuarios",
+            description: "Volver regresa al dashboard principal. Crear Usuario abre el formulario para registrar un nuevo usuario en el sistema con username, email, contraseña y rol.",
+          },
+          {
+            selector: '[data-tour="users-search"]',
+            title: "Búsqueda de usuarios",
+            description: "Escribe el nombre de usuario, correo electrónico o rol para filtrar la lista. El contador muestra cuántos resultados coinciden con tu búsqueda sobre el total.",
+          },
+          {
+            selector: '[data-tour="users-table"]',
+            title: "Tabla de usuarios",
+            description: "Lista completa de usuarios del sistema con su username, email, rol (ADMIN / COMMAND / OPERATIVE), estado activo o inactivo y fecha de registro. Pulsa Editar para modificar los datos o cambiar el estado de la cuenta.",
+          },
+        ]}
+      />
     </div>
   );
 }

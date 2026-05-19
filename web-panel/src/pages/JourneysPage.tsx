@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
-import HelpButton from "../components/HelpButton";
-import TourButton from "../components/TourGuide";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -303,32 +302,6 @@ export default function JourneysPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <TourButton
-              steps={[
-                {
-                  selector: '[data-tour="journeys-stats"]',
-                  title: "Estadísticas de jornadas",
-                  description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día.",
-                },
-                {
-                  selector: '[data-tour="journeys-list"]',
-                  title: "Listado de jornadas",
-                  description: "Detalle de cada jornada: quién la inició, cuándo empezó y terminó, duración total y notas. Haz clic en cualquier jornada para ver su mapa de recorrido GPS y los descansos registrados.",
-                },
-              ]}
-            />
-            <HelpButton
-              title="Centro de jornadas"
-              content={
-                <>
-                  <p>Seguimiento de los turnos de trabajo iniciados desde la app móvil.</p>
-                  <p>Cada jornada registra hora de inicio, ubicación GPS, descansos y hora de finalización.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">Inicio</strong> — el operativo activa la jornada desde el menú de la app.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">Descanso</strong> — pausa opcional que interrumpe el registro de movimiento.</p>
-                  <p><strong className="text-[color:var(--cm-text)]">Parar</strong> — cierra la jornada y guarda el resumen completo.</p>
-                </>
-              }
-            />
             <button
               type="button"
               onClick={() => navigate("/viewunidades")}
@@ -606,6 +579,21 @@ export default function JourneysPage() {
           </div>
         </div>
       ) : null}
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="journeys-stats"]',
+            title: "Estadísticas de jornadas",
+            description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día de un vistazo.",
+          },
+          {
+            selector: '[data-tour="journeys-list"]',
+            title: "Listado de jornadas",
+            description: "Cada fila es una jornada: quién la inició, su correo, rol, hora de inicio y fin. Haz clic en una fila para ver su mapa GPS con el recorrido completo y los descansos. Usa el buscador para filtrar por unidad, correo o notas. Los botones Ver unidades y Volver están arriba a la derecha. Una jornada activa no tiene hora de fin y sigue actualizándose en tiempo real.",
+          },
+        ]}
+      />
     </div>
   );
 }

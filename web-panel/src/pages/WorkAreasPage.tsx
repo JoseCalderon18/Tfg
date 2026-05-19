@@ -4,8 +4,7 @@ import { Circle, MapContainer, Polygon, TileLayer, useMap } from "react-leaflet"
 import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
-import HelpButton from "../components/HelpButton";
-import TourButton from "../components/TourGuide";
+import { FloatingTourButton } from "../components/TourGuide";
 
 type WorkAreaAPIFila = {
   id: number;
@@ -366,31 +365,6 @@ export default function WorkAreasPage() {
             Selecciona un área para ver su localización en el mapa y revisar sus datos.
           </p>
         </div>
-        <TourButton
-          steps={[
-            {
-              selector: '[data-tour="workareas-list"]',
-              title: "Lista de áreas de trabajo",
-              description: "Aquí aparecen todas las áreas definidas. Cada área tiene un nombre, tipo (circular o poligonal) y el incidente al que pertenece. Pulsa una para ver su geometría en el mapa.",
-            },
-            {
-              selector: '[data-tour="workareas-map"]',
-              title: "Mapa del área",
-              description: "Visualiza la zona geográfica del área seleccionada. El contorno azul es el perímetro activo de geofence. Si un operativo sale de este área, el sistema genera una alerta GEOFENCE automáticamente.",
-            },
-          ]}
-        />
-        <HelpButton
-          title="Áreas de trabajo"
-          content={
-            <>
-              <p>Define zonas geográficas de actuación para los operativos en campo.</p>
-              <p><strong className="text-[color:var(--cm-text)]">Circular</strong> — se define por un punto central y un radio en metros.</p>
-              <p><strong className="text-[color:var(--cm-text)]">Poligonal</strong> — forma irregular dibujada directamente sobre el mapa.</p>
-              <p>Cuando un operativo sale de su área asignada, el sistema genera automáticamente una alerta de tipo <strong className="text-[color:var(--cm-text)]">GEOFENCE</strong> y bloquea la app del operativo.</p>
-            </>
-          }
-        />
       </div>
 
       {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
@@ -650,6 +624,21 @@ export default function WorkAreasPage() {
           </div>
         </div>
       ) : null}
+
+      <FloatingTourButton
+        steps={[
+          {
+            selector: '[data-tour="workareas-list"]',
+            title: "Lista de áreas de trabajo",
+            description: "Aquí aparecen todas las áreas definidas. Cada área muestra su nombre, tipo (circular o poligonal), incidente asociado y estado activo. Pulsa cualquier fila para seleccionarla y ver su geometría en el mapa. Usa el campo de búsqueda para filtrar por nombre, tipo o incidente.",
+          },
+          {
+            selector: '[data-tour="workareas-map"]',
+            title: "Mapa del área",
+            description: "Visualiza el perímetro geográfico del área seleccionada. El área circular se muestra con radio en metros y la poligonal con su forma exacta. Cuando un operativo sale de este perímetro, el sistema genera automáticamente una alerta de tipo GEOFENCE y bloquea la app. Desde aquí puedes editar, borrar o crear una nueva área de trabajo.",
+          },
+        ]}
+      />
     </div>
   );
 }
