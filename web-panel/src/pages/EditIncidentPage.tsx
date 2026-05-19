@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -49,6 +50,22 @@ type MensajeIncidente = {
   content: string;
   created_at: string;
   updated_at: string;
+};
+
+type UnidadAsignable = {
+  id: string;
+  username: string;
+  email?: string | null;
+  role?: string | null;
+  is_active?: boolean;
+};
+
+type MiembroIncidente = {
+  id: string;
+  user_id?: string | null;
+  user?: string | null;
+  role_in_incident?: string | null;
+  is_active?: boolean;
 };
 
 const opcionesTipoIncidente: Array<{ value: TipoIncidente; label: string }> = [
@@ -116,6 +133,38 @@ function normalizarOrganizaciones(raw: unknown): Organizacion[] {
     .filter((org) => org.id && org.name);
 }
 
+function obtenerFilas<T>(raw: unknown): T[] {
+  if (Array.isArray(raw)) return raw as T[];
+  if (raw && typeof raw === "object" && Array.isArray((raw as { results?: unknown[] }).results)) {
+    return ((raw as { results?: T[] }).results ?? []) as T[];
+  }
+  return [];
+}
+
+function normalizarUnidadesAsignables(raw: unknown): UnidadAsignable[] {
+  return obtenerFilas<Record<string, unknown>>(raw)
+    .map((row) => ({
+      id: String(row.id ?? ""),
+      username: String(row.username ?? row.email ?? ""),
+      email: typeof row.email === "string" ? row.email : "",
+      role: typeof row.role === "string" ? row.role : "",
+      is_active: Boolean(row.is_active ?? true),
+    }))
+    .filter((unidad) => unidad.id && unidad.username && unidad.role !== "ADMIN");
+}
+
+function normalizarMiembros(raw: unknown): MiembroIncidente[] {
+  return obtenerFilas<Record<string, unknown>>(raw)
+    .map((row) => ({
+      id: String(row.id ?? ""),
+      user_id: typeof row.user_id === "string" ? row.user_id : "",
+      user: typeof row.user === "string" ? row.user : "",
+      role_in_incident: typeof row.role_in_incident === "string" ? row.role_in_incident : "",
+      is_active: Boolean(row.is_active),
+    }))
+    .filter((miembro) => miembro.id);
+}
+
 function SelectorMapaEditable({
   coords,
   editable,
@@ -159,6 +208,11 @@ export default function EditIncidentPage() {
   const [descripcion, setDescripcion] = useState("");
   const [direccionUbicacion, setDireccionUbicacion] = useState("");
   const [organizacionResponsable, setOrganizacionResponsable] = useState("");
+  const [unidadesAsignables, setUnidadesAsignables] = useState<UnidadAsignable[]>([]);
+  const [miembrosIncidente, setMiembrosIncidente] = useState<MiembroIncidente[]>([]);
+  const [unidadSeleccionadaId, setUnidadSeleccionadaId] = useState("");
+  const [asignandoUnidad, setAsignandoUnidad] = useState(false);
+  const [errorAsignacion, setErrorAsignacion] = useState("");
 
   const [latitud, setLatitud] = useState("");
   const [longitud, setLongitud] = useState("");
@@ -194,7 +248,12 @@ export default function EditIncidentPage() {
         return;
       }
 
-      const [incidentRes, orgRes] = await Promise.all([apiFetch(`/incidents/${id}/`), apiFetch("/organizations/")]);
+      const [incidentRes, orgRes, membersRes, usersRes] = await Promise.all([
+        apiFetch(`/incidents/${id}/`),
+        apiFetch("/organizations/"),
+        apiFetch(`/incidents/${id}/members/`),
+        apiFetch("/users/"),
+      ]);
 
       if (!incidentRes.ok) {
         setErrorMensaje("No se pudo cargar el incidente.");
@@ -205,6 +264,8 @@ export default function EditIncidentPage() {
       const incident = (await incidentRes.json()) as DetalleIncidenteResponse;
       const listaOrganizaciones = orgRes.ok ? normalizarOrganizaciones((await orgRes.json()) as unknown) : [];
       setOrganizaciones(listaOrganizaciones);
+      setMiembrosIncidente(membersRes.ok ? normalizarMiembros((await membersRes.json()) as unknown) : []);
+      setUnidadesAsignables(usersRes.ok ? normalizarUnidadesAsignables((await usersRes.json()) as unknown) : []);
 
       setNombre(String(incident.name ?? ""));
 
@@ -232,6 +293,16 @@ export default function EditIncidentPage() {
       setCargando(false);
     })();
   }, [id, navegar]);
+
+  const unidadesDisponibles = useMemo(() => {
+    const miembrosActivos = new Set(
+      miembrosIncidente
+        .filter((miembro) => miembro.is_active)
+        .map((miembro) => miembro.user_id)
+        .filter(Boolean)
+    );
+    return unidadesAsignables.filter((unidad) => unidad.is_active !== false && !miembrosActivos.has(unidad.id));
+  }, [miembrosIncidente, unidadesAsignables]);
 
   async function cargarMensajes(options?: { silent?: boolean }) {
     if (!id) return;
@@ -415,6 +486,41 @@ export default function EditIncidentPage() {
     }
   }
 
+  async function asignarUnidadAlIncidente() {
+    if (!id || !unidadSeleccionadaId || asignandoUnidad) return;
+
+    setAsignandoUnidad(true);
+    setErrorAsignacion("");
+    setExitoMensaje("");
+
+    try {
+      const res = await apiFetch(`/incidents/${id}/assign-members/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_ids: [unidadSeleccionadaId], role: "OPERATIVE" }),
+      });
+
+      if (!res.ok) {
+        let detail = "No se pudo asignar la unidad al incidente.";
+        try {
+          const data = (await res.json()) as Record<string, unknown>;
+          if (typeof data.detail === "string") detail = data.detail;
+          if (typeof data.error === "string") detail = data.error;
+        } catch {
+          // mantenemos el mensaje por defecto
+        }
+        setErrorAsignacion(detail);
+        return;
+      }
+
+      setMiembrosIncidente(normalizarMiembros((await res.json()) as unknown));
+      setUnidadSeleccionadaId("");
+      setExitoMensaje("Unidad asignada correctamente al incidente.");
+    } finally {
+      setAsignandoUnidad(false);
+    }
+  }
+
   function formatearFechaMensaje(value: string) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -450,16 +556,27 @@ export default function EditIncidentPage() {
             <h1 className="text-3xl font-bold tracking-tight">Editar incidente</h1>
             <p className="mt-2 text-slate-300">Actualiza los datos del incidente y su localizacion.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => navegar("/incidents")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="edit-incident-form"]',
+                  title: "Editar incidente",
+                  description: "Modifica los datos del incidente: nombre, tipo, estado, descripción y ubicación en el mapa. Puedes cambiar el estado (OPEN → TRIAGE → CLOSED) según el avance de la operación. El mapa permite actualizar el punto de referencia del incidente.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navegar("/incidents")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.75fr)_24rem]">
+        <div data-tour="edit-incident-form" className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.75fr)_24rem]">
           <div className="rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
             {errorMensaje ? (
               <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{errorMensaje}</div>
@@ -673,6 +790,40 @@ export default function EditIncidentPage() {
           </option>
         ))}
       </select>
+    </div>
+
+    <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/30 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="flex-1">
+          <label className="mb-1 block text-sm font-medium text-slate-300">Asignar unidad suelta</label>
+          <select
+            value={unidadSeleccionadaId}
+            onChange={(event) => setUnidadSeleccionadaId(event.target.value)}
+            className="w-full rounded-xl bg-slate-950/40 px-4 py-2.5 text-slate-100 ring-1 ring-slate-800 outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="" className="bg-slate-900">
+              {unidadesDisponibles.length ? "Selecciona una unidad" : "No hay unidades disponibles"}
+            </option>
+            {unidadesDisponibles.map((unidad) => (
+              <option key={unidad.id} value={unidad.id} className="bg-slate-900">
+                {unidad.username}{unidad.email ? ` (${unidad.email})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={() => void asignarUnidadAlIncidente()}
+          disabled={!unidadSeleccionadaId || asignandoUnidad}
+          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {asignandoUnidad ? "Asignando..." : "Asignar unidad"}
+        </button>
+      </div>
+      {errorAsignacion ? <p className="mt-3 text-sm text-red-200">{errorAsignacion}</p> : null}
+      <p className="mt-3 text-xs text-slate-400">
+        Miembros activos actuales: {miembrosIncidente.filter((miembro) => miembro.is_active).length}
+      </p>
     </div>
   </section>
 
