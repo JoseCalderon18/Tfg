@@ -32,6 +32,7 @@ import PointOfInterestPage from './pages/PointOfInterestPage';
 import CreatePointOfInterestPage from './pages/CreatePointOfInterestPage';
 import ChatPage from './pages/ChatPage';
 import AuditPage from './pages/AuditPage';
+import ReportsPage from './pages/ReportsPage';
 import RiskReportsPage from './pages/RiskReportsPage';
 /**
  * Componente principal del panel web
@@ -77,6 +78,7 @@ function App() {
         <Route path="createPointOfInterest" element={<CreatePointOfInterestPage />} />
         <Route path="chats" element={<ChatPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="risk-reports" element={<RiskReportsPage />} />
         {/* Si no encuentra la página, va al dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />

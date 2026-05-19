@@ -57,7 +57,7 @@ const NAVIGATION_SECTIONS: NavigationSection[] = [
     items: [
       { label: "Usuarios", to: "/viewusers" },
       { label: "Auditoría", to: "/audit" },
-      { label: "Reportes", to: "/risk-reports" },
+      { label: "Reportes", to: "/reports" },
     ],
   },
 ];
