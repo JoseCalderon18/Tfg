@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import TourButton from "../components/TourGuide";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { LatLngTuple } from "leaflet";
@@ -1616,18 +1617,23 @@ export default function ReportsPage() {
             Exporta datos operativos con sus incidentes relacionados desde una unica pagina.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
-        >
-          Recargar datos
-        </button>
+        <div className="flex items-center gap-2">
+          <TourButton steps={[
+            { selector: '[data-tour="reports-cards"]', title: "Tarjetas de reporte", description: "Cada tarjeta genera un PDF completo para un tipo de datos: incidentes, alertas, usuarios, jornadas, POI o áreas. Aplica filtros opcionales antes de exportar." },
+          ]} />
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
+          >
+            Recargar datos
+          </button>
+        </div>
       </div>
 
       {error ? <div className="cm-badge-danger mt-4 rounded-xl p-3 text-sm">{error}</div> : null}
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div data-tour="reports-cards" className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {reportCards.map((card) => {
           const filter = filters[card.kind];
           const options = filterOptions[card.kind];
