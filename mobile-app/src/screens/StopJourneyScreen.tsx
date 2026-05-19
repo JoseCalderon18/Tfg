@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../context/LocationContext';
@@ -44,6 +44,13 @@ type PointCoordinates = {
 type PausePoint = PointCoordinates & {
   id: string;
   title: string;
+  description?: string;
+};
+
+type JourneyMarker = PointCoordinates & {
+  id: string;
+  title: string;
+  color: string;
   description?: string;
 };
 
@@ -222,14 +229,131 @@ function uniqueValidCoordinates(points: Array<PointCoordinates | null>) {
   });
 }
 
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function createJourneyMapHtml(region: ReturnType<typeof buildRegion>, route: PointCoordinates[], markers: JourneyMarker[]) {
+  const south = clampValue(region.latitude - region.latitudeDelta / 2, -85, 85);
+  const north = clampValue(region.latitude + region.latitudeDelta / 2, -85, 85);
+  const west = clampValue(region.longitude - region.longitudeDelta / 2, -180, 180);
+  const east = clampValue(region.longitude + region.longitudeDelta / 2, -180, 180);
+  const markersJson = JSON.stringify(markers).replace(/</g, '\\u003c');
+  const routeJson = JSON.stringify(route).replace(/</g, '\\u003c');
+  const markerSummary = markers
+    .slice(0, 5)
+    .map(
+      (marker) =>
+        `<li><strong>${escapeHtml(marker.title)}</strong><span>${marker.latitude.toFixed(5)}, ${marker.longitude.toFixed(5)}</span></li>`
+    )
+    .join('');
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <style>
+          html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
+          body { background: #e5e7eb; font-family: Arial, sans-serif; overflow: hidden; }
+          .leaflet-container { background: #dbeafe; }
+          .marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+          }
+          .marker span {
+            display: block;
+            width: 6px;
+            height: 6px;
+            margin: 4px;
+            border-radius: 999px;
+            background: #fff;
+          }
+          .summary {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            z-index: 500;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid #d9e2ec;
+            border-radius: 12px;
+            padding: 9px 11px;
+            color: #102033;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+          }
+          ul { list-style: none; margin: 0; padding: 0; max-height: 86px; overflow: auto; }
+          li { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding-top: 4px; }
+          span { color: #526477; white-space: nowrap; }
+        </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <div class="summary">
+          <ul>${markerSummary || '<li>No hay marcadores con coordenadas.</li>'}</ul>
+        </div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
+          const markers = ${markersJson};
+          const route = ${routeJson};
+          const map = L.map('map', { zoomControl: true, attributionControl: true });
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+          }).addTo(map);
+
+          const bounds = [[${south}, ${west}], [${north}, ${east}]];
+          map.fitBounds(bounds, { padding: [24, 24], animate: false });
+
+          if (route.length >= 2) {
+            L.polyline(route.map((point) => [point.latitude, point.longitude]), {
+              color: '#2563EB',
+              weight: 5,
+              opacity: 0.85
+            }).addTo(map);
+          }
+
+          markers.forEach((marker) => {
+            const icon = L.divIcon({
+              className: '',
+              html: '<div class="marker" style="background:' + marker.color + '"><span></span></div>',
+              iconSize: [22, 22],
+              iconAnchor: [11, 22],
+              popupAnchor: [0, -20],
+            });
+
+            const popup = '<strong>' + marker.title + '</strong>' + (marker.description ? '<br/>' + marker.description : '');
+            L.marker([marker.latitude, marker.longitude], { icon })
+              .addTo(map)
+              .bindPopup(popup);
+          });
+        </script>
+      </body>
+    </html>
+  `;
+}
+
 export default function StopJourneyScreen({ navigation }: any) {
-  const mapRef = useRef<MapView | null>(null);
   const [journey, setJourney] = useState<JourneyApi | null>(null);
   const [loading, setLoading] = useState(false);
   const [screenLoading, setScreenLoading] = useState(true);
   const [screenError, setScreenError] = useState('');
   const [locationPermission, setLocationPermission] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const { token, user } = useAuth();
   const { location: trackedLocation, stopTracking } = useLocation();
   const [manualLocation, setManualLocation] = useState<Location.LocationObject | null>(null);
@@ -356,14 +480,36 @@ export default function StopJourneyScreen({ navigation }: any) {
   const mapRegion = useMemo(() => buildRegion(routeCoordinates), [routeCoordinates]);
   const canRenderMap = routeCoordinates.length > 0;
   const canStopJourney = Boolean(journey && !journey.end_date);
+  const mapMarkers = useMemo<JourneyMarker[]>(() => {
+    const markers: JourneyMarker[] = [];
 
-  useEffect(() => {
-    if (!mapReady || !mapRef.current || !canRenderMap) {
-      return;
+    if (startPoint) {
+      markers.push({ id: 'start', title: 'Inicio de jornada', color: '#16A34A', ...startPoint });
     }
 
-    mapRef.current.animateToRegion(mapRegion, 400);
-  }, [canRenderMap, mapReady, mapRegion]);
+    pausePoints.forEach((pausePoint) => {
+      markers.push({
+        id: pausePoint.id,
+        title: pausePoint.title,
+        description: pausePoint.description,
+        color: '#F59E0B',
+        latitude: pausePoint.latitude,
+        longitude: pausePoint.longitude,
+      });
+    });
+
+    if (operativePoint) {
+      markers.push({ id: 'current', title: 'Ubicacion actual', color: '#2563EB', ...operativePoint });
+    } else if (stopPoint) {
+      markers.push({ id: 'stop', title: 'Fin de jornada', color: '#DC2626', ...stopPoint });
+    }
+
+    return markers;
+  }, [operativePoint, pausePoints, startPoint, stopPoint]);
+  const journeyMapHtml = useMemo(
+    () => createJourneyMapHtml(mapRegion, routeCoordinates, mapMarkers),
+    [mapMarkers, mapRegion, routeCoordinates]
+  );
 
   // Calorias estimadas y sugerencias
   const totalDistanceKm = React.useMemo(() => computeRouteDistanceKm(routeCoordinates), [routeCoordinates]);
@@ -484,46 +630,14 @@ export default function StopJourneyScreen({ navigation }: any) {
               </View>
             ) : canRenderMap ? (
               <>
-                <MapView
-                  ref={mapRef}
+                <WebView
+                  key={`${routeCoordinates.length}-${mapRegion.latitude}-${mapRegion.longitude}`}
+                  source={{ html: journeyMapHtml }}
                   style={styles.map}
-                  initialRegion={mapRegion}
-                  mapType="standard"
-                  toolbarEnabled={false}
-                  showsCompass
-                  showsScale
-                  rotateEnabled
-                  pitchEnabled={false}
-                  loadingEnabled={false}
-                  moveOnMarkerPress={false}
-                  onMapReady={() => setMapReady(true)}
-                >
-                  {startPoint ? (
-                    <Marker coordinate={startPoint} title="Inicio de jornada" pinColor="#16A34A" />
-                  ) : null}
-
-                  {pausePoints.map((pausePoint) => (
-                    <Marker
-                      key={pausePoint.id}
-                      coordinate={{ latitude: pausePoint.latitude, longitude: pausePoint.longitude }}
-                      title={pausePoint.title}
-                      description={pausePoint.description}
-                      pinColor="#F59E0B"
-                    />
-                  ))}
-
-                  {operativePoint ? (
-                    <Marker coordinate={operativePoint} title="Ubicacion actual" pinColor="#2563EB" />
-                  ) : null}
-
-                  {stopPoint && !operativePoint ? (
-                    <Marker coordinate={stopPoint} title="Fin de jornada" pinColor="#DC2626" />
-                  ) : null}
-
-                  {routeCoordinates.length >= 2 ? (
-                    <Polyline coordinates={routeCoordinates} strokeColor="#2563EB" strokeWidth={4} />
-                  ) : null}
-                </MapView>
+                  javaScriptEnabled
+                  domStorageEnabled
+                  originWhitelist={['*']}
+                />
 
                 <View style={styles.legend}>
                   <View style={styles.legendItem}>
