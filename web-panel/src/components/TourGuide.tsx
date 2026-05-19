@@ -179,7 +179,7 @@ export default function TourButton({ steps, className = "" }: TourButtonProps) {
       <button
         type="button"
         onClick={() => setActive(true)}
-        className={`cm-btn cm-btn-secondary cm-btn-sm ${className}`}
+        className={`cm-btn cm-btn-secondary ${className}`}
         aria-label="Iniciar tour guiado de esta página"
       >
         <span className="flex h-4 w-4 items-center justify-center rounded-full border border-[color:var(--cm-border)] text-[10px] font-bold leading-none">
