@@ -32,6 +32,7 @@ import PointOfInterestPage from './pages/PointOfInterestPage';
 import CreatePointOfInterestPage from './pages/CreatePointOfInterestPage';
 import ChatPage from './pages/ChatPage';
 import AuditPage from './pages/AuditPage';
+import ReportsPage from './pages/ReportsPage';
 import RiskReportsPage from './pages/RiskReportsPage';
 import HelpPage from './pages/HelpPage';
 import FaqPage from './pages/FaqPage';
@@ -80,6 +81,7 @@ function App() {
         <Route path="createPointOfInterest" element={<CreatePointOfInterestPage />} />
         <Route path="chats" element={<ChatPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="risk-reports" element={<RiskReportsPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="faq" element={<FaqPage />} />
