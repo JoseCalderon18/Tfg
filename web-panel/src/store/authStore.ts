@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiFetch } from "../utils/api";
+import { apiFetch, setCsrfToken } from "../utils/api";
 
 interface User {
   id: string;
@@ -47,6 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     const csrfData = (await csrfBootstrap.json().catch(() => ({}))) as PanelCsrfResponse;
     const csrfToken = csrfData.csrfToken ?? "";
+    setCsrfToken(csrfToken);
 
     // Después, mandamos el email y contraseña del supervisor
     const body = new URLSearchParams();
@@ -96,7 +97,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     // Cerramos la sesión en el servidor y limpiamos todo aquí
-    await apiFetch("/auth/panel/logout/", { method: "POST" });
+    await apiFetch("/auth/panel/logout/", { method: "POST" }).catch(() => undefined);
+    setCsrfToken("");
     set({ user: null, isAuthenticated: false });
   },
 

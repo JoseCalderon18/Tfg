@@ -78,12 +78,7 @@ async function cargarTodasLasUnidades(): Promise<{ unidades: UnidadOperativa[]; 
   let totalRegistros = 0;
 
   while (urlSiguiente) {
-    const respuesta = urlSiguiente.startsWith("http")
-      ? await fetch(urlSiguiente, {
-          headers: { Accept: "application/json" },
-          credentials: "include",
-        })
-      : await apiFetch(urlSiguiente);
+    const respuesta = await apiFetch(urlSiguiente);
 
     if (!respuesta.ok) {
       throw new Error("No se pudieron cargar las unidades.");
