@@ -25,6 +25,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from emergency.apps.core.forms import SupervisorLoginForm
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.location_utils import obtener_direccion_legible
 from emergency.apps.core.models import CodigoResetPassword, Dispositivo, Organizacion, Profile, User
 
@@ -152,6 +153,10 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        registrar_auditoria(user, f"Se registro el usuario '{user.username}'.")
 
 
 class CurrentUserView(APIView):
@@ -311,6 +316,7 @@ class CurrentUserView(APIView):
             profile.save(update_fields=[*dict.fromkeys(profile_updated_fields), "updated_at"])
 
         user.refresh_from_db()
+        registrar_auditoria(request.user, f"{nombre_usuario(request.user)} modifico sus datos de usuario.")
         return Response(_serializar_usuario_mobile(user, request), status=status.HTTP_200_OK)
 
 
@@ -378,6 +384,7 @@ class ProfileView(APIView):
             serializer = ProfileSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                registrar_auditoria(request.user, f"{nombre_usuario(request.user)} modifico su perfil.")
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Profile.DoesNotExist:
@@ -623,6 +630,10 @@ class PanelCreateOperativeUserView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user = serializer.save()
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} creo el usuario operativo '{user.username}'.",
+        )
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
@@ -967,6 +978,10 @@ class PanelUserDetailView(APIView):
             profile.save(update_fields=["role", "updated_at"])
 
         user.refresh_from_db()
+        registrar_auditoria(
+            request.user,
+            f"{nombre_usuario(request.user)} modifico el usuario '{user.username}'.",
+        )
         return Response(self._serialize_user(user, request), status=status.HTTP_200_OK)
 
     @transaction.atomic
@@ -992,7 +1007,9 @@ class PanelUserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        username = user.username
         user.delete()
+        registrar_auditoria(request.user, f"{nombre_usuario(request.user)} elimino el usuario '{username}'.")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

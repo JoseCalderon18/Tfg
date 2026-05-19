@@ -2,7 +2,6 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import models
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
@@ -65,9 +64,11 @@ class LastPositionView(APIView):
             queryset = PuntoRastreo.objects.all()
 
         # Obtener el más reciente por usuario
-        latest_ids = queryset.values('user').annotate(
-            max_id=models.Max('id')
-        ).values('max_id')
+        latest_ids = queryset.order_by(
+            'user_id',
+            '-recorded_at',
+            '-created_at',
+        ).distinct('user_id').values('id')
 
         points = PuntoRastreo.objects.filter(id__in=latest_ids).select_related('user')
         serializer = PuntoRastreoSerializer(points, many=True)

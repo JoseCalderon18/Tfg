@@ -2,6 +2,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import PointOfInterest
 from ..serializers import PointOfInterestCreateSerializer, PointOfInterestSerializer
 
@@ -20,4 +21,20 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
         return PointOfInterestSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        point = serializer.save(created_by=self.request.user)
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo el punto de interes '{point.name}'.",
+        )
+
+    def perform_update(self, serializer):
+        point = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico el punto de interes '{point.name}'.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino el punto de interes '{instance.name}'."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)

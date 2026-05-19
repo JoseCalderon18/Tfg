@@ -23,7 +23,7 @@ from emergency.apps.api.views.chat_views import (
     PanelChatsView,
 )
 
-from .views import alert_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views, unit_views
+from .views import alert_views, audit_views, auth_views, incident_views, tracking_views, user_views, risk_report_views, lightning_views, workarea_views, journey_views, point_of_interest_views, unit_views
 
 app_name = "api"
 
@@ -33,6 +33,7 @@ router.register(r"alerts", alert_views.AlertaViewSet, basename="alert")
 router.register(r"users", user_views.UserViewSet, basename="user")
 router.register(r"organizations", user_views.OrganizationViewSet, basename="organization")
 router.register(r"risk-reports", risk_report_views.RiskReportViewSet, basename="risk-report")
+router.register(r"auditoria", audit_views.AuditoriaViewSet, basename="auditoria")
 router.register(r"lightning", lightning_views.LightningViewSet, basename="lightning")
 router.register(r"workareas", workarea_views.WorkAreaViewSet, basename="workarea")
 router.register(r"journeys", journey_views.JourneyViewSet, basename="journey")

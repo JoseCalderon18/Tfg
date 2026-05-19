@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import Journey
 from ..serializers import JourneyCreateSerializer, JourneySerializer, JourneyStopSerializer
 
@@ -28,7 +29,23 @@ class JourneyViewSet(viewsets.ModelViewSet):
         return JourneySerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user.profile)
+        journey = serializer.save(user=self.request.user.profile)
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo la jornada #{journey.id}.",
+        )
+
+    def perform_update(self, serializer):
+        journey = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico la jornada #{journey.id}.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino la jornada #{instance.id}."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)
 
     @action(detail=False, methods=["post"], url_path="stop-current")
     def stop_current(self, request):
@@ -56,5 +73,6 @@ class JourneyViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data, context={"journey": journey})
         serializer.is_valid(raise_exception=True)
         journey = serializer.save()
+        registrar_auditoria(request.user, f"{nombre_usuario(request.user)} finalizo la jornada #{journey.id}.")
 
         return Response(JourneySerializer(journey).data, status=status.HTTP_200_OK)
