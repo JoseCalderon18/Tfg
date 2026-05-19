@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocation } from '../context/LocationContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +32,8 @@ type AlertaMapa = {
 type MapaOperativoProps = {
   mostrarCabecera?: boolean;
   modoLigero?: boolean;
+  alertaEnfocada?: AlertaMapa | null;
+  centrarEnAlerta?: boolean;
 };
 
 type MarcadorPlano = {
@@ -43,9 +45,27 @@ type MarcadorPlano = {
   tipo: 'incidente' | 'alerta' | 'usuario';
 };
 
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
+
 const DELTA_MINIMO = 0.08;
 function tieneValor<T>(valor: T | null): valor is T {
   return Boolean(valor);
+}
+
+function esPuntoValido(latitude: number, longitude: number) {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
 }
 
 function crearPuntoDesdeUbicacion(location?: PuntoGeografico) {
@@ -56,13 +76,13 @@ function crearPuntoDesdeUbicacion(location?: PuntoGeografico) {
   if (Array.isArray(location.coordinates) && location.coordinates.length >= 2) {
     const longitude = Number(location.coordinates[0]);
     const latitude = Number(location.coordinates[1]);
-    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    return esPuntoValido(latitude, longitude) ? { latitude, longitude } : null;
   }
 
   if (location.x !== undefined && location.y !== undefined) {
     const longitude = Number(location.x);
     const latitude = Number(location.y);
-    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    return esPuntoValido(latitude, longitude) ? { latitude, longitude } : null;
   }
 
   const latitudeValue = location.latitude ?? location.lat;
@@ -70,7 +90,7 @@ function crearPuntoDesdeUbicacion(location?: PuntoGeografico) {
   if (latitudeValue !== undefined && longitudeValue !== undefined) {
     const latitude = Number(latitudeValue);
     const longitude = Number(longitudeValue);
-    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    return esPuntoValido(latitude, longitude) ? { latitude, longitude } : null;
   }
 
   return null;
@@ -119,7 +139,7 @@ function crearMarcadores(
     .filter(tieneValor);
 
   const marcadorUsuario =
-    latitudUsuario !== undefined && longitudUsuario !== undefined
+    latitudUsuario !== undefined && longitudUsuario !== undefined && esPuntoValido(latitudUsuario, longitudUsuario)
       ? [
           {
             id: 'usuario',
@@ -148,39 +168,143 @@ function calcularRegionAjustada(marcadores: MarcadorPlano[], regionBase: Region)
   const maxLongitud = Math.max(...longitudes);
   const latitudeDelta = Math.max((maxLatitud - minLatitud) * 1.5, DELTA_MINIMO);
   const longitudeDelta = Math.max((maxLongitud - minLongitud) * 1.5, DELTA_MINIMO);
+  const latitude = (minLatitud + maxLatitud) / 2;
+  const longitude = (minLongitud + maxLongitud) / 2;
+
+  if (!esPuntoValido(latitude, longitude) || !Number.isFinite(latitudeDelta) || !Number.isFinite(longitudeDelta)) {
+    return regionBase;
+  }
 
   return {
-    latitude: (minLatitud + maxLatitud) / 2,
-    longitude: (minLongitud + maxLongitud) / 2,
+    latitude,
+    longitude,
     latitudeDelta,
     longitudeDelta,
   };
 }
 
-function renderizarMarcadores(marcadores: MarcadorPlano[]) {
-  return marcadores.map((marcador) => (
-    <Marker
-      key={`${marcador.tipo}-${marcador.id}`}
-      coordinate={{ latitude: marcador.latitud, longitude: marcador.longitud }}
-      title={marcador.titulo}
-      pinColor={marcador.color}
-    />
-  ));
+function limitarValor(valor: number, minimo: number, maximo: number) {
+  return Math.min(Math.max(valor, minimo), maximo);
+}
+
+function escaparHtml(valor: string) {
+  return valor
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function crearHtmlMapaOpenStreetMap(region: Region, marcadores: MarcadorPlano[]) {
+  const sur = limitarValor(region.latitude - region.latitudeDelta / 2, -85, 85);
+  const norte = limitarValor(region.latitude + region.latitudeDelta / 2, -85, 85);
+  const oeste = limitarValor(region.longitude - region.longitudeDelta / 2, -180, 180);
+  const este = limitarValor(region.longitude + region.longitudeDelta / 2, -180, 180);
+  const marcadoresJson = JSON.stringify(marcadores).replace(/</g, '\\u003c');
+  const resumenMarcadores = marcadores
+    .slice(0, 6)
+    .map(
+      (marcador) =>
+        `<li><strong>${escaparHtml(marcador.titulo)}</strong><span>${marcador.latitud.toFixed(5)}, ${marcador.longitud.toFixed(5)}</span></li>`
+    )
+    .join('');
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <style>
+          html, body, #mapa { height: 100%; width: 100%; margin: 0; padding: 0; }
+          body { background: #eef2f7; font-family: Arial, sans-serif; overflow: hidden; }
+          .leaflet-container { background: #dbeafe; }
+          .marcador {
+            width: 18px;
+            height: 18px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+          }
+          .marcador span {
+            display: block;
+            width: 6px;
+            height: 6px;
+            margin: 4px;
+            border-radius: 999px;
+            background: #fff;
+          }
+          .panel {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            z-index: 2;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid #d9e2ec;
+            border-radius: 12px;
+            padding: 10px 12px;
+            color: #102033;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+          }
+          h1 { margin: 0 0 6px; font-size: 14px; }
+          ul { list-style: none; margin: 0; padding: 0; max-height: 96px; overflow: auto; }
+          li { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding-top: 4px; }
+          span { color: #526477; white-space: nowrap; }
+        </style>
+      </head>
+      <body>
+        <div id="mapa"></div>
+        <div class="panel">
+          <h1>Mapa operativo</h1>
+          <ul>${resumenMarcadores || '<li>No hay marcadores con coordenadas.</li>'}</ul>
+        </div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
+          const marcadores = ${marcadoresJson};
+          const mapa = L.map('mapa', { zoomControl: true, attributionControl: true });
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+          }).addTo(mapa);
+
+          const bounds = [[${sur}, ${oeste}], [${norte}, ${este}]];
+          mapa.fitBounds(bounds, { padding: [22, 22], animate: false });
+
+          marcadores.forEach((marcador) => {
+            const icono = L.divIcon({
+              className: '',
+              html: '<div class="marcador" style="background:' + marcador.color + '"><span></span></div>',
+              iconSize: [22, 22],
+              iconAnchor: [11, 22],
+              popupAnchor: [0, -20],
+            });
+
+            L.marker([marcador.latitud, marcador.longitud], { icon: icono })
+              .addTo(mapa)
+              .bindPopup('<strong>' + marcador.titulo + '</strong><br/>' + marcador.tipo);
+          });
+        </script>
+      </body>
+    </html>
+  `;
 }
 
 export default function MapaOperativo({
   mostrarCabecera = true,
   modoLigero = false,
+  alertaEnfocada = null,
+  centrarEnAlerta = false,
 }: MapaOperativoProps) {
-  const mapaRef = useRef<MapView | null>(null);
   const { location } = useLocation();
   const { token, user } = useAuth();
   const [incidentes, setIncidentes] = useState<IncidenteMapa[]>([]);
   const [alertas, setAlertas] = useState<AlertaMapa[]>([]);
   const [cargando, setCargando] = useState(false);
   const [errorRemoto, setErrorRemoto] = useState('');
-  const [mapaListo, setMapaListo] = useState(false);
-  const [errorMapa, setErrorMapa] = useState('');
 
   const cargarCapasRemotas = useCallback(async () => {
     if (!token) {
@@ -252,8 +376,12 @@ export default function MapaOperativo({
 
   const regionBase = useMemo<Region>(
     () => ({
-      latitude: location?.coords.latitude || 40.4168,
-      longitude: location?.coords.longitude || -3.7038,
+      latitude: esPuntoValido(location?.coords.latitude ?? NaN, location?.coords.longitude ?? NaN)
+        ? location!.coords.latitude
+        : 40.4168,
+      longitude: esPuntoValido(location?.coords.latitude ?? NaN, location?.coords.longitude ?? NaN)
+        ? location!.coords.longitude
+        : -3.7038,
       latitudeDelta: 2.6,
       longitudeDelta: 2.6,
     }),
@@ -261,29 +389,50 @@ export default function MapaOperativo({
   );
 
   const marcadores = useMemo(
-    () => crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude),
-    [alertas, incidentes, location]
+    () => {
+      const base = crearMarcadores(incidentes, alertas, location?.coords.latitude, location?.coords.longitude);
+      const puntoEnfocado = crearPuntoDesdeUbicacion(alertaEnfocada?.location);
+
+      if (!alertaEnfocada || !puntoEnfocado) {
+        return base;
+      }
+
+      const yaExiste = base.some((marcador) => marcador.tipo === 'alerta' && marcador.id === alertaEnfocada.id);
+      if (yaExiste) {
+        return base;
+      }
+
+      return [
+        {
+          id: alertaEnfocada.id,
+          titulo: alertaEnfocada.title,
+          latitud: puntoEnfocado.latitude,
+          longitud: puntoEnfocado.longitude,
+          color: colors.danger,
+          tipo: 'alerta' as const,
+        },
+        ...base,
+      ];
+    },
+    [alertaEnfocada, alertas, incidentes, location]
   );
 
-  const regionAjustada = useMemo(() => calcularRegionAjustada(marcadores, regionBase), [marcadores, regionBase]);
-
-  useEffect(() => {
-    if (!mapaListo || !mapaRef.current) {
-      return;
+  const marcadoresRegion = useMemo(() => {
+    if (!centrarEnAlerta || !alertaEnfocada) {
+      return marcadores;
     }
 
-    mapaRef.current.animateToRegion(regionAjustada, 500);
-  }, [mapaListo, regionAjustada]);
+    return marcadores.filter((marcador) => marcador.tipo === 'alerta' && marcador.id === alertaEnfocada.id);
+  }, [alertaEnfocada, centrarEnAlerta, marcadores]);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (!mapaListo) {
-        setErrorMapa('El motor nativo del mapa no ha terminado de cargar en Android.');
-      }
-    }, 5000);
-
-    return () => clearTimeout(timeoutId);
-  }, [mapaListo]);
+  const regionAjustada = useMemo(
+    () => calcularRegionAjustada(marcadoresRegion.length ? marcadoresRegion : marcadores, regionBase),
+    [marcadores, marcadoresRegion, regionBase]
+  );
+  const htmlMapaOpenStreetMap = useMemo(
+    () => crearHtmlMapaOpenStreetMap(regionAjustada, marcadoresRegion.length ? marcadoresRegion : marcadores),
+    [marcadores, marcadoresRegion, regionAjustada]
+  );
 
   return (
     <View style={styles.container}>
@@ -305,35 +454,13 @@ export default function MapaOperativo({
         </View>
       )}
 
-      <MapView
-        ref={mapaRef}
+      <WebView
+        source={{ html: htmlMapaOpenStreetMap }}
         style={styles.mapa}
-        initialRegion={regionAjustada}
-        mapType="standard"
-        liteMode={modoLigero}
-        loadingEnabled
-        toolbarEnabled={!modoLigero}
-        rotateEnabled={!modoLigero}
-        pitchEnabled={!modoLigero}
-        showsCompass={!modoLigero}
-        showsBuildings={!modoLigero}
-        showsUserLocation={Boolean(location)}
-        scrollEnabled
-        zoomEnabled
-        onMapReady={() => {
-          setMapaListo(true);
-          setErrorMapa('');
-        }}
-      >
-        {renderizarMarcadores(marcadores)}
-      </MapView>
-
-      {!mapaListo && errorMapa ? (
-        <View style={styles.estadoMapa}>
-          <Text style={styles.estadoMapaTitulo}>Mapa no disponible</Text>
-          <Text style={styles.estadoMapaTexto}>{errorMapa}</Text>
-        </View>
-      ) : null}
+        javaScriptEnabled
+        domStorageEnabled
+        originWhitelist={['*']}
+      />
 
       {modoLigero ? (
         <View style={styles.leyendaInferior}>

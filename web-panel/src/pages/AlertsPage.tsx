@@ -34,6 +34,8 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   HAZARD: "Peligro ambiental",
   FATIGUE: "Fatiga extrema",
   WEATHER: "Clima peligroso",
+  BATTERY: "Bateria baja",
+  MOVEMENT: "Inmovilidad prolongada",
   LOST: "Operativo perdido",
   GEOFENCE: "Fuera de zona segura",
   ANOMALY: "Anomalia detectada",
@@ -42,7 +44,7 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
 
 function obtenerEtiquetaTipoAlerta(type?: string | null) {
   if (!type) return "Desconocido";
-  return ALERT_TYPE_LABELS[type] ?? type;
+  return ALERT_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
 }
 
 function obtenerBadgeAlerta(type?: string | null) {

@@ -51,22 +51,39 @@ type DetalleAlerta = {
   updated_at?: string | null;
 };
 
-const ALERT_TYPE_OPTIONS = [
-  { value: "SOS", label: "SOS" },
+const OPCIONES_TIPO_ALERTA = [
+  { value: "SOS", label: "SOS emergencia" },
   { value: "MAN_DOWN", label: "Hombre caido" },
-  { value: "LOST", label: "Perdida / desorientado" },
-  { value: "GEOFENCE", label: "Geofence" },
-  { value: "ANOMALY", label: "Anomalia" },
-  { value: "OTHER", label: "Otro" },
+  { value: "LOST", label: "Operativo perdido/desorientado" },
+  { value: "GEOFENCE", label: "Fuera de zona segura" },
+  { value: "ANOMALY", label: "Anomalia detectada" },
+  { value: "FIRE_SPREAD", label: "Cambio de fuego" },
+  { value: "SMOKE", label: "Humo en incidente" },
+  { value: "INJURY", label: "Operativo herido" },
+  { value: "DEATH", label: "Operativo fallecido" },
+  { value: "EVACUATION", label: "Evacuacion" },
+  { value: "MEDICAL", label: "Emergencia medica" },
+  { value: "TRAPPED", label: "Operativo atrapado" },
+  { value: "VEHICLE", label: "Incidente vehicular" },
+  { value: "ANIMAL", label: "Animal peligroso" },
+  { value: "ANIMAL_INJURY", label: "Animal herido" },
+  { value: "LOW_SUPPLIES", label: "Recursos bajos" },
+  { value: "COMM_LOSS", label: "Perdida de comunicacion" },
+  { value: "HAZARD", label: "Peligro ambiental" },
+  { value: "FATIGUE", label: "Fatiga extrema" },
+  { value: "WEATHER", label: "Clima peligroso" },
+  { value: "BATTERY", label: "Bateria baja" },
+  { value: "MOVEMENT", label: "Inmovilidad prolongada" },
+  { value: "OTHER", label: "Otra alerta" },
 ];
 
-const STATUS_OPTIONS = [
+const OPCIONES_ESTADO = [
   { value: "OPEN", label: "Abierta" },
   { value: "ACK", label: "Reconocida" },
   { value: "CLOSED", label: "Cerrada" },
 ];
 
-const SEVERITY_OPTIONS = [
+const OPCIONES_SEVERIDAD = [
   { value: 1, label: "Crítica" },
   { value: 2, label: "Alta" },
   { value: 3, label: "Media" },
@@ -76,13 +93,13 @@ const SEVERITY_OPTIONS = [
 
 async function geocodificarInverso(lat: number, lon: number): Promise<string | null> {
   try {
-    const response = await fetch(
+    const respuesta = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=es`
     );
 
-    if (!response.ok) return null;
+    if (!respuesta.ok) return null;
 
-    const data = (await response.json()) as {
+    const datos = (await respuesta.json()) as {
       display_name?: string;
       address?: {
         road?: string;
@@ -98,23 +115,23 @@ async function geocodificarInverso(lat: number, lon: number): Promise<string | n
       };
     };
 
-    const road = data.address?.road ?? data.address?.pedestrian ?? "";
-    const houseNumber = data.address?.house_number ?? "";
+    const road = datos.address?.road ?? datos.address?.pedestrian ?? "";
+    const houseNumber = datos.address?.house_number ?? "";
     const locality =
-      data.address?.city ??
-      data.address?.town ??
-      data.address?.village ??
-      data.address?.municipality ??
+      datos.address?.city ??
+      datos.address?.town ??
+      datos.address?.village ??
+      datos.address?.municipality ??
       "";
-    const state = data.address?.state ?? "";
-    const postcode = data.address?.postcode ?? "";
-    const country = data.address?.country ?? "";
+    const state = datos.address?.state ?? "";
+    const postcode = datos.address?.postcode ?? "";
+    const country = datos.address?.country ?? "";
 
     const compact = [road && houseNumber ? `${road} ${houseNumber}` : road, locality, state, postcode, country]
       .filter(Boolean)
       .join(", ");
 
-    return compact || data.display_name || null;
+    return compact || datos.display_name || null;
   } catch {
     return null;
   }
@@ -140,9 +157,9 @@ function obtenerEtiquetaUsuario(user?: UsuarioResumen | null) {
   if (user.email?.trim()) return user.email.trim();
   if (user.display_name?.trim()) return user.display_name.trim();
 
-  const fullName = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
-  if (fullName && user.username) return `${fullName} (${user.username})`;
-  if (fullName) return fullName;
+  const nombreCompleto = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
+  if (nombreCompleto && user.username) return `${nombreCompleto} (${user.username})`;
+  if (nombreCompleto) return nombreCompleto;
   if (user.username) return user.username;
   if (user.email) return user.email;
   return "No disponible";
@@ -154,22 +171,22 @@ function pareceUuid(value?: string | null) {
 }
 
 function aResumenUsuario(
-  rawUser?: UsuarioResumen | string | null,
-  rawId?: string | null,
-  rawName?: string | null
+  usuarioCrudo?: UsuarioResumen | string | null,
+  idCrudo?: string | null,
+  nombreCrudo?: string | null
 ): UsuarioResumen | null {
-  if (rawUser && typeof rawUser === "object") {
+  if (usuarioCrudo && typeof usuarioCrudo === "object") {
     return {
-      ...rawUser,
-      id: rawUser.id ?? rawId ?? undefined,
-      display_name: rawName ?? rawUser.display_name,
+      ...usuarioCrudo,
+      id: usuarioCrudo.id ?? idCrudo ?? undefined,
+      display_name: nombreCrudo ?? usuarioCrudo.display_name,
     };
   }
 
-  if (rawId || rawName || typeof rawUser === "string") {
+  if (idCrudo || nombreCrudo || typeof usuarioCrudo === "string") {
     return {
-      id: rawId ?? (typeof rawUser === "string" && pareceUuid(rawUser) ? rawUser : undefined),
-      display_name: rawName ?? (typeof rawUser === "string" && !pareceUuid(rawUser) ? rawUser : undefined),
+      id: idCrudo ?? (typeof usuarioCrudo === "string" && pareceUuid(usuarioCrudo) ? usuarioCrudo : undefined),
+      display_name: nombreCrudo ?? (typeof usuarioCrudo === "string" && !pareceUuid(usuarioCrudo) ? usuarioCrudo : undefined),
     };
   }
 
@@ -192,10 +209,10 @@ function analizarUbicacion(location: unknown): { lat: number; lng: number } | nu
   if (!location) return null;
 
   if (typeof location === "string") {
-    const match = location.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
-    if (match) {
-      const lng = Number(match[1]);
-      const lat = Number(match[3]);
+    const coincidencia = location.match(/POINT\s*\(\s*([-+]?\d+(\.\d+)?)\s+([-+]?\d+(\.\d+)?)\s*\)/i);
+    if (coincidencia) {
+      const lng = Number(coincidencia[1]);
+      const lat = Number(coincidencia[3]);
       if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
         return { lat, lng };
       }
@@ -211,7 +228,7 @@ function analizarUbicacion(location: unknown): { lat: number; lng: number } | nu
   }
 
   if (typeof location === "object") {
-    const candidate = location as {
+    const candidato = location as {
       coordinates?: unknown;
       x?: unknown;
       y?: unknown;
@@ -220,25 +237,25 @@ function analizarUbicacion(location: unknown): { lat: number; lng: number } | nu
       lon?: unknown;
     };
 
-    if (Array.isArray(candidate.coordinates) && candidate.coordinates.length >= 2) {
-      const lng = Number(candidate.coordinates[0]);
-      const lat = Number(candidate.coordinates[1]);
+    if (Array.isArray(candidato.coordinates) && candidato.coordinates.length >= 2) {
+      const lng = Number(candidato.coordinates[0]);
+      const lat = Number(candidato.coordinates[1]);
       if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
         return { lat, lng };
       }
     }
 
-    if (candidate.x !== undefined && candidate.y !== undefined) {
-      const lng = Number(candidate.x);
-      const lat = Number(candidate.y);
+    if (candidato.x !== undefined && candidato.y !== undefined) {
+      const lng = Number(candidato.x);
+      const lat = Number(candidato.y);
       if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
         return { lat, lng };
       }
     }
 
-    if (candidate.lat !== undefined && (candidate.lng !== undefined || candidate.lon !== undefined)) {
-      const lat = Number(candidate.lat);
-      const lng = Number(candidate.lng ?? candidate.lon);
+    if (candidato.lat !== undefined && (candidato.lng !== undefined || candidato.lon !== undefined)) {
+      const lat = Number(candidato.lat);
+      const lng = Number(candidato.lng ?? candidato.lon);
       if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
         return { lat, lng };
       }
@@ -252,12 +269,12 @@ function obtenerTextoUbicacion(location: unknown, lat: number | null, lng: numbe
   if (typeof location === "string" && location.trim()) return location;
 
   if (location && typeof location === "object") {
-    const candidate = location as { coordinates?: unknown; x?: unknown; y?: unknown };
-    if (Array.isArray(candidate.coordinates) && candidate.coordinates.length >= 2) {
-      return `POINT (${candidate.coordinates[0]} ${candidate.coordinates[1]})`;
+    const candidato = location as { coordinates?: unknown; x?: unknown; y?: unknown };
+    if (Array.isArray(candidato.coordinates) && candidato.coordinates.length >= 2) {
+      return `POINT (${candidato.coordinates[0]} ${candidato.coordinates[1]})`;
     }
-    if (candidate.x !== undefined && candidate.y !== undefined) {
-      return `POINT (${candidate.x} ${candidate.y})`;
+    if (candidato.x !== undefined && candidato.y !== undefined) {
+      return `POINT (${candidato.x} ${candidato.y})`;
     }
   }
 
@@ -268,7 +285,7 @@ function obtenerTextoUbicacion(location: unknown, lat: number | null, lng: numbe
   return "";
 }
 
-export default function EditAlertPage() {
+export default function PaginaEditarAlerta() {
   const navegar = useNavigate();
   const { id } = useParams<{ id: string }>();
 
@@ -304,9 +321,9 @@ export default function EditAlertPage() {
   const resumen = useMemo(
     () => ({
       etiquetaTipoAlerta:
-        ALERT_TYPE_OPTIONS.find((option) => option.value === tipoAlerta)?.label ?? "Sin tipo",
-      etiquetaSeveridad: SEVERITY_OPTIONS.find((option) => option.value === severidad)?.label ?? "Sin severidad",
-      etiquetaEstado: STATUS_OPTIONS.find((option) => option.value === estado)?.label ?? "Sin estado",
+        OPCIONES_TIPO_ALERTA.find((opcion) => opcion.value === tipoAlerta)?.label ?? "Sin tipo",
+      etiquetaSeveridad: OPCIONES_SEVERIDAD.find((opcion) => opcion.value === severidad)?.label ?? "Sin severidad",
+      etiquetaEstado: OPCIONES_ESTADO.find((opcion) => opcion.value === estado)?.label ?? "Sin estado",
     }),
     [tipoAlerta, severidad, estado]
   );
@@ -320,14 +337,14 @@ export default function EditAlertPage() {
       }
 
       try {
-        const response = await apiFetch(`/alerts/${id}/`);
-        if (!response.ok) {
+        const respuesta = await apiFetch(`/alerts/${id}/`);
+        if (!respuesta.ok) {
           setError("No se pudo cargar la alerta.");
           setCargando(false);
           return;
         }
 
-        const alerta = (await response.json()) as DetalleAlerta;
+        const alerta = (await respuesta.json()) as DetalleAlerta;
         setIdIncidente(alerta.incident ?? "");
         setTipoAlerta(alerta.alert_type ?? "OTHER");
         setSeveridad(alerta.severity ?? 3);
@@ -355,54 +372,54 @@ export default function EditAlertPage() {
   }, [id]);
 
   useEffect(() => {
-    const userRefs = [creadoPor, reconocidoPor, cerradoPor].filter(Boolean) as UsuarioResumen[];
+    const referenciasUsuarios = [creadoPor, reconocidoPor, cerradoPor].filter(Boolean) as UsuarioResumen[];
 
-    if (userRefs.length === 0) return;
+    if (referenciasUsuarios.length === 0) return;
 
-    let cancelled = false;
+    let cancelado = false;
 
-    async function hydrateUsers() {
-      let userList: FilaListaUsuarioPanel[] = [];
+    async function hidratarUsuarios() {
+      let listaUsuarios: FilaListaUsuarioPanel[] = [];
       try {
-        const listResponse = await apiFetch("/auth/panel/users/");
-        if (listResponse.ok) {
-          const listPayload = (await listResponse.json()) as { results?: FilaListaUsuarioPanel[] } | FilaListaUsuarioPanel[];
-          userList = Array.isArray(listPayload) ? listPayload : listPayload.results ?? [];
+        const respuestaLista = await apiFetch("/auth/panel/users/");
+        if (respuestaLista.ok) {
+          const datosLista = (await respuestaLista.json()) as { results?: FilaListaUsuarioPanel[] } | FilaListaUsuarioPanel[];
+          listaUsuarios = Array.isArray(datosLista) ? datosLista : datosLista.results ?? [];
         }
       } catch {
-        userList = [];
+        listaUsuarios = [];
       }
 
-      const usersById = new Map(userList.map((user) => [user.id, user]));
-      const usersByUsername = new Map(
-        userList
+      const usuariosPorId = new Map(listaUsuarios.map((user) => [user.id, user]));
+      const usuariosPorNombreUsuario = new Map(
+        listaUsuarios
           .filter((user) => user.username)
           .map((user) => [String(user.username).toLowerCase(), user])
       );
 
-      const idsToFetch = userRefs
+      const idsPorCargar = referenciasUsuarios
         .map((user) => user.id)
         .filter((value, index, array): value is string => {
           if (!value) return false;
-          return pareceUuid(value) && !usersById.has(value) && array.indexOf(value) === index;
+          return pareceUuid(value) && !usuariosPorId.has(value) && array.indexOf(value) === index;
         });
 
-      const detailResponses = await Promise.all(
-        idsToFetch.map(async (userId) => {
+      const respuestasDetalle = await Promise.all(
+        idsPorCargar.map(async (idUsuario) => {
           try {
-            const response = await apiFetch(`/auth/panel/users/${userId}/`);
-            if (!response.ok) return null;
-            return (await response.json()) as DetalleUsuarioPanel;
+            const respuesta = await apiFetch(`/auth/panel/users/${idUsuario}/`);
+            if (!respuesta.ok) return null;
+            return (await respuesta.json()) as DetalleUsuarioPanel;
           } catch {
             return null;
           }
         })
       );
 
-      if (cancelled) return;
+      if (cancelado) return;
 
-      const mapped = new Map(
-        detailResponses
+      const usuariosMapeados = new Map(
+        respuestasDetalle
           .filter((user): user is DetalleUsuarioPanel => Boolean(user?.id))
           .map((user) => [
             user.id,
@@ -416,79 +433,79 @@ export default function EditAlertPage() {
           ])
       );
 
-      const resolveUser = (current: UsuarioResumen | null) => {
-        if (!current) return current;
+      const resolverUsuario = (actual: UsuarioResumen | null) => {
+        if (!actual) return actual;
 
-        if (current.id && usersById.has(current.id)) {
-          const matched = usersById.get(current.id)!;
+        if (actual.id && usuariosPorId.has(actual.id)) {
+          const coincidente = usuariosPorId.get(actual.id)!;
           return {
-            ...current,
-            id: matched.id,
-            username: matched.username ?? current.username,
-            email: matched.email ?? current.email,
+            ...actual,
+            id: coincidente.id,
+            username: coincidente.username ?? actual.username,
+            email: coincidente.email ?? actual.email,
           };
         }
 
-        if (current.display_name && usersByUsername.has(current.display_name.toLowerCase())) {
-          const matched = usersByUsername.get(current.display_name.toLowerCase())!;
+        if (actual.display_name && usuariosPorNombreUsuario.has(actual.display_name.toLowerCase())) {
+          const coincidente = usuariosPorNombreUsuario.get(actual.display_name.toLowerCase())!;
           return {
-            ...current,
-            id: matched.id,
-            username: matched.username ?? current.username,
-            email: matched.email ?? current.email,
+            ...actual,
+            id: coincidente.id,
+            username: coincidente.username ?? actual.username,
+            email: coincidente.email ?? actual.email,
           };
         }
 
-        if (current.id && mapped.has(current.id)) {
-          return { ...current, ...mapped.get(current.id)! };
+        if (actual.id && usuariosMapeados.has(actual.id)) {
+          return { ...actual, ...usuariosMapeados.get(actual.id)! };
         }
 
-        return current;
+        return actual;
       };
 
-      setCreadoPor((current) => resolveUser(current));
-      setReconocidoPor((current) => resolveUser(current));
-      setCerradoPor((current) => resolveUser(current));
+      setCreadoPor((actual) => resolverUsuario(actual));
+      setReconocidoPor((actual) => resolverUsuario(actual));
+      setCerradoPor((actual) => resolverUsuario(actual));
     }
 
-    void hydrateUsers();
+    void hidratarUsuarios();
 
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
   }, [creadoPor?.id, creadoPor?.display_name, reconocidoPor?.id, reconocidoPor?.display_name, cerradoPor?.id, cerradoPor?.display_name]);
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelado = false;
 
-    async function loadReadableLocation() {
-      const resolvedLat = ubicacionAnalizada?.lat ?? latitud;
-      const resolvedLng = ubicacionAnalizada?.lng ?? longitud;
+    async function cargarUbicacionLegible() {
+      const latitudResuelta = ubicacionAnalizada?.lat ?? latitud;
+      const longitudResuelta = ubicacionAnalizada?.lng ?? longitud;
 
-      if (resolvedLat == null || resolvedLng == null) {
+      if (latitudResuelta == null || longitudResuelta == null) {
         setUbicacionLegible("");
         setResolviendoUbicacion(false);
         return;
       }
 
       setResolviendoUbicacion(true);
-      const resolved = await geocodificarInverso(resolvedLat, resolvedLng);
+      const direccionResuelta = await geocodificarInverso(latitudResuelta, longitudResuelta);
 
-      if (!cancelled) {
-        setUbicacionLegible(resolved || "");
+      if (!cancelado) {
+        setUbicacionLegible(direccionResuelta || "");
         setResolviendoUbicacion(false);
       }
     }
 
-    void loadReadableLocation();
+    void cargarUbicacionLegible();
 
     return () => {
-      cancelled = true;
+      cancelado = true;
     };
   }, [ubicacionAnalizada, latitud, longitud]);
 
-  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function guardarAlerta(evento: React.FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
 
     if (!id) {
       setError("Alerta no valida.");
@@ -500,7 +517,7 @@ export default function EditAlertPage() {
     setGuardando(true);
 
     try {
-      const response = await apiFetch(`/alerts/${id}/`, {
+      const respuesta = await apiFetch(`/alerts/${id}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -513,27 +530,27 @@ export default function EditAlertPage() {
         }),
       });
 
-      if (!response.ok) {
-        let detail = "No se pudo guardar la alerta.";
+      if (!respuesta.ok) {
+        let detalle = "No se pudo guardar la alerta.";
         try {
-          const data = await response.json();
-          if (data?.detail) {
-            detail = String(data.detail);
-          } else if (typeof data === "object" && data !== null) {
-            const firstKey = Object.keys(data)[0];
-            if (firstKey) {
-              const value = (data as Record<string, unknown>)[firstKey];
-              detail = Array.isArray(value) ? `${firstKey}: ${String(value[0])}` : `${firstKey}: ${String(value)}`;
+          const datos = await respuesta.json();
+          if (datos?.detail) {
+            detalle = String(datos.detail);
+          } else if (typeof datos === "object" && datos !== null) {
+            const primeraClave = Object.keys(datos)[0];
+            if (primeraClave) {
+              const valorError = (datos as Record<string, unknown>)[primeraClave];
+              detalle = Array.isArray(valorError) ? `${primeraClave}: ${String(valorError[0])}` : `${primeraClave}: ${String(valorError)}`;
             }
           }
         } catch {
           // Si la respuesta no es un JSON bueno, usamos el mensaje por defecto
         }
-        setError(detail);
+        setError(detalle);
         return;
       }
 
-      const alertaActualizada = (await response.json()) as DetalleAlerta;
+      const alertaActualizada = (await respuesta.json()) as DetalleAlerta;
       setIdIncidente(alertaActualizada.incident ?? "");
       setTipoAlerta(alertaActualizada.alert_type ?? "OTHER");
       setSeveridad(alertaActualizada.severity ?? 3);
@@ -568,7 +585,7 @@ export default function EditAlertPage() {
   }
 
   return (
-    <form onSubmit={handleSave}>
+    <form onSubmit={guardarAlerta}>
       <div className="cm-shell min-h-screen">
         <div className="w-full px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -606,7 +623,7 @@ export default function EditAlertPage() {
                     <input
                       value={titulo}
                       disabled={!edicionDesbloqueada}
-                      onChange={(event) => setTitulo(event.target.value)}
+                      onChange={(evento) => setTitulo(evento.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     />
                   </div>
@@ -615,12 +632,12 @@ export default function EditAlertPage() {
                     <select
                       value={tipoAlerta}
                       disabled={!edicionDesbloqueada}
-                      onChange={(event) => setTipoAlerta(event.target.value)}
+                      onChange={(evento) => setTipoAlerta(evento.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
-                      {ALERT_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      {OPCIONES_TIPO_ALERTA.map((opcion) => (
+                        <option key={opcion.value} value={opcion.value}>
+                          {opcion.label}
                         </option>
                       ))}
                     </select>
@@ -631,12 +648,12 @@ export default function EditAlertPage() {
                     <select
                       value={estado}
                       disabled={!edicionDesbloqueada}
-                      onChange={(event) => setEstado(event.target.value)}
+                      onChange={(evento) => setEstado(evento.target.value)}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
-                      {STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      {OPCIONES_ESTADO.map((opcion) => (
+                        <option key={opcion.value} value={opcion.value}>
+                          {opcion.label}
                         </option>
                       ))}
                     </select>
@@ -647,12 +664,12 @@ export default function EditAlertPage() {
                     <select
                       value={severidad}
                       disabled={!edicionDesbloqueada}
-                      onChange={(event) => setSeveridad(Number(event.target.value))}
+                      onChange={(evento) => setSeveridad(Number(evento.target.value))}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     >
-                      {SEVERITY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                      {OPCIONES_SEVERIDAD.map((opcion) => (
+                        <option key={opcion.value} value={opcion.value}>
+                          {opcion.label}
                         </option>
                       ))}
                     </select>
@@ -768,7 +785,7 @@ export default function EditAlertPage() {
                     <textarea
                       value={descripcion}
                       disabled={!edicionDesbloqueada}
-                      onChange={(event) => setDescripcion(event.target.value)}
+                      onChange={(evento) => setDescripcion(evento.target.value)}
                       rows={5}
                       className="w-full rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface-2)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[color:var(--cm-info)]"
                     />

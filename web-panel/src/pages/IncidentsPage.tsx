@@ -298,20 +298,33 @@ function agruparAlertasPorIncidente(alertas: AlertaFila[]) {
 }
 
 function obtenerEtiquetaTipoAlerta(tipo: string) {
-  switch (tipo) {
-    case "SOS":
-      return "SOS";
-    case "MAN_DOWN":
-      return "Operativo caido";
-    case "LOST":
-      return "Operativo desorientado";
-    case "GEOFENCE":
-      return "Fuera de zona";
-    case "ANOMALY":
-      return "Anomalia";
-    default:
-      return "Otra";
-  }
+  const labels: Record<string, string> = {
+    SOS: "SOS",
+    MAN_DOWN: "Operativo caido",
+    LOST: "Operativo desorientado",
+    GEOFENCE: "Fuera de zona",
+    ANOMALY: "Anomalia",
+    FIRE_SPREAD: "Cambio de fuego",
+    SMOKE: "Humo",
+    INJURY: "Operativo herido",
+    DEATH: "Operativo fallecido",
+    EVACUATION: "Evacuacion",
+    MEDICAL: "Emergencia medica",
+    TRAPPED: "Operativo atrapado",
+    VEHICLE: "Incidente vehicular",
+    ANIMAL: "Animal peligroso",
+    ANIMAL_INJURY: "Animal herido",
+    LOW_SUPPLIES: "Recursos bajos",
+    COMM_LOSS: "Perdida de comunicacion",
+    HAZARD: "Peligro ambiental",
+    FATIGUE: "Fatiga extrema",
+    WEATHER: "Clima peligroso",
+    BATTERY: "Bateria baja",
+    MOVEMENT: "Inmovilidad",
+    OTHER: "Otra",
+  };
+
+  return labels[tipo] ?? tipo.replace(/_/g, " ");
 }
 
 function obtenerEtiquetaEstadoAlerta(estado: string) {

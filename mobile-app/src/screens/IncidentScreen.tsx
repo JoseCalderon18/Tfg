@@ -95,7 +95,7 @@ const LABEL_TIPO_ALERTA: Record<string, string> = {
   LOST: 'Operativo perdido',
   GEOFENCE: 'Fuera de zona segura',
   ANOMALY: 'Anomalia detectada',
-  BATERY: 'Bateria baja',
+  BATTERY: 'Bateria baja',
   MOVEMENT: 'Inmovilidad prolongada',
   OTHER: 'Otra alerta',
 };

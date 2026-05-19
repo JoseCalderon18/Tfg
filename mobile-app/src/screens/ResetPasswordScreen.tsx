@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -10,336 +11,502 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { apiFetch, parseJsonResponse } from '../services/api';
-import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
-type Step = 'request' | 'verify' | 'confirm' | 'done';
+import { apiFetch, parseJsonResponse } from '../services/api';
+import { borderRadius, colors, shadows, spacing, typography } from '../theme';
+
+const ENDPOINT_SOLICITAR_CODIGO = '/auth/password-reset/request/';
+const ENDPOINT_VERIFICAR_CODIGO = '/auth/password-reset/verify-code/';
+const ENDPOINT_CONFIRMAR_PASSWORD = '/auth/password-reset/confirm/';
+
+function obtenerMensajeError(data: unknown, mensajePorDefecto: string) {
+  if (!data || typeof data !== 'object') {
+    return mensajePorDefecto;
+  }
+
+  const posibleDetalle = (data as Record<string, unknown>).detail;
+  if (typeof posibleDetalle === 'string' && posibleDetalle.trim()) {
+    return posibleDetalle;
+  }
+
+  const primeraClave = Object.keys(data)[0];
+  if (!primeraClave) {
+    return mensajePorDefecto;
+  }
+
+  const valor = (data as Record<string, unknown>)[primeraClave];
+  if (Array.isArray(valor) && typeof valor[0] === 'string') {
+    return `${primeraClave}: ${valor[0]}`;
+  }
+  if (typeof valor === 'string') {
+    return `${primeraClave}: ${valor}`;
+  }
+
+  return mensajePorDefecto;
+}
 
 export default function ResetPasswordScreen({ navigation }: any) {
-  const [step, setStep] = useState<Step>('request');
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [correoElectronico, setCorreoElectronico] = useState('');
+  const [codigoVerificacion, setCodigoVerificacion] = useState('');
+  const [nuevaPassword, setNuevaPassword] = useState('');
+  const [confirmacionPassword, setConfirmacionPassword] = useState('');
+  const [tokenReseteoVerificado, setTokenReseteoVerificado] = useState('');
 
-  const canSubmitRequest = useMemo(() => email.trim().length > 0, [email]);
-  const canSubmitVerify = useMemo(() => email.trim().length > 0 && code.trim().length === 6, [email, code]);
-  const canSubmitConfirm = useMemo(
-    () => email.trim().length > 0 && resetToken && newPassword.trim().length >= 8 && newPassword === confirmPassword,
-    [email, resetToken, newPassword, confirmPassword]
-  );
+  const [modalNuevaPasswordAbierto, setModalNuevaPasswordAbierto] = useState(false);
+  const [requiereCodigo, setRequiereCodigo] = useState(false);
 
-  const showError = (nextError: unknown) => {
-    if (nextError instanceof Error) {
-      setError(nextError.message);
-      return;
-    }
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
+  const [reseteandoPassword, setReseteandoPassword] = useState(false);
 
-    setError(String(nextError ?? 'Ocurrió un error.')); 
-  };
+  const [errorPagina, setErrorPagina] = useState('');
+  const [errorNuevaPassword, setErrorNuevaPassword] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
 
-  const goBackAfterReset = () => {
+  const correoNormalizado = useMemo(() => correoElectronico.trim().toLowerCase(), [correoElectronico]);
+  const puedeContinuar = correoNormalizado.length > 0 && !enviandoCodigo;
+
+  function volverAlLogin() {
     if (navigation.canGoBack?.()) {
       navigation.goBack();
       return;
     }
 
     navigation.navigate('Login');
-  };
+  }
 
-  const handleRequestReset = async () => {
-    setSubmitting(true);
-    setError('');
-    setMessage('');
+  function cerrarModal() {
+    setModalNuevaPasswordAbierto(false);
+    setErrorNuevaPassword('');
+    setCodigoVerificacion('');
+    setNuevaPassword('');
+    setConfirmacionPassword('');
+  }
 
-    try {
-      const response = await apiFetch('/auth/password-reset/request/', {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const payload = await parseJsonResponse<any>(response);
+  async function continuarAlCambioPassword() {
+    setErrorPagina('');
+    setMensajeExito('');
 
-      if (!response.ok) {
-        const errorMessage = payload.email?.[0] ?? payload.detail ?? payload.error ?? 'No se pudo enviar la solicitud.';
-        throw new Error(errorMessage);
-      }
-
-      const nextResetToken = payload.reset_token ?? payload.reset_token_debug ?? '';
-      if (nextResetToken) {
-        setResetToken(nextResetToken);
-        setMessage(
-          'La solicitud de restablecimiento se ha aceptado. Introduce tu nueva contraseña para completar el cambio.'
-        );
-        setStep('confirm');
-      } else {
-        setMessage('Se ha enviado un código de verificación a tu correo. Revisa tu bandeja de entrada.');
-        setStep('verify');
-      }
-    } catch (nextError) {
-      showError(nextError);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    setSubmitting(true);
-    setError('');
-    setMessage('');
-
-    try {
-      const response = await apiFetch('/auth/password-reset/verify-code/', {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim() }),
-      });
-      const payload = await parseJsonResponse<any>(response);
-
-      if (!response.ok) {
-        const errorMessage = payload.code?.[0] ?? payload.detail ?? payload.error ?? 'Código inválido.';
-        throw new Error(errorMessage);
-      }
-
-      setResetToken(payload.reset_token ?? '');
-      if (!payload.reset_token) {
-        throw new Error('No se recibió el token de restauración.');
-      }
-
-      setMessage('Código verificado. Ahora puedes crear una nueva contraseña.');
-      setStep('confirm');
-    } catch (nextError) {
-      showError(nextError);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleConfirmPassword = async () => {
-    if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+    if (!correoNormalizado) {
+      setErrorPagina('Introduce un correo electronico valido.');
       return;
     }
 
-    setSubmitting(true);
-    setError('');
-    setMessage('');
+    setEnviandoCodigo(true);
 
     try {
-      const response = await apiFetch('/auth/password-reset/confirm/', {
+      const respuesta = await apiFetch(ENDPOINT_SOLICITAR_CODIGO, {
         method: 'POST',
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          reset_token: resetToken,
-          new_password: newPassword,
-        }),
+        body: JSON.stringify({ email: correoNormalizado }),
       });
-      const payload = await parseJsonResponse<any>(response);
+      const data = await parseJsonResponse<{ reset_token_debug?: string; detail?: string } | Record<string, unknown>>(respuesta);
 
-      if (!response.ok) {
-        const errorMessage = payload.new_password?.[0] ?? payload.detail ?? payload.error ?? 'No se pudo actualizar la contraseña.';
-        throw new Error(errorMessage);
+      if (!respuesta.ok) {
+        setErrorPagina(obtenerMensajeError(data, 'No se pudo preparar el cambio de password.'));
+        return;
       }
 
-      setMessage('Contraseña actualizada correctamente. Puedes iniciar sesión con tu nueva contraseña.');
-      setStep('done');
-    } catch (nextError) {
-      showError(nextError);
+      const tokenDebug = typeof data.reset_token_debug === 'string' ? data.reset_token_debug : '';
+      setTokenReseteoVerificado(tokenDebug);
+      setRequiereCodigo(!tokenDebug);
+      setCodigoVerificacion('');
+      setNuevaPassword('');
+      setConfirmacionPassword('');
+      setErrorNuevaPassword('');
+      setModalNuevaPasswordAbierto(true);
+      setMensajeExito(
+        typeof data.detail === 'string' ? data.detail : 'Continua con el cambio de password.'
+      );
+    } catch {
+      setErrorPagina('No se pudo conectar con el servidor.');
     } finally {
-      setSubmitting(false);
+      setEnviandoCodigo(false);
     }
-  };
+  }
 
-  const renderStepTitle = () => {
-    switch (step) {
-      case 'request':
-        return 'Restablecer contraseña';
-      case 'verify':
-        return 'Verificar código';
-      case 'confirm':
-        return 'Crear nueva contraseña';
-      case 'done':
-        return '¡Listo!';
-      default:
-        return 'Restablecer contraseña';
+  async function verificarCodigoSiHaceFalta() {
+    if (!requiereCodigo) {
+      return tokenReseteoVerificado;
     }
-  };
+
+    if (!codigoVerificacion.trim()) {
+      throw new Error('Introduce el codigo de verificacion.');
+    }
+
+    const respuesta = await apiFetch(ENDPOINT_VERIFICAR_CODIGO, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: correoNormalizado,
+        code: codigoVerificacion.trim(),
+      }),
+    });
+    const data = await parseJsonResponse<{ reset_token?: string } | Record<string, unknown>>(respuesta);
+
+    if (!respuesta.ok) {
+      throw new Error(obtenerMensajeError(data, 'El codigo no es valido o ha caducado.'));
+    }
+
+    const token = typeof data.reset_token === 'string' ? data.reset_token : '';
+    if (!token) {
+      throw new Error('No se recibio el token de reseteo.');
+    }
+
+    setTokenReseteoVerificado(token);
+    setRequiereCodigo(false);
+    return token;
+  }
+
+  async function resetearPassword() {
+    setErrorNuevaPassword('');
+    setMensajeExito('');
+
+    if (nuevaPassword.length < 8) {
+      setErrorNuevaPassword('La nueva password debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    if (nuevaPassword.includes(' ')) {
+      setErrorNuevaPassword('La nueva password no puede contener espacios.');
+      return;
+    }
+
+    if (nuevaPassword !== confirmacionPassword) {
+      setErrorNuevaPassword('La confirmacion de la password no coincide.');
+      return;
+    }
+
+    setReseteandoPassword(true);
+
+    try {
+      const resetToken = await verificarCodigoSiHaceFalta();
+      const respuesta = await apiFetch(ENDPOINT_CONFIRMAR_PASSWORD, {
+        method: 'POST',
+        body: JSON.stringify({
+          email: correoNormalizado,
+          reset_token: resetToken,
+          new_password: nuevaPassword,
+        }),
+      });
+      const data = await parseJsonResponse<Record<string, unknown>>(respuesta);
+
+      if (!respuesta.ok) {
+        setErrorNuevaPassword(obtenerMensajeError(data, 'No se pudo actualizar la password.'));
+        return;
+      }
+
+      setModalNuevaPasswordAbierto(false);
+      setMensajeExito('La contrasena se ha actualizado correctamente. Ya puedes iniciar sesion.');
+      setTokenReseteoVerificado('');
+      setCodigoVerificacion('');
+      setNuevaPassword('');
+      setConfirmacionPassword('');
+      setTimeout(volverAlLogin, 1200);
+    } catch (error) {
+      setErrorNuevaPassword(error instanceof Error ? error.message : 'No se pudo actualizar la password.');
+    } finally {
+      setReseteandoPassword(false);
+    }
+  }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.shell}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>{renderStepTitle()}</Text>
-          <Text style={styles.subtitle}>
-            {step === 'request' && 'Introduce tu correo electrónico para recibir un código de verificación.'}
-            {step === 'verify' && 'Introduce el código que recibiste por correo.'}
-            {step === 'confirm' && 'Escribe tu nueva contraseña y confírmala.'}
-            {step === 'done' && 'Tu contraseña se ha actualizado correctamente.'}
-          </Text>
-        </View>
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Resetear password</Text>
+            <Text style={styles.subtitle}>
+              Introduce el correo y continua al cambio de password.
+            </Text>
+          </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        {message ? <Text style={styles.successText}>{message}</Text> : null}
-
-        {(step === 'request' || step === 'verify' || step === 'confirm') && (
-          <>
+          <View style={styles.fieldBlock}>
+            <Text style={styles.label}>Correo electronico</Text>
             <TextInput
               style={styles.input}
-              placeholder="Correo electrónico"
-              placeholderTextColor={colors.textMuted}
+              value={correoElectronico}
+              onChangeText={setCorreoElectronico}
               autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
               keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </>
-        )}
-
-        {step === 'verify' && (
-          <TextInput
-            style={styles.input}
-            placeholder="Código de 6 dígitos"
-            placeholderTextColor={colors.textMuted}
-            value={code}
-            onChangeText={setCode}
-            keyboardType="numeric"
-            maxLength={6}
-          />
-        )}
-
-        {step === 'confirm' && (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Nueva contraseña"
+              placeholder="usuario@emergency.com"
               placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              value={newPassword}
-              onChangeText={setNewPassword}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirmar contraseña"
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
-          </>
-        )}
+          </View>
 
-        {step === 'done' ? (
-          <TouchableOpacity style={styles.button} onPress={goBackAfterReset}>
-            <Text style={styles.buttonText}>Volver</Text>
-          </TouchableOpacity>
-        ) : (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              Coloque la direccion de correo electronico asociada a su cuenta y le enviaremos un codigo de verificacion. Luego podra usar ese codigo para establecer una nueva password.
+            </Text>
+          </View>
+
+          {errorPagina ? <Text style={styles.errorBox}>{errorPagina}</Text> : null}
+          {mensajeExito ? <Text style={styles.successBox}>{mensajeExito}</Text> : null}
+
           <TouchableOpacity
-            style={[styles.button, submitting ? styles.buttonDisabled : null]}
-            onPress={
-              step === 'request'
-                ? handleRequestReset
-                : step === 'verify'
-                ? handleVerifyCode
-                : handleConfirmPassword
-            }
-            disabled={submitting || (step === 'request' ? !canSubmitRequest : step === 'verify' ? !canSubmitVerify : !canSubmitConfirm)}
+            style={[styles.primaryButton, !puedeContinuar && styles.buttonDisabled]}
+            onPress={continuarAlCambioPassword}
+            disabled={!puedeContinuar}
+            activeOpacity={0.85}
           >
-            {submitting ? (
+            {enviandoCodigo ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>
-                {step === 'request' ? 'Enviar código' : step === 'verify' ? 'Verificar código' : 'Actualizar contraseña'}
-              </Text>
+              <Text style={styles.primaryButtonText}>Continuar</Text>
             )}
           </TouchableOpacity>
-        )}
 
-        <TouchableOpacity
-          style={styles.backLink}
-          onPress={goBackAfterReset}
-          disabled={submitting}
-        >
-          <Text style={styles.backLinkText}>Volver</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.backLink} onPress={volverAlLogin} disabled={enviandoCodigo}>
+            <Text style={styles.backLinkText}>Ir a iniciar sesion</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      <Modal
+        visible={modalNuevaPasswordAbierto}
+        transparent
+        animationType="fade"
+        onRequestClose={cerrarModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Nueva password</Text>
+              <Text style={styles.modalSubtitle}>
+                Introduce la nueva password y confirmala para completar el cambio.
+              </Text>
+
+              {requiereCodigo ? (
+                <View style={styles.fieldBlock}>
+                  <Text style={styles.label}>Codigo de verificacion</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={codigoVerificacion}
+                    onChangeText={setCodigoVerificacion}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    placeholder="Codigo de 6 digitos"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              ) : null}
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Nueva password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={nuevaPassword}
+                  onChangeText={setNuevaPassword}
+                  secureTextEntry
+                  autoComplete="new-password"
+                  placeholder="Minimo 8 caracteres"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Confirmar password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmacionPassword}
+                  onChangeText={setConfirmacionPassword}
+                  secureTextEntry
+                  autoComplete="new-password"
+                  placeholder="Repite la nueva password"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              {errorNuevaPassword ? <Text style={styles.errorBox}>{errorNuevaPassword}</Text> : null}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={cerrarModal}
+                  disabled={reseteandoPassword}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.primaryButton, styles.modalPrimaryButton, reseteandoPassword && styles.buttonDisabled]}
+                  onPress={resetearPassword}
+                  disabled={reseteandoPassword}
+                  activeOpacity={0.85}
+                >
+                  {reseteandoPassword ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Resetear password</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  shell: {
     flex: 1,
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.xxl,
-    justifyContent: 'center',
     flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    padding: spacing.xxl,
+    ...shadows.lg,
   },
   header: {
+    alignItems: 'center',
     marginBottom: spacing.xl,
   },
   title: {
     ...typography.heading2,
     color: colors.text,
-    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
-    ...typography.body,
+    ...typography.small,
     color: colors.textMuted,
-    lineHeight: 22,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  fieldBlock: {
+    marginBottom: spacing.lg,
+  },
+  label: {
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: colors.surface,
+    ...typography.body,
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    color: colors.text,
+    minHeight: 50,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
-    ...typography.body,
-    ...shadows.sm,
   },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
+  infoBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
     borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+  },
+  infoText: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  errorBox: {
+    ...typography.small,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: borderRadius.md,
+    color: colors.danger,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  successBox: {
+    ...typography.small,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: borderRadius.md,
+    color: colors.success,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  primaryButton: {
     alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
     justifyContent: 'center',
-    minHeight: 54,
-    marginTop: spacing.sm,
-    ...shadows.md,
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  primaryButtonText: {
+    ...typography.subtitle,
+    color: colors.white,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
-  buttonText: {
-    color: colors.white,
-    ...typography.subtitle,
-  },
   backLink: {
-    marginTop: spacing.md,
     alignItems: 'center',
+    marginTop: spacing.lg,
   },
   backLinkText: {
+    ...typography.small,
     color: colors.primary,
-    ...typography.body,
     fontWeight: '700',
   },
-  errorText: {
-    color: colors.danger,
-    marginBottom: spacing.md,
-    ...typography.small,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
   },
-  successText: {
-    color: colors.success,
-    marginBottom: spacing.md,
+  modalContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  modalCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    padding: spacing.xxl,
+    ...shadows.lg,
+  },
+  modalTitle: {
+    ...typography.heading3,
+    color: colors.text,
+  },
+  modalSubtitle: {
     ...typography.small,
+    color: colors.textMuted,
+    marginBottom: spacing.xl,
+    marginTop: spacing.sm,
+  },
+  modalActions: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    minHeight: 50,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  secondaryButtonText: {
+    ...typography.subtitle,
+    color: colors.text,
+  },
+  modalPrimaryButton: {
+    marginTop: 0,
   },
 });

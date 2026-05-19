@@ -8,7 +8,7 @@ import { apiFetch } from './api';
 export const TIEMPO_INMOVILIDAD_MS = 10 * 60 * 1000;
 export const CUENTA_ATRAS_INMOVILIDAD_SEGUNDOS = 30;
 export const DISTANCIA_MINIMA_MOVIMIENTO_METROS = 20;
-export const TIPO_ALERTA_INMOVILIDAD = 'ANOMALY';
+export const TIPO_ALERTA_INMOVILIDAD = 'MOVEMENT';
 export const ACCION_CONFIRMAR_INMOVILIDAD = 'SIGO_AQUI_MOVEMENT';
 export const CATEGORIA_NOTIFICACION_INMOVILIDAD = 'movement-confirmation';
 export const CANAL_NOTIFICACION_INMOVILIDAD = 'movement-alerts';

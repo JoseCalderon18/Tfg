@@ -10,7 +10,7 @@ import { useOfflineSync } from '../context/OfflineSyncContext';
 
 const UMBRAL_BATERIA_BAJA = 0.15;
 const UMBRAL_REACTIVACION = 0.2;
-const TIPO_ALERTA_BATERIA = 'ANOMALY';
+const TIPO_ALERTA_BATERIA = 'BATTERY';
 const TITULO_ALERTA_BATERIA = 'Bateria baja del dispositivo';
 const CANAL_NOTIFICACION_BATERIA = 'battery-alerts';
 

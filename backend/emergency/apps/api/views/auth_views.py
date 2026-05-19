@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.middleware.csrf import get_token
-from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_cookie
 from rest_framework import generics, permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -401,10 +401,10 @@ class PanelLoginView(APIView):
         return Response({"ok": False, "errors": form.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(csrf_exempt, name="dispatch")
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = []
 
     @transaction.atomic
     def post(self, request):
@@ -472,10 +472,10 @@ class PasswordResetRequestView(APIView):
         return Response(respuesta, status=status.HTTP_200_OK)
 
 
-@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(csrf_exempt, name="dispatch")
 class PasswordResetVerifyCodeView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = []
 
     @transaction.atomic
     def post(self, request):
@@ -517,10 +517,10 @@ class PasswordResetVerifyCodeView(APIView):
         )
 
 
-@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(csrf_exempt, name="dispatch")
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = []
 
     @transaction.atomic
     def post(self, request):
