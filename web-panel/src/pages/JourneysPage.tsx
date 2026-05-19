@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
 import HelpButton from "../components/HelpButton";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -302,6 +303,20 @@ export default function JourneysPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="journeys-stats"]',
+                  title: "Estadísticas de jornadas",
+                  description: "Resumen rápido: total de jornadas registradas, cuántas están activas ahora mismo, cuántas ya han finalizado y cuántas incluyen notas operativas. Úsalo para ver el volumen operativo del día.",
+                },
+                {
+                  selector: '[data-tour="journeys-list"]',
+                  title: "Listado de jornadas",
+                  description: "Detalle de cada jornada: quién la inició, cuándo empezó y terminó, duración total y notas. Haz clic en cualquier jornada para ver su mapa de recorrido GPS y los descansos registrados.",
+                },
+              ]}
+            />
             <HelpButton
               title="Centro de jornadas"
               content={
@@ -331,7 +346,7 @@ export default function JourneysPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div data-tour="journeys-stats" className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-4">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Total</p>
             <p className="mt-2 text-2xl font-bold">{jornada.length}</p>
@@ -351,7 +366,7 @@ export default function JourneysPage() {
         </div>
 
         <div className="mt-5 grid gap-4 2xl:grid-cols-[1.55fr_1fr]">
-          <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+          <section data-tour="journeys-list" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
               <input
                 value={busqueda}

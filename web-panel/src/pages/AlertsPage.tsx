@@ -4,6 +4,7 @@ import { apiFetch } from "../utils/api";
 import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
 import HelpButton from "../components/HelpButton";
+import TourButton from "../components/TourGuide";
 
 type FilaAlerta = {
   id: string;
@@ -229,6 +230,20 @@ export default function AlertsPage() {
               <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
               <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
               <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="alerts-metrics"]',
+                    title: "Indicadores de alertas",
+                    description: "Muestra el recuento de alertas por estado: abiertas (sin atender), reconocidas (en gestión), críticas (SOS o máxima prioridad) y cerradas. Son los KPIs principales del centro de alertas.",
+                  },
+                  {
+                    selector: '[data-tour="alerts-table"]',
+                    title: "Tabla de alertas",
+                    description: "Lista todas las alertas con tipo (SOS, GEOFENCE, MOVEMENT), severidad y estado. Usa 'Reconocer' para acusar recibo o 'Cerrar' cuando la alerta quede resuelta. Puedes buscar por tipo, título o estado.",
+                  },
+                ]}
+              />
               <HelpButton
                 title="Alertas operativas"
                 content={
@@ -245,7 +260,7 @@ export default function AlertsPage() {
           }
         />
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div data-tour="alerts-metrics" className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Abiertas" value={indicadores.abiertas} tone="success" />
           <MetricCard label="Reconocidas" value={indicadores.reconocidas} tone="warning" />
           <MetricCard label="Críticas" value={indicadores.criticas} tone="danger" />
@@ -323,6 +338,7 @@ export default function AlertsPage() {
           </div>
         )}
 
+        <div data-tour="alerts-table">
         <DataTable minWidth="1220px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
@@ -409,6 +425,7 @@ export default function AlertsPage() {
               {alertasFiltradas.length === 0 ? <EmptyState colSpan={7} title="No hay alertas para mostrar" /> : null}
             </tbody>
           </DataTable>
+        </div>
 
         <Pagination
           page={paginaActual}

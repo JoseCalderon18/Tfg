@@ -8,6 +8,7 @@ import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
 import HelpButton from "../components/HelpButton";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -791,6 +792,20 @@ export default function IncidentsPage() {
           </div>
 
                   <div className="flex flex-wrap items-center gap-3">
+          <TourButton
+            steps={[
+              {
+                selector: '[data-tour="incidents-stats"]',
+                title: "Resumen de incidentes",
+                description: "Muestra el total de incidentes por estado: abiertos (activos ahora), en evaluación (pendientes de resolución) y cerrados (finalizados). Úsalos para tener un vistazo rápido del estado operativo.",
+              },
+              {
+                selector: '[data-tour="incidents-list"]',
+                title: "Lista y filtro de incidentes",
+                description: "Filtra incidentes por nombre, tipo, estado o ubicación. Haz clic en cualquier fila para ver su ficha completa con alertas asociadas, mapa y áreas de trabajo asignadas.",
+              },
+            ]}
+          />
           <HelpButton
             title="Incidentes"
             content={
@@ -823,7 +838,7 @@ export default function IncidentsPage() {
         </div>
 
         </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div data-tour="incidents-stats" className="mt-4 grid gap-3 md:grid-cols-3">
           <article className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">
               Incidentes abiertos
@@ -861,7 +876,7 @@ export default function IncidentsPage() {
           </article>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
+        <div data-tour="incidents-list" className="mt-4 rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-3.5">
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
             <div>
               <input

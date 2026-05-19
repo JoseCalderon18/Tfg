@@ -5,6 +5,7 @@ import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import HelpButton from "../components/HelpButton";
+import TourButton from "../components/TourGuide";
 
 type WorkAreaAPIFila = {
   id: number;
@@ -365,6 +366,20 @@ export default function WorkAreasPage() {
             Selecciona un área para ver su localización en el mapa y revisar sus datos.
           </p>
         </div>
+        <TourButton
+          steps={[
+            {
+              selector: '[data-tour="workareas-list"]',
+              title: "Lista de áreas de trabajo",
+              description: "Aquí aparecen todas las áreas definidas. Cada área tiene un nombre, tipo (circular o poligonal) y el incidente al que pertenece. Pulsa una para ver su geometría en el mapa.",
+            },
+            {
+              selector: '[data-tour="workareas-map"]',
+              title: "Mapa del área",
+              description: "Visualiza la zona geográfica del área seleccionada. El contorno azul es el perímetro activo de geofence. Si un operativo sale de este área, el sistema genera una alerta GEOFENCE automáticamente.",
+            },
+          ]}
+        />
         <HelpButton
           title="Áreas de trabajo"
           content={
@@ -381,7 +396,7 @@ export default function WorkAreasPage() {
       {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <section data-tour="workareas-list" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <input
             type="text"
             value={query}
@@ -506,7 +521,7 @@ export default function WorkAreasPage() {
           ) : null}
         </section>
 
-        <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <section data-tour="workareas-map" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Mapa</p>

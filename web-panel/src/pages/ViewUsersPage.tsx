@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, PageHeader, Pagination, SearchBar } from "../components/ui";
 import HelpButton from "../components/HelpButton";
+import TourButton from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -92,6 +93,20 @@ export default function ViewUsersPage() {
           title="Usuarios del sistema"
           actions={
             <>
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="users-search"]',
+                  title: "Buscar usuarios",
+                  description: "Filtra la lista por nombre de usuario, email o rol en tiempo real. El resultado muestra cuántos usuarios coinciden con la búsqueda.",
+                },
+                {
+                  selector: '[data-tour="users-table"]',
+                  title: "Lista de usuarios",
+                  description: "Todos los usuarios del sistema con su username, email, rol (ADMIN, COMMAND, OPERATIVE) y estado activo/inactivo. Pulsa 'Editar usuario' en cualquier fila para modificarlo.",
+                },
+              ]}
+            />
             <HelpButton
               title="Usuarios del sistema"
               content={
@@ -122,19 +137,21 @@ export default function ViewUsersPage() {
           }
         />
 
-        <SearchBar
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPaginaActual(1);
-          }}
-          onClear={() => {
-            setQuery("");
-            setPaginaActual(1);
-          }}
-          placeholder="Buscar por username, email o rol..."
-          resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
-        />
+        <div data-tour="users-search">
+          <SearchBar
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPaginaActual(1);
+            }}
+            onClear={() => {
+              setQuery("");
+              setPaginaActual(1);
+            }}
+            placeholder="Buscar por username, email o rol..."
+            resultLabel={`${filteredUsers.length} de ${users.length} usuarios`}
+          />
+        </div>
 
         {error ? <ErrorBanner message={error} className="mt-4" /> : null}
 
@@ -172,6 +189,7 @@ export default function ViewUsersPage() {
           </div>
         )}
 
+        <div data-tour="users-table">
         <DataTable minWidth="1050px" wrapperClassName="mt-4 hidden md:block">
             <thead>
               <tr>
@@ -220,6 +238,7 @@ export default function ViewUsersPage() {
               )}
             </tbody>
         </DataTable>
+        </div>
 
         <Pagination
           page={paginaActual}
