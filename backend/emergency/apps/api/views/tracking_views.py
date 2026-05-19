@@ -9,6 +9,18 @@ from emergency.apps.core.models import PuntoRastreo, Incidente
 from ..serializers import PuntoRastreoSerializer, PuntoRastreoCreateSerializer
 
 
+DEFAULT_ROUTE_LIMIT = 300
+MAX_ROUTE_LIMIT = 1000
+
+
+def _get_route_limit(request):
+    try:
+        limit = int(request.query_params.get('limit', DEFAULT_ROUTE_LIMIT))
+    except (TypeError, ValueError):
+        limit = DEFAULT_ROUTE_LIMIT
+    return max(1, min(limit, MAX_ROUTE_LIMIT))
+
+
 class PuntoRastreoCreateView(generics.CreateAPIView):
     """Crear un punto de tracking"""
     serializer_class = PuntoRastreoCreateSerializer
@@ -98,6 +110,10 @@ class RouteView(APIView):
         if date:
             queryset = queryset.filter(recorded_at__date=date)
 
+        limit = _get_route_limit(request)
+        queryset = list(queryset.order_by('-recorded_at')[:limit])
+        queryset.reverse()
+
         serializer = PuntoRastreoSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -116,9 +132,11 @@ class IncidentTrackingView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        points = PuntoRastreo.objects.filter(
+        limit = _get_route_limit(request)
+        points = list(PuntoRastreo.objects.filter(
             incident=incident
-        ).select_related('user').order_by('recorded_at')
+        ).select_related('user').order_by('-recorded_at')[:limit])
+        points.reverse()
 
         serializer = PuntoRastreoSerializer(points, many=True)
         return Response(serializer.data)
