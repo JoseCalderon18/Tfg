@@ -5,6 +5,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import User, Organization
 from ..serializers import UserSerializer, OrganizationSerializer
 
@@ -45,3 +46,22 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 ),
             )
         )
+
+    def perform_create(self, serializer):
+        organization = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo la organizacion '{organization.name}'.",
+        )
+
+    def perform_update(self, serializer):
+        organization = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico la organizacion '{organization.name}'.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino la organizacion '{instance.name}'."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)

@@ -7,6 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 
+from emergency.apps.core.audit import nombre_usuario, registrar_auditoria
 from emergency.apps.core.models import Incidente, IncidentMember, IncidentMessage
 from .auth_views import _has_panel_full_access
 from ..serializers import (
@@ -36,7 +37,23 @@ class IncidentViewSet(viewsets.ModelViewSet):
         return IncidenteSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        incident = serializer.save(created_by=self.request.user)
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} creo el incidente '{incident.name}' ({incident.incident_type}).",
+        )
+
+    def perform_update(self, serializer):
+        incident = serializer.save()
+        registrar_auditoria(
+            self.request.user,
+            f"{nombre_usuario(self.request.user)} modifico el incidente '{incident.name}'.",
+        )
+
+    def perform_destroy(self, instance):
+        descripcion = f"{nombre_usuario(self.request.user)} elimino el incidente '{instance.name}'."
+        instance.delete()
+        registrar_auditoria(self.request.user, descripcion)
 
     def _can_access_incident_chat(self, incident, user):
         if not getattr(user, "is_authenticated", False):
@@ -70,6 +87,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
             user=user,
             role_in_incident=role
         )
+        registrar_auditoria(request.user, f"{nombre_usuario(request.user)} se unio al incidente '{incident.name}'.")
 
         return Response(IncidentMemberSerializer(member).data, status=status.HTTP_201_CREATED)
 
@@ -83,6 +101,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
             member = IncidentMember.objects.get(incident=incident, user=user)
             member.is_active = False
             member.save()
+            registrar_auditoria(request.user, f"{nombre_usuario(request.user)} abandono el incidente '{incident.name}'.")
             return Response({'status': 'left incident'})
         except IncidentMember.DoesNotExist:
             return Response(
@@ -105,6 +124,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
         incident.status = 'CLOSED'
         incident.ended_at = timezone.now()
         incident.save()
+        registrar_auditoria(request.user, f"{nombre_usuario(request.user)} cerro el incidente '{incident.name}'.")
 
         return Response(IncidenteSerializer(incident).data)
 

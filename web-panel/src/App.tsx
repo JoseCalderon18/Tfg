@@ -31,6 +31,8 @@ import JourneysPage from './pages/JourneysPage';
 import PointOfInterestPage from './pages/PointOfInterestPage';
 import CreatePointOfInterestPage from './pages/CreatePointOfInterestPage';
 import ChatPage from './pages/ChatPage';
+import AuditPage from './pages/AuditPage';
+import RiskReportsPage from './pages/RiskReportsPage';
 /**
  * Componente principal del panel web
  * Maneja las rutas y la verificación de autenticación
@@ -74,6 +76,8 @@ function App() {
         <Route path="points" element={<PointOfInterestPage />} />
         <Route path="createPointOfInterest" element={<CreatePointOfInterestPage />} />
         <Route path="chats" element={<ChatPage />} />
+        <Route path="audit" element={<AuditPage />} />
+        <Route path="risk-reports" element={<RiskReportsPage />} />
         {/* Si no encuentra la página, va al dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

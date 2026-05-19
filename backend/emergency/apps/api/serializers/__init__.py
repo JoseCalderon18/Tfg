@@ -30,6 +30,7 @@ from .alert_serializers import (
 from .organization_serializers import OrganizationSerializer, OrganizationCreateSerializer
 from .lightning_serializers import LightningStrikeSerializer, LightningStrikeListSerializer
 from .risk_report_serializers import RiskReportSerializer, RiskReportCreateSerializer
+from .audit_serializers import AuditoriaSerializer
 from .workarea_serializers import WorkAreaSerializer, WorkAreaCreateSerializer
 from .point_of_interest_serializers import PointOfInterestSerializer, PointOfInterestCreateSerializer
 from .unit_serializers import (
@@ -89,6 +90,7 @@ __all__ = [
     "OrganizationCreateSerializer",
     "RiskReportSerializer",
     "RiskReportCreateSerializer",
+    "AuditoriaSerializer",
     "JourneySerializer",
     "JourneyCreateSerializer",
     "JourneyStopSerializer",

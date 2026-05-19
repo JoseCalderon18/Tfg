@@ -21,6 +21,7 @@ from .workarea import AreaTrabajo
 from .workarea import AreaTrabajo as WorkArea
 from .lightning import LightningStrike
 from .risk_report import RiskReport
+from .audit import Auditoria
 from .password_reset import CodigoResetPassword
 from .journey import Journey
 from .point_of_interest import PointOfInterest
@@ -52,6 +53,7 @@ __all__ = [
     'AreaTrabajo',
     'WorkArea',
     'RiskReport',
+    'Auditoria',
     'CodigoResetPassword',
     'Journey',
     'PointOfInterest',
