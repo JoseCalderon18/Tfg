@@ -4,7 +4,7 @@ import { Circle, MapContainer, Polygon, TileLayer, useMap } from "react-leaflet"
 import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
-import { FloatingTourButton } from "../components/TourGuide";
+import TourButton from "../components/TourGuide";
 
 type WorkAreaAPIFila = {
   id: number;
@@ -365,6 +365,20 @@ export default function WorkAreasPage() {
             Selecciona un área para ver su localización en el mapa y revisar sus datos.
           </p>
         </div>
+        <TourButton
+          steps={[
+            {
+              selector: '[data-tour="workareas-list"]',
+              title: "Lista de áreas de trabajo",
+              description: "Aquí aparecen todas las áreas definidas. Cada área muestra su nombre, tipo (circular o poligonal), incidente asociado y estado activo. Pulsa cualquier fila para seleccionarla y ver su geometría en el mapa. Usa el campo de búsqueda para filtrar por nombre, tipo o incidente.",
+            },
+            {
+              selector: '[data-tour="workareas-map"]',
+              title: "Mapa del área",
+              description: "Visualiza el perímetro geográfico del área seleccionada. El área circular se muestra con radio en metros y la poligonal con su forma exacta. Cuando un operativo sale de este perímetro, el sistema genera automáticamente una alerta de tipo GEOFENCE y bloquea la app. Desde aquí puedes editar, borrar o crear una nueva área de trabajo.",
+            },
+          ]}
+        />
       </div>
 
       {error ? <div className="mt-4 cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
@@ -625,20 +639,6 @@ export default function WorkAreasPage() {
         </div>
       ) : null}
 
-      <FloatingTourButton
-        steps={[
-          {
-            selector: '[data-tour="workareas-list"]',
-            title: "Lista de áreas de trabajo",
-            description: "Aquí aparecen todas las áreas definidas. Cada área muestra su nombre, tipo (circular o poligonal), incidente asociado y estado activo. Pulsa cualquier fila para seleccionarla y ver su geometría en el mapa. Usa el campo de búsqueda para filtrar por nombre, tipo o incidente.",
-          },
-          {
-            selector: '[data-tour="workareas-map"]',
-            title: "Mapa del área",
-            description: "Visualiza el perímetro geográfico del área seleccionada. El área circular se muestra con radio en metros y la poligonal con su forma exacta. Cuando un operativo sale de este perímetro, el sistema genera automáticamente una alerta de tipo GEOFENCE y bloquea la app. Desde aquí puedes editar, borrar o crear una nueva área de trabajo.",
-          },
-        ]}
-      />
     </div>
   );
 }

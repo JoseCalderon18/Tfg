@@ -1,3 +1,5 @@
+import TourButton from "./TourGuide";
+
 type LayerType = "satellite" | "relief" | "vegetation";
 type StatusFilter = "ALL" | "OPEN" | "TRIAGE" | "CLOSED";
 
@@ -66,6 +68,11 @@ export function DashboardHeader({ email, activeLayer, onLayerChange, onLogout }:
           ))}
         </div>
 
+        <TourButton steps={[
+          { selector: '[data-tour="dashboard-kpis"]', title: "KPIs del centro de mando", description: "Resumen de incidentes abiertos, en revisión, cerrados, alertas críticas y operativos activos en tiempo real." },
+          { selector: '[data-tour="dashboard-map"]', title: "Mapa operativo", description: "Visualiza en el mapa todos los incidentes, alertas, POI, áreas de trabajo y rutas de los operativos." },
+          { selector: '[data-tour="dashboard-summary"]', title: "Panel de resumen lateral", description: "Lista de incidentes, alertas, recursos y unidades asignadas al incidente seleccionado." },
+        ]} />
         <button onClick={onLogout} className="cm-btn cm-btn-secondary hover:border-[color:var(--cm-danger)]/50" type="button">
           Cerrar sesión
         </button>

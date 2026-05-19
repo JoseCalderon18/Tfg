@@ -243,7 +243,7 @@ export default function PanelNotifications() {
 
   return (
     <>
-      <div className="fixed right-4 top-20 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col items-end gap-3">
+      <div className="fixed bottom-4 right-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col items-end gap-3">
         <div className="flex flex-col items-end gap-2">
           {avisosVisibles.map((aviso) => (
             <article
@@ -278,7 +278,7 @@ export default function PanelNotifications() {
 
         <div className="relative">
           {panelAbierto ? (
-            <section className="absolute right-0 top-12 w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-2xl shadow-black/40">
+            <section className="absolute bottom-12 right-0 w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-2xl shadow-black/40">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Notificaciones</p>

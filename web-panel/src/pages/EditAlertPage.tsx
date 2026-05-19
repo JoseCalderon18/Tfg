@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { apiFetch } from "../utils/api";
 import { getAlertStatusBadge } from "../utils/statusColors";
+import TourButton from "../components/TourGuide";
 
 type UsuarioResumen = {
   id?: string;
@@ -597,16 +598,27 @@ export default function PaginaEditarAlerta() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navegar("/alerts")}
-              className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
-            >
-              Volver a alertas
-            </button>
+            <div className="flex items-center gap-2">
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="edit-alert-info"]',
+                    title: "Información de la alerta",
+                    description: "Vista detallada de la alerta: tipo, severidad, estado actual, creador y fecha. El mapa muestra la ubicación GPS donde se generó la alerta. Activa el modo edición para modificar el tipo, severidad o estado.",
+                  },
+                ]}
+              />
+              <button
+                type="button"
+                onClick={() => navegar("/alerts")}
+                className="rounded-xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] px-4 py-2 text-sm font-semibold transition hover:bg-[color:var(--cm-surface-2)]"
+              >
+                Volver a alertas
+              </button>
+            </div>
           </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
+          <div data-tour="edit-alert-info" className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_0.95fr]">
             <div className="space-y-4">
               {error ? <div className="cm-badge-danger rounded-xl p-3 text-sm">{error}</div> : null}
               {exito ? <div className="cm-badge-success rounded-xl p-3 text-sm">{exito}</div> : null}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { getAlertSeverityBadge, getAlertStatusBadge } from "../utils/statusColors";
 import { ConfirmDialog, DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
-import { FloatingTourButton } from "../components/TourGuide";
+import TourButton from "../components/TourGuide";
 
 type FilaAlerta = {
   id: string;
@@ -225,10 +225,36 @@ export default function AlertsPage() {
           title="Centro de alertas operativas"
           description="Vista operativa con prioridades visuales, más registros y búsqueda para análisis rápido."
           actions={
-            <div data-tour="alerts-legend" className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
-              <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
-              <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div data-tour="alerts-legend" className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="cm-badge-success rounded-full px-3 py-1">Abierta</span>
+                <span className="cm-badge-warning rounded-full px-3 py-1">Evaluación</span>
+                <span className="cm-badge-neutral rounded-full px-3 py-1">Cerrada</span>
+              </div>
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="alerts-legend"]',
+                    title: "Leyenda de estados",
+                    description: "Los colores indican el estado de cada alerta: verde Abierta (sin atender), amarillo Evaluación (reconocida, en gestión) y gris Cerrada (resuelta). Úsalos para identificar rápidamente la urgencia.",
+                  },
+                  {
+                    selector: '[data-tour="alerts-metrics"]',
+                    title: "KPIs del centro de alertas",
+                    description: "Las 4 tarjetas muestran el recuento en tiempo real: Abiertas (requieren atención), Reconocidas (en gestión), Críticas (SOS o severidad máxima) y Cerradas. Las críticas son SOS enviados desde la app.",
+                  },
+                  {
+                    selector: '[data-tour="alerts-search"]',
+                    title: "Búsqueda y filtros",
+                    description: "Filtra por tipo de alerta (SOS, GEOFENCE, MOVEMENT), título, estado o nombre del creador. El contador muestra cuántas alertas coinciden. Borra el filtro pulsando la X para volver al listado completo.",
+                  },
+                  {
+                    selector: '[data-tour="alerts-table"]',
+                    title: "Tabla de alertas",
+                    description: "Cada fila muestra tipo, título, severidad, estado, creador y fecha. Los botones de acción son: Ver (abre la ficha completa), Reconocer (cambia estado a Evaluación) y Cerrar (marca como resuelta). Eliminar borra la alerta definitivamente.",
+                  },
+                ]}
+              />
             </div>
           }
         />
@@ -431,30 +457,6 @@ export default function AlertsPage() {
         <p>Esta acción no se puede deshacer.</p>
       </ConfirmDialog>
 
-      <FloatingTourButton
-        steps={[
-          {
-            selector: '[data-tour="alerts-legend"]',
-            title: "Leyenda de estados",
-            description: "Los colores indican el estado de cada alerta: verde Abierta (sin atender), amarillo Evaluación (reconocida, en gestión) y gris Cerrada (resuelta). Úsalos para identificar rápidamente la urgencia.",
-          },
-          {
-            selector: '[data-tour="alerts-metrics"]',
-            title: "KPIs del centro de alertas",
-            description: "Las 4 tarjetas muestran el recuento en tiempo real: Abiertas (requieren atención), Reconocidas (en gestión), Críticas (SOS o severidad máxima) y Cerradas. Las críticas son SOS enviados desde la app.",
-          },
-          {
-            selector: '[data-tour="alerts-search"]',
-            title: "Búsqueda y filtros",
-            description: "Filtra por tipo de alerta (SOS, GEOFENCE, MOVEMENT), título, estado o nombre del creador. El contador muestra cuántas alertas coinciden. Borra el filtro pulsando la X para volver al listado completo.",
-          },
-          {
-            selector: '[data-tour="alerts-table"]',
-            title: "Tabla de alertas",
-            description: "Cada fila muestra tipo, título, severidad, estado, creador y fecha. Los botones de acción son: Ver (abre la ficha completa), Reconocer (cambia estado a Evaluación) y Cerrar (marca como resuelta). Eliminar borra la alerta definitivamente.",
-          },
-        ]}
-      />
     </div>
   );
 }

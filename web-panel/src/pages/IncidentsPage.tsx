@@ -7,7 +7,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import MapaMiniUnidad from "../components/MapaMiniUnidad";
 import { getIncidentStatusBadge } from "../utils/statusColors";
-import { FloatingTourButton } from "../components/TourGuide";
+import TourButton from "../components/TourGuide";
 
 type RespuestaUsuario = {
   authenticated: boolean;
@@ -791,6 +791,25 @@ export default function IncidentsPage() {
           </div>
 
                   <div data-tour="incidents-actions" className="flex flex-wrap items-center gap-3">
+          <TourButton
+            steps={[
+              {
+                selector: '[data-tour="incidents-actions"]',
+                title: "Botones de acción",
+                description: "Exportar PDF descarga un informe completo de todos los incidentes visibles. Nuevo incidente abre el formulario de creación donde defines nombre, tipo (incendio, rescate, médico…) y estado inicial.",
+              },
+              {
+                selector: '[data-tour="incidents-stats"]',
+                title: "KPIs de incidentes",
+                description: "Las 3 tarjetas muestran el recuento actual por estado: Abiertos (activos en campo ahora mismo), En evaluación (pendientes de decisión del mando) y Cerrados (finalizados y archivados). Se actualizan en tiempo real.",
+              },
+              {
+                selector: '[data-tour="incidents-list"]',
+                title: "Búsqueda y selección",
+                description: "Escribe en el campo de búsqueda para filtrar por nombre, tipo, estado o dirección. Haz clic en cualquier incidente de la lista para cargar su ficha completa a la derecha del mapa.",
+              },
+            ]}
+          />
           <button
             type="button"
             onClick={exportarIncidentesPdf}
@@ -1315,25 +1334,6 @@ export default function IncidentsPage() {
         </div>
       ) : null}
 
-      <FloatingTourButton
-        steps={[
-          {
-            selector: '[data-tour="incidents-actions"]',
-            title: "Botones de acción",
-            description: "Exportar PDF descarga un informe completo de todos los incidentes visibles. Nuevo incidente abre el formulario de creación donde defines nombre, tipo (incendio, rescate, médico…) y estado inicial.",
-          },
-          {
-            selector: '[data-tour="incidents-stats"]',
-            title: "KPIs de incidentes",
-            description: "Las 3 tarjetas muestran el recuento actual por estado: Abiertos (activos en campo ahora mismo), En evaluación (pendientes de decisión del mando) y Cerrados (finalizados y archivados). Se actualizan en tiempo real.",
-          },
-          {
-            selector: '[data-tour="incidents-list"]',
-            title: "Búsqueda y selección",
-            description: "Escribe en el campo de búsqueda para filtrar por nombre, tipo, estado o dirección. Haz clic en cualquier incidente de la lista para cargar su ficha completa a la derecha del mapa.",
-          },
-        ]}
-      />
     </div>
   );
 }

@@ -1005,11 +1005,13 @@ export default function DashboardPage() {
         />
 
         <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
-          <DashboardKpis kpis={kpis} closedColor={STATUS_COLOR.cerrado} />
+          <div data-tour="dashboard-kpis">
+            <DashboardKpis kpis={kpis} closedColor={STATUS_COLOR.cerrado} />
+          </div>
 
           {/* El mapa y el resumen juntos */}
           <div className="mt-4 grid h-[calc(100vh-255px)] gap-4 xl:grid-cols-[1.8fr_0.95fr]">
-            <section className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <section data-tour="dashboard-map" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <DashboardMapToolbar
                 search={search}
                 statusFilter={statusFilter}
@@ -1332,7 +1334,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <aside className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+            <aside data-tour="dashboard-summary" className="rounded-2xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <DashboardSideSummary
                 selectedIncidentName={selectedIncident?.name}
                 incidents={visibleIncidents.length}

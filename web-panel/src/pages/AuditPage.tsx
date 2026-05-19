@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../utils/api";
 import { DataTable, EmptyState, ErrorBanner, LoadingState, MetricCard, PageHeader, Pagination, SearchBar } from "../components/ui";
+import TourButton from "../components/TourGuide";
 
 type FilaAuditoria = {
   id: number;
@@ -168,19 +169,41 @@ export default function AuditPage() {
           title="Auditoria"
           description="Registro cronologico de creaciones, modificaciones y acciones relevantes realizadas en el sistema."
           actions={
-            <button type="button" className="cm-btn cm-btn-secondary" onClick={() => window.location.reload()}>
-              Actualizar
-            </button>
+            <div className="flex items-center gap-2">
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="audit-metrics"]',
+                    title: "Resumen de auditoría",
+                    description: "Las 4 tarjetas muestran el total de registros de auditoría, cuántos se generaron hoy, cuántos tienen usuario identificado y cuántos son eventos de sistema automático.",
+                  },
+                  {
+                    selector: '[data-tour="audit-search"]',
+                    title: "Búsqueda de registros",
+                    description: "Filtra los registros por descripción, nombre de usuario, UUID o fecha. El contador muestra cuántos registros coinciden con tu búsqueda.",
+                  },
+                  {
+                    selector: '[data-tour="audit-table"]',
+                    title: "Tabla de auditoría",
+                    description: "Registro cronológico de todas las acciones realizadas: quién lo hizo, cuándo y qué cambió. Cada fila es un evento del sistema con ID único, descripción y marca de tiempo.",
+                  },
+                ]}
+              />
+              <button type="button" className="cm-btn cm-btn-secondary" onClick={() => window.location.reload()}>
+                Actualizar
+              </button>
+            </div>
           }
         />
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div data-tour="audit-metrics" className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Registros" value={metricas.total} tone="info" />
           <MetricCard label="Hoy" value={metricas.hoy} tone="success" />
           <MetricCard label="Con usuario" value={metricas.conUsuario} />
           <MetricCard label="Sistema" value={metricas.sinUsuario} tone="warning" />
         </div>
 
+        <div data-tour="audit-search">
         <SearchBar
           value={consulta}
           onChange={(event) => setConsulta(event.target.value)}
@@ -188,6 +211,7 @@ export default function AuditPage() {
           placeholder="Buscar por descripcion, usuario, UUID o fecha..."
           resultLabel={`${filasFiltradas.length} de ${filas.length} registros`}
         />
+        </div>
 
         {errorMensaje ? <ErrorBanner message={errorMensaje} className="mt-4" /> : null}
 
@@ -198,6 +222,7 @@ export default function AuditPage() {
           />
         ) : (
           <>
+            <div data-tour="audit-table">
             <DataTable minWidth="980px">
               <thead>
                 <tr>
@@ -226,6 +251,7 @@ export default function AuditPage() {
                 ))}
               </tbody>
             </DataTable>
+            </div>
             <Pagination
               page={paginaActual}
               totalPages={totalPaginas}

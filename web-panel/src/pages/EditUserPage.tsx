@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type RespuestaYo = {
   authenticated: boolean;
@@ -159,16 +160,27 @@ export default function EditUserPage() {
               Aqui solo se modifican los datos basicos almacenados en la tabla users.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/viewusers")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="edit-user-form"]',
+                  title: "Editar datos del usuario",
+                  description: "Modifica el nombre de usuario, email, rol y organización asignada. También puedes cambiar la contraseña o activar/desactivar la cuenta desde este formulario. Pulsa Guardar cambios para confirmar.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/viewusers")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 transition hover:bg-slate-800"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800">
+        <div data-tour="edit-user-form" className="mt-6 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800">
           {error && (
             <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
               {error}

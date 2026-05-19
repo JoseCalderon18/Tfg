@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { apiFetch } from "../utils/api";
 import "leaflet/dist/leaflet.css";
+import TourButton from "../components/TourGuide";
 
 // Fix for default markers in react-leaflet
 import L from "leaflet";
@@ -101,7 +102,21 @@ export default function LightningMapPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div data-tour="lightning-header" className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="lightning-header"]',
+                  title: "Estadísticas de rayos",
+                  description: "Muestra el número de rayos detectados en la zona en tiempo real. Los datos se actualizan automáticamente cada pocos minutos desde el servicio de detección de rayos.",
+                },
+                {
+                  selector: '[data-tour="lightning-map"]',
+                  title: "Mapa de rayos",
+                  description: "Mapa interactivo con los últimos rayos detectados marcados como puntos. Haz zoom para ver la distribución geográfica. Cada marcador incluye la hora de impacto y la intensidad. Útil para evaluar riesgos eléctricos en la zona de operaciones.",
+                },
+              ]}
+            />
             <span className="cm-badge-info inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs">
               <span className="h-2 w-2 rounded-full bg-yellow-400" />
               {strikes.length} rayos detectados
@@ -110,7 +125,7 @@ export default function LightningMapPage() {
         </div>
 
         {/* El mapa interactivo */}
-        <div className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
+        <div data-tour="lightning-map" className="flex-1 min-h-0 px-4 pb-4 lg:px-5 lg:pb-5 2xl:px-6">
           <div className="h-[calc(100vh-120px)] w-full rounded-2xl overflow-hidden border border-[color:var(--cm-border)] relative">
             {strikes.length === 0 && (
               <div className="absolute inset-0 bg-[color:var(--cm-surface)] flex items-center justify-center z-50">

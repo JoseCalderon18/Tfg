@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorBanner, FormActions, FormSection, LoadingState, PageHeader, SuccessBanner } from "../components/ui";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type MeResponse = {
   authenticated: boolean;
@@ -118,16 +119,27 @@ export default function NewUserPage() {
           title="Crear usuario operativo"
           description="Este usuario tendrá rol OPERATIVE y podrá usar el sistema operativo."
           actions={
-            <button type="button" onClick={() => navegar("/dashboard")} className="cm-btn cm-btn-secondary">
-              Volver
-            </button>
+            <div className="flex items-center gap-2">
+              <TourButton
+                steps={[
+                  {
+                    selector: '[data-tour="new-user-form"]',
+                    title: "Formulario de nuevo usuario",
+                    description: "Rellena los datos del nuevo usuario operativo: nombre de usuario único, email, contraseña y organización a la que pertenece. El rol se asigna automáticamente como OPERATIVE. Pulsa Crear usuario para guardar.",
+                  },
+                ]}
+              />
+              <button type="button" onClick={() => navegar("/dashboard")} className="cm-btn cm-btn-secondary">
+                Volver
+              </button>
+            </div>
           }
         />
 
         {error ? <ErrorBanner message={error} /> : null}
         {enviado ? <SuccessBanner message={enviado} /> : null}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form data-tour="new-user-form" onSubmit={handleSubmit} className="space-y-5">
           <FormSection title="Datos de acceso" description="Credenciales principales del usuario operativo.">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>

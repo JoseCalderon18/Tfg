@@ -4,6 +4,7 @@ import { Circle, CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMa
 import type { LatLngBoundsExpression, LatLngTuple } from "leaflet";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import TourButton from "../components/TourGuide";
 
 type IncidentOption = {
   id: string;
@@ -258,16 +259,27 @@ export default function NewWorkAreaPage() {
               Selecciona el incidente y dibuja en el mapa el circulo o poligono exacto que quieres guardar.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/workarea")}
-            className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
-          >
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <TourButton
+              steps={[
+                {
+                  selector: '[data-tour="new-workarea-map"]',
+                  title: "Mapa de creación",
+                  description: "Selecciona el incidente y dibuja el área sobre el mapa. Para un área circular, haz clic en el centro y ajusta el radio. Para poligonal, haz clic para añadir vértices y cierra el polígono. El sistema calcula automáticamente la geometría exacta.",
+                },
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/workarea")}
+              className="rounded-xl bg-slate-900/60 px-4 py-2 text-sm font-semibold ring-1 ring-slate-800 hover:bg-slate-800 transition"
+            >
+              Volver
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div data-tour="new-workarea-map" className="mt-8 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
           <section className="rounded-2xl bg-slate-900/60 p-6 ring-1 ring-slate-800 shadow-2xl">
             {error ? (
               <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
