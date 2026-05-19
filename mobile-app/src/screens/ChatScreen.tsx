@@ -308,9 +308,6 @@ export default function PantallaChat({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={estilos.header}>
-        <TouchableOpacity style={estilos.backButton} onPress={() => navigation.goBack()}>
-          <Text style={estilos.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <View style={estilos.headerText}>
           <Text style={estilos.title}>Chats</Text>
           <Text style={estilos.subtitle}>Comunicaciones del operativo</Text>
@@ -407,17 +404,6 @@ const estilos = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 18,
     paddingTop: 18,
-  },
-  backButton: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
   },
   headerText: {
     flex: 1,

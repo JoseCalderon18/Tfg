@@ -467,9 +467,6 @@ export default function IncidentsScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.title}>Incidentes</Text>
           <Text style={styles.subtitle}>{user?.organization_name ?? 'Organizacion del operativo'}</Text>
@@ -507,17 +504,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-  },
-  backButton: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
   },
   headerText: {
     flex: 1,

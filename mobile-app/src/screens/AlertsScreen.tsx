@@ -336,9 +336,6 @@ export default function PantallaAlertas({ navigation, route }: any) {
   return (
     <View style={estilos.contenedor}>
       <View style={estilos.cabecera}>
-        <TouchableOpacity style={estilos.botonVolver} onPress={() => navigation.goBack()}>
-          <Text style={estilos.textoBotonVolver}>Volver</Text>
-        </TouchableOpacity>
         <View style={estilos.textoCabecera}>
           <Text style={estilos.titulo}>Alertas registradas</Text>
           <Text style={estilos.subtitulo}>{etiquetaAlcanceSeleccionado}</Text>
@@ -471,8 +468,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  botonVolver: { backgroundColor: colors.surfaceMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  textoBotonVolver: { color: colors.text, fontSize: 14, fontWeight: '700' },
   textoCabecera: { flex: 1 },
   titulo: { color: colors.text, fontSize: 24, fontWeight: '800' },
   subtitulo: { marginTop: 4, color: colors.textMuted, fontSize: 13, fontWeight: '600' },

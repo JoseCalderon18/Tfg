@@ -145,12 +145,10 @@ function OperativeNavigator() {
           <Stack.Screen
             name="PointsOfInterest"
             component={PointsOfInterestScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartJourney"
             component={StartJourneyScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StartBreak"

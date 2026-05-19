@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, parseJsonResponse } from '../services/api';
@@ -114,9 +114,6 @@ export default function CompanionsScreen({ navigation, route }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
         <View style={styles.headerText}>
           <Text style={styles.title}>Companeros</Text>
           <Text style={styles.subtitle}>{incident?.name ?? 'Incidente seleccionado'}</Text>
@@ -179,8 +176,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  backButton: { backgroundColor: colors.surfaceMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  backButtonText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   headerText: { flex: 1 },
   title: { color: colors.text, fontSize: 24, fontWeight: '800' },
   subtitle: { marginTop: 4, color: colors.textMuted, fontSize: 13, fontWeight: '600' },

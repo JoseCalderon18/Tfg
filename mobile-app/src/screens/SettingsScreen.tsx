@@ -18,14 +18,6 @@ export default function SettingsScreen({ navigation }: any) {
         style={[styles.screen, { backgroundColor: themeColors.background }]}
         contentContainerStyle={styles.content}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={[styles.backButton, { backgroundColor: themeColors.surfaceMuted }]}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.backButtonText, { color: themeColors.text }]}>Volver</Text>
-        </TouchableOpacity>
-
         <View style={styles.header}>
           <Text style={[styles.title, { color: themeColors.text }]}>Configuracion operativa</Text>
           <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
@@ -104,18 +96,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: spacing.xxxl,
-  },
-  backButton: {
-    alignSelf: 'flex-end',
-    marginTop: 24,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  backButtonText: {
-    ...typography.subtitle,
-    color: colors.text,
   },
   header: {
     marginBottom: spacing.xl,
