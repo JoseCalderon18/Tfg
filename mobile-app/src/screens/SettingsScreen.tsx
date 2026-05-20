@@ -7,7 +7,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { getApiDebugUrls } from '../services/api';
 import { borderRadius, colors, shadows, spacing, typography } from '../theme';
 
-export default function SettingsScreen({ navigation }: any) {
+export default function SettingsScreen() {
   const urls = getApiDebugUrls();
   const { pendingCount, isSyncing, lastSyncedAt, lastError, flushQueue } = useOfflineSync();
   const themeColors = useThemeColors();
@@ -35,19 +35,6 @@ export default function SettingsScreen({ navigation }: any) {
 
         <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <ThemeToggle />
-        </View>
-
-        <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
-          <Text style={[styles.cardTitle, { color: themeColors.text }]}>Cuenta</Text>
-          <Text style={[styles.cardValue, { color: themeColors.textMuted }]}>
-            Cambia la contrasena desde la app sin salir del entorno operativo.
-          </Text>
-          <TouchableOpacity
-            style={[styles.syncButton, { backgroundColor: themeColors.primary }]}
-            onPress={() => navigation.navigate('ResetPassword')}
-          >
-            <Text style={styles.syncButtonText}>Resetear contrasena</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>

@@ -30,7 +30,6 @@ import IncidentsScreen from './src/screens/IncidentsScreen';
 import IncidentScreen from './src/screens/IncidentScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import CompanionsScreen from './src/screens/CompanionsScreen';
-import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import WeatherScreen from './src/screens/WeatherScreen';
 import UnitsTrackingScreen from './src/screens/UnitsTrackingScreen';
@@ -118,11 +117,6 @@ function LoginNavigator() {
   return (
     <Stack.Navigator initialRouteName="Login">
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen
-        name="ResetPassword"
-        component={ResetPasswordScreen}
-        options={{ headerShown: false }}
-      />
     </Stack.Navigator>
   );
 }
@@ -179,11 +173,6 @@ function OperativeNavigator() {
           <Stack.Screen
             name="Companions"
             component={CompanionsScreen}
-          />
-          <Stack.Screen
-            name="ResetPassword"
-            component={ResetPasswordScreen}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Weather"
