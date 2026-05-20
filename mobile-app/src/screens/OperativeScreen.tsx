@@ -265,7 +265,12 @@ export default function OperativeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
+        <TouchableOpacity
+          style={styles.hamburgerButton}
+          onPress={() => setMenuVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir menu principal"
+        >
           <Text style={styles.hamburgerText}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Emergencias</Text>
@@ -318,6 +323,9 @@ export default function OperativeScreen({ navigation }: any) {
                       selectedIncidentId === incident.id ? styles.incidentChipSelected : null,
                     ]}
                     onPress={() => setSelectedIncidentId(incident.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Seleccionar incidente ${incident.name ?? 'sin nombre'} para SOS`}
+                    accessibilityState={{ selected: selectedIncidentId === incident.id }}
                   >
                     <Text
                       style={[
@@ -341,10 +349,18 @@ export default function OperativeScreen({ navigation }: any) {
           <TouchableOpacity
             style={[styles.quickActionButton, isTracking ? styles.stopQuickAction : styles.startQuickAction]}
             onPress={isTracking ? stopTracking : startTracking}
+            accessibilityRole="button"
+            accessibilityLabel={isTracking ? 'Detener GPS' : 'Iniciar GPS'}
+            accessibilityHint="Activa o detiene el seguimiento de ubicacion"
           >
             <Text style={styles.quickActionText}>{isTracking ? 'Detener GPS' : 'Iniciar GPS'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.quickActionButton, styles.mapQuickAction]} onPress={() => navigation.navigate('Map')}>
+          <TouchableOpacity
+            style={[styles.quickActionButton, styles.mapQuickAction]}
+            onPress={() => navigation.navigate('Map')}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir mapa operativo"
+          >
             <Text style={styles.quickActionText}>Abrir mapa</Text>
           </TouchableOpacity>
         </View>
@@ -373,21 +389,44 @@ export default function OperativeScreen({ navigation }: any) {
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.quickActionButton, styles.mapQuickAction, styles.botonAmpliar]} onPress={() => navigation.navigate('Map')}>
+        <TouchableOpacity
+          style={[styles.quickActionButton, styles.mapQuickAction, styles.botonAmpliar]}
+          onPress={() => navigation.navigate('Map')}
+          accessibilityRole="button"
+          accessibilityLabel="Ampliar mapa operativo"
+        >
           <Text style={styles.quickActionText}>Ampliar</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.bottomMenu}>
-        <TouchableOpacity style={styles.sideButton} onPress={handleAlertPress}>
+        <TouchableOpacity
+          style={styles.sideButton}
+          onPress={handleAlertPress}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar alerta"
+        >
           <Text style={styles.sideButtonText}>🚨{'\n'}ALERTA</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.centerButton} onPress={handleSosPress} disabled={isSendingSos}>
+        <TouchableOpacity
+          style={styles.centerButton}
+          onPress={handleSosPress}
+          disabled={isSendingSos}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar SOS"
+          accessibilityHint="Abre una cuenta atras antes de enviar una alerta SOS"
+          accessibilityState={{ disabled: isSendingSos, busy: isSendingSos }}
+        >
           <Text style={styles.centerButtonText}>{`🆘\nSOS${isSendingSos ? '\nENVIANDO...' : ''}`}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.sideButton} onPress={() => navigation.navigate('PointsOfInterest')}>
+        <TouchableOpacity
+          style={styles.sideButton}
+          onPress={() => navigation.navigate('PointsOfInterest')}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir puntos de interes"
+        >
           <Text style={styles.sideButtonText}>📍{'\n'}PUNTOS DE{'\n'}INTERES</Text>
         </TouchableOpacity>
       </View>
@@ -397,6 +436,7 @@ export default function OperativeScreen({ navigation }: any) {
         transparent
         animationType="fade"
         onRequestClose={closeSosModal}
+        accessibilityViewIsModal
       >
         <View style={styles.sosModalOverlay}>
           <View style={styles.sosModalCard}>
@@ -409,6 +449,9 @@ export default function OperativeScreen({ navigation }: any) {
               style={[styles.sosCancelButton, isSendingSos ? styles.sosCancelButtonDisabled : null]}
               onPress={closeSosModal}
               disabled={isSendingSos}
+              accessibilityRole="button"
+              accessibilityLabel={isSendingSos ? 'Enviando SOS' : 'Cancelar SOS'}
+              accessibilityState={{ disabled: isSendingSos, busy: isSendingSos }}
             >
               <Text style={styles.sosCancelButtonText}>
                 {isSendingSos ? 'Enviando SOS...' : 'Cancelar'}
@@ -423,10 +466,16 @@ export default function OperativeScreen({ navigation }: any) {
         transparent
         animationType="slide"
         onRequestClose={() => setMenuVisible(false)}
+        accessibilityViewIsModal
       >
         <View style={styles.modalOverlay}>
           <View style={styles.drawerMenu}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setMenuVisible(false)}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setMenuVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar menu principal"
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
 

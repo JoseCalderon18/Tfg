@@ -17,6 +17,10 @@ export function Input({
   ...props
 }: InputProps) {
   const [focused, setFocused] = React.useState(false);
+  const accessibleLabel =
+    props.accessibilityLabel ??
+    label ??
+    (typeof props.placeholder === 'string' ? props.placeholder : undefined);
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -30,9 +34,11 @@ export function Input({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholderTextColor={colors.textMuted}
+        accessibilityLabel={accessibleLabel}
+        accessibilityHint={hint}
         {...props}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>}
       {hint && !error && <Text style={styles.hintText}>{hint}</Text>}
     </View>
   );

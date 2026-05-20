@@ -39,6 +39,8 @@ export default function LoginScreen() {
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
+        accessibilityLabel="Usuario o email"
+        accessibilityHint="Introduce tu usuario o correo electronico para iniciar sesion"
       />
       <TextInput
         style={styles.input}
@@ -47,11 +49,21 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        accessibilityLabel="Contrasena"
+        accessibilityHint="Introduce tu contrasena"
       />
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={submitting}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={submitting}
+        accessibilityRole="button"
+        accessibilityLabel="Entrar"
+        accessibilityHint="Inicia sesion en la aplicacion"
+        accessibilityState={{ disabled: submitting, busy: submitting }}
+      >
         {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Entrar</Text>}
       </TouchableOpacity>
 

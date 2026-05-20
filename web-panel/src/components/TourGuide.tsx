@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export type TourStep = {
   selector: string;
@@ -7,6 +8,7 @@ export type TourStep = {
 };
 
 const PAD = 10;
+const TOUR_Z_INDEX = 2147483000;
 
 function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -43,10 +45,17 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   }, [isLast, onClose]);
 
   if (!rect) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80">
+    return createPortal(
+      <div
+        className="fixed inset-0 flex items-center justify-center bg-slate-950/80"
+        style={{ zIndex: TOUR_Z_INDEX }}
+        role="status"
+        aria-live="polite"
+        aria-label="Cargando tour guiado"
+      >
         <span className="cm-spinner" />
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -77,8 +86,14 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     else onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100]">
+  return createPortal(
+    <div
+      className="fixed inset-0"
+      style={{ zIndex: TOUR_Z_INDEX }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Tour guiado: ${step.title}`}
+    >
       {/* Top dark segment */}
       <div
         className="absolute cursor-pointer bg-slate-950/80"
@@ -122,6 +137,7 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
         className="absolute cm-card p-5 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
         style={{ top: cardTop, left: cardLeft, width: CARD_W }}
         onClick={(e) => e.stopPropagation()}
+        data-tour-card="true"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="cm-eyebrow">
@@ -145,6 +161,7 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
             type="button"
             onClick={advance}
             className="cm-btn cm-btn-primary cm-btn-sm"
+            aria-label={isLast ? "Finalizar tour guiado" : "Continuar al siguiente paso del tour guiado"}
           >
             {isLast ? "Finalizar ✓" : "Continuar →"}
           </button>
@@ -162,7 +179,8 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

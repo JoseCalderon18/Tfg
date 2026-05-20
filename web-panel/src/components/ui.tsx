@@ -49,7 +49,7 @@ type LoadingStateProps = {
 
 export function LoadingState({ label = "Cargando..." }: LoadingStateProps) {
   return (
-    <div className="cm-loading-state">
+    <div className="cm-loading-state" role="status" aria-live="polite" aria-label={label}>
       <div className="cm-loading-inline">
         <span className="cm-spinner" />
         <p>{label}</p>
@@ -120,13 +120,16 @@ export function SearchBar({
   ...props
 }: SearchBarProps) {
   const hasValue = typeof value === "string" && value.trim().length > 0;
+  const inputAriaLabel =
+    props["aria-label"] ??
+    (typeof props.placeholder === "string" ? props.placeholder : "Buscar");
 
   return (
     <div className={`cm-card cm-card-pad ${wrapperClassName}`.trim()}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input type={type} value={value} className={`cm-input ${className}`.trim()} {...props} />
+        <input type={type} value={value} className={`cm-input ${className}`.trim()} aria-label={inputAriaLabel} {...props} />
         {onClear && hasValue ? (
-          <button type="button" onClick={onClear} className="cm-btn cm-btn-secondary shrink-0">
+          <button type="button" onClick={onClear} className="cm-btn cm-btn-secondary shrink-0" aria-label="Limpiar búsqueda">
             Limpiar
           </button>
         ) : null}
@@ -162,7 +165,7 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="cm-card w-full max-w-md p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         {eyebrow ? <p className="cm-eyebrow">{eyebrow}</p> : null}
         <h2 className="mt-2 text-xl font-bold text-[color:var(--cm-text)]">{title}</h2>
@@ -253,10 +256,10 @@ export function Pagination({
         Página {page} de {totalPages} · Mostrando {visibleCount} de {totalCount} {itemLabel}
       </p>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-        <button type="button" onClick={onPrevious} disabled={page === 1} className="cm-btn cm-btn-secondary">
+        <button type="button" onClick={onPrevious} disabled={page === 1} className="cm-btn cm-btn-secondary" aria-label={`Página anterior de ${itemLabel}`}>
           Anterior
         </button>
-        <button type="button" onClick={onNext} disabled={page === totalPages} className="cm-btn cm-btn-secondary">
+        <button type="button" onClick={onNext} disabled={page === totalPages} className="cm-btn cm-btn-secondary" aria-label={`Página siguiente de ${itemLabel}`}>
           Siguiente
         </button>
       </div>

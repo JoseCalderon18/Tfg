@@ -10,6 +10,8 @@ interface ButtonProps {
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   style?: ViewStyle;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export function Button({
@@ -19,6 +21,8 @@ export function Button({
   size = 'medium',
   disabled = false,
   style,
+  accessibilityLabel,
+  accessibilityHint,
 }: ButtonProps) {
   const colors = useThemeColors();
 
@@ -104,6 +108,10 @@ export function Button({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled }}
     >
       <Text style={buttonTextStyle}>
         {label}
