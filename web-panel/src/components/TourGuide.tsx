@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export type TourStep = {
   selector: string;
@@ -7,6 +8,7 @@ export type TourStep = {
 };
 
 const PAD = 10;
+const TOUR_Z_INDEX = 2147483000;
 
 function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -43,10 +45,11 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   }, [isLast, onClose]);
 
   if (!rect) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80">
+    return createPortal(
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-950/80" style={{ zIndex: TOUR_Z_INDEX }}>
         <span className="cm-spinner" />
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -77,8 +80,8 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     else onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100]">
+  return createPortal(
+    <div className="fixed inset-0" style={{ zIndex: TOUR_Z_INDEX }}>
       {/* Top dark segment */}
       <div
         className="absolute cursor-pointer bg-slate-950/80"
@@ -162,7 +165,8 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

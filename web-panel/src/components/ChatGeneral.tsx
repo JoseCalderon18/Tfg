@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useAuthStore } from "../store/authStore";
 import { apiFetch } from "../utils/api";
+import TourButton from "./TourGuide";
 
 type ChatRow = {
   id: string | number;
@@ -332,7 +333,7 @@ export default function ChatGeneral() {
     <div className="cm-shell min-h-screen px-4 py-5 lg:px-5 lg:py-6 2xl:px-6">
       <div className="mx-auto w-full max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
+          <div data-tour="chat-header">
             <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--cm-text-muted)]">Chat</p>
             <h1 className="mt-1 text-2xl font-bold">Centro de comunicaciones</h1>
             <p className="mt-1 max-w-3xl text-sm text-[color:var(--cm-text-muted)]">
@@ -340,6 +341,30 @@ export default function ChatGeneral() {
               Solo esos perfiles pueden verlo.
             </p>
           </div>
+          <TourButton
+            steps={[
+              {
+                selector: '[data-tour="chat-header"]',
+                title: "Centro de comunicaciones",
+                description: "Desde aqui se gestionan conversaciones internas y el acceso de perfiles autorizados.",
+              },
+              {
+                selector: '[data-tour="chat-list"]',
+                title: "Listado de chats",
+                description: "Crea un chat nuevo o selecciona una conversacion existente para consultar sus mensajes.",
+              },
+              {
+                selector: '[data-tour="chat-messages"]',
+                title: "Mensajes del chat",
+                description: "Revisa el historial del chat seleccionado y envia nuevos mensajes cuando tengas acceso.",
+              },
+              {
+                selector: '[data-tour="chat-members"]',
+                title: "Usuarios autorizados",
+                description: "Busca perfiles, marca quienes pueden ver el chat y guarda los miembros permitidos.",
+              },
+            ]}
+          />
         </div>
 
         {errorMessage ? (
@@ -347,7 +372,7 @@ export default function ChatGeneral() {
         ) : null}
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
-          <aside className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
+          <aside data-tour="chat-list" className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--cm-text-muted)]">Chats</p>
@@ -414,7 +439,7 @@ export default function ChatGeneral() {
             </div>
           </aside>
 
-          <section className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]">
+          <section data-tour="chat-messages" className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)]">
             <header className="border-b border-[color:var(--cm-border)] px-5 py-4">
               {selectedChat ? (
                 <>
@@ -513,7 +538,7 @@ export default function ChatGeneral() {
             </div>
           </section>
 
-          <aside className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
+          <aside data-tour="chat-members" className="rounded-3xl border border-[color:var(--cm-border)] bg-[color:var(--cm-surface)] p-4">
             <button
               type="button"
               onClick={() => setAccediendoPanel((current) => !current)}
