@@ -46,7 +46,13 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
 
   if (!rect) {
     return createPortal(
-      <div className="fixed inset-0 flex items-center justify-center bg-slate-950/80" style={{ zIndex: TOUR_Z_INDEX }}>
+      <div
+        className="fixed inset-0 flex items-center justify-center bg-slate-950/80"
+        style={{ zIndex: TOUR_Z_INDEX }}
+        role="status"
+        aria-live="polite"
+        aria-label="Cargando tour guiado"
+      >
         <span className="cm-spinner" />
       </div>,
       document.body
@@ -81,7 +87,13 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   };
 
   return createPortal(
-    <div className="fixed inset-0" style={{ zIndex: TOUR_Z_INDEX }}>
+    <div
+      className="fixed inset-0"
+      style={{ zIndex: TOUR_Z_INDEX }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Tour guiado: ${step.title}`}
+    >
       {/* Top dark segment */}
       <div
         className="absolute cursor-pointer bg-slate-950/80"
@@ -125,6 +137,7 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
         className="absolute cm-card p-5 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
         style={{ top: cardTop, left: cardLeft, width: CARD_W }}
         onClick={(e) => e.stopPropagation()}
+        data-tour-card="true"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="cm-eyebrow">
@@ -148,6 +161,7 @@ function TourOverlay({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
             type="button"
             onClick={advance}
             className="cm-btn cm-btn-primary cm-btn-sm"
+            aria-label={isLast ? "Finalizar tour guiado" : "Continuar al siguiente paso del tour guiado"}
           >
             {isLast ? "Finalizar ✓" : "Continuar →"}
           </button>
